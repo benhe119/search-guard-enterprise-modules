@@ -37,6 +37,7 @@ import org.elasticsearch.index.query.ParsedQuery;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryShardContext;
 
+import com.floragunn.searchguard.support.SearchGuardDeprecationHandler;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -82,7 +83,7 @@ final class DlsQueryParser {
 
                     @Override
                     public QueryBuilder call() throws Exception {
-                        final XContentParser parser = JsonXContent.jsonXContent.createParser(namedXContentRegistry, unparsedDlsQuery);                
+                        final XContentParser parser = JsonXContent.jsonXContent.createParser(namedXContentRegistry, SearchGuardDeprecationHandler.INSTANCE, unparsedDlsQuery);                
                         final QueryBuilder qb = AbstractQueryBuilder.parseInnerQueryBuilder(parser);
                         return qb;
                     }
