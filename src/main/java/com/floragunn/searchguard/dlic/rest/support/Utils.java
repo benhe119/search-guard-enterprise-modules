@@ -44,7 +44,7 @@ public class Utils {
     
     public static BytesReference convertStructuredMapToBytes(Map<String, Object> structuredMap) {
         try {
-            return JsonXContent.contentBuilder().map(structuredMap).bytes();
+            return BytesReference.bytes(JsonXContent.contentBuilder().map(structuredMap));
         } catch (IOException e) {
             throw new ElasticsearchParseException("Failed to convert map", e);
         }
