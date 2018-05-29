@@ -39,6 +39,7 @@ import org.junit.Test;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage.Category;
 import com.floragunn.searchguard.auditlog.impl.WebhookAuditLog.WebhookFormat;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
+import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
 public class WebhookAuditLogTest {
     
@@ -203,14 +204,14 @@ public class WebhookAuditLogTest {
 		TestHttpHandler handler = new TestHttpHandler();
 
 		server = ServerBootstrap.bootstrap()
-				.setListenerPort(8080)
+				.setListenerPort(SocketUtils.findAvailableTcpPort())
 				.setServerInfo("Test/1.1")
 				.registerHandler("*", handler)
 				.create();
 
 		server.start();
 
-		String url = "http://localhost:8080/endpoint";
+		String url = "http://localhost:"+server.getLocalPort()+"/endpoint";
 
 		// SLACK
 		Settings settings = Settings.builder()
@@ -300,16 +301,17 @@ public class WebhookAuditLogTest {
 	public void httpsTestWithoutTLSServer() throws Exception {
 
 		TestHttpHandler handler = new TestHttpHandler();
+		final int port = SocketUtils.findAvailableTcpPort();
 
 		server = ServerBootstrap.bootstrap()
-				.setListenerPort(8081)
+				.setListenerPort(port)
 				.setServerInfo("Test/1.1")
 				.registerHandler("*", handler)
 				.create();
 
 		server.start();
 
-		String url = "https://localhost:8081/endpoint";
+		String url = "https://localhost:"+port+"/endpoint";
 
 		Settings settings = Settings.builder()
 				.put("searchguard.audit.config.webhook.url", url)
@@ -334,7 +336,7 @@ public class WebhookAuditLogTest {
 		TestHttpHandler handler = new TestHttpHandler();
 
 		server = ServerBootstrap.bootstrap()
-				.setListenerPort(8082)
+				.setListenerPort(SocketUtils.findAvailableTcpPort())
 				.setServerInfo("Test/1.1")
 				.setSslContext(createSSLContext())
 				.registerHandler("*", handler)
@@ -342,7 +344,7 @@ public class WebhookAuditLogTest {
 
 		server.start();
 
-		String url = "https://localhost:8082/endpoint";
+		String url = "https://localhost:"+server.getLocalPort()+"/endpoint";
 		
 		// try with ssl verification on, must fail
 		Settings settings = Settings.builder()
@@ -402,7 +404,7 @@ public class WebhookAuditLogTest {
         TestHttpHandler handler = new TestHttpHandler();
 
         server = ServerBootstrap.bootstrap()
-                .setListenerPort(8083)
+                .setListenerPort(SocketUtils.findAvailableTcpPort())
                 .setServerInfo("Test/1.1")
                 .setSslContext(createSSLContext())
                 .registerHandler("*", handler)
@@ -411,7 +413,7 @@ public class WebhookAuditLogTest {
         server.start();
         AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
 
-        String url = "https://localhost:8083/endpoint";
+        String url = "https://localhost:"+server.getLocalPort()+"/endpoint";
         
         // try with ssl verification on, must fail
         Settings settings = Settings.builder()
