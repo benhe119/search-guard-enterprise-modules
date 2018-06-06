@@ -79,7 +79,7 @@ public final class FieldReadCallback {
         this.shardId = shardId;
         try {
             sfc = (SourceFieldsContext) HeaderHelper.deserializeSafeFromHeader(threadContext, "_sg_source_field_context");
-            if(sfc != null && sfc.getIncludes() != null && sfc.getExcludes() != null) {
+            if(sfc != null && sfc.hasIncludesOrExcludes()) {
                 if(log.isTraceEnabled()) {
                     log.trace("_sg_source_field_context: "+sfc);
                 }
