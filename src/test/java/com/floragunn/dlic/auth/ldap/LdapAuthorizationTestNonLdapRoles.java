@@ -13,15 +13,15 @@ import com.floragunn.searchguard.user.User;
 
 public class LdapAuthorizationTestNonLdapRoles {
     
-	protected EmbeddedLDAPServer ldapServer = null;
-	
-	@Before
+    protected EmbeddedLDAPServer ldapServer = null;
+
+    @Before
     public final void startLDAPServer() throws Exception {
         ldapServer = new EmbeddedLDAPServer();
         ldapServer.start();
         ldapServer.applyLdif("base.ldif");
     }
-    
+
     @After
     public void tearDown() throws Exception {
         if (ldapServer != null) {
@@ -29,7 +29,7 @@ public class LdapAuthorizationTestNonLdapRoles {
         }
     }
     
-	@Test
+    @Test
     public void testLdapAuthorizationNonDNRoles() throws Exception {
 
         final Settings settings = Settings.builder()
