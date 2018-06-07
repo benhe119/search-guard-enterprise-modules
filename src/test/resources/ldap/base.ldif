@@ -47,6 +47,8 @@ uid: jacksonm
 userpassword: secret
 mail: jacksonm@example.com
 ou: Human Resources
+userPKCS12::YWJjdmdmcnQ=YWJjdmdmcnQ=YWJjdmdmcnQ=YWJjdmdmcnQ=YWJjdmdmcnQ=
+userSMIMECertificate;binary: abc
 
 dn: cn=Captain Spock,ou=people,o=TEST
 objectclass: inetOrgPerson
