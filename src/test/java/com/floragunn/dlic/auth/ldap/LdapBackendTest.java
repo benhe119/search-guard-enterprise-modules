@@ -46,7 +46,7 @@ public class LdapBackendTest {
     private static EmbeddedLDAPServer ldapServer = null;
     
     @BeforeClass
-    public static void startL() throws Exception {
+    public static void startLdapServer() throws Exception {
         ldapServer = new EmbeddedLDAPServer();
         ldapServer.start();
         ldapServer.applyLdif("base.ldif");
@@ -740,6 +740,44 @@ public class LdapBackendTest {
         Assert.assertEquals(3, user.getRoles().size());
         Assert.assertEquals("nested3", new ArrayList(new TreeSet(user.getRoles())).get(1));
         Assert.assertEquals("rolemo4", new ArrayList(new TreeSet(user.getRoles())).get(2));
+    }
+
+    @Test
+    public void testCustomAttributes() throws Exception {
+
+        Settings settings = Settings.builder()
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
+
+        LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
+                .getBytes(StandardCharsets.UTF_8)));
+        Assert.assertNotNull(user);
+        Assert.assertEquals("cn=Michael Jackson,ou=people,o=TEST", user.getName());
+        Assert.assertEquals(user.getCustomAttributesMap().toString(), 13, user.getCustomAttributesMap().size());
+        Assert.assertFalse(user.getCustomAttributesMap().toString(), user.getCustomAttributesMap().keySet().contains("attr.ldap.userpassword"));
+    
+        settings = Settings.builder()
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
+                .put(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 0)
+                .build();
+
+        user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
+                .getBytes(StandardCharsets.UTF_8)));
+    
+        Assert.assertEquals(user.getCustomAttributesMap().toString(), 2, user.getCustomAttributesMap().size());
+        
+        settings = Settings.builder()
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
+                .putList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST, "*objectclass*","entryParentId")
+                .build();
+
+        user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
+                .getBytes(StandardCharsets.UTF_8)));
+    
+        Assert.assertEquals(user.getCustomAttributesMap().toString(), 4, user.getCustomAttributesMap().size());
+    
     }
     
     @AfterClass

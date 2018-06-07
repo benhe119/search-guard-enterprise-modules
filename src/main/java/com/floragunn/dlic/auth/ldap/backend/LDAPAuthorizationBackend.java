@@ -489,10 +489,11 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                 log.trace("roles count total {}", roles.size());
             }
             
-            final List<String> nestedRoleFilter = settings.getAsList(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, Collections.emptyList());
 
             // nested roles
             if (settings.getAsBoolean(ConfigConstants.LDAP_AUTHZ_RESOLVE_NESTED_ROLES, false)) {
+                
+                final List<String> nestedRoleFilter = settings.getAsList(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, Collections.emptyList());
 
                 if(log.isTraceEnabled()) {
                     log.trace("Evaluate nested roles");
