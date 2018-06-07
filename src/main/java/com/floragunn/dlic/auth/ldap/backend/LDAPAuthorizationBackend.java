@@ -426,19 +426,19 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             }
             
             // we support more than one rolenames, must be separated by a comma                      
-            for(String userRoleName : userRoleNames.split(",")) {
-            	final String roleName = userRoleName.trim();
-            	if (entry.getAttribute(roleName) != null) {
-                	final Collection<String> userRoles = entry.getAttribute(roleName).getStringValues();
-                    for (final String possibleRoleDN : userRoles) {
-                        if (isValidDn(possibleRoleDN)) {
-                            ldapRoles.add(new LdapName(possibleRoleDN));
-                        } else {
-                        	nonLdapRoles.add(possibleRoleDN);
-                        }
-                    }
-                }            	
-            }
+			for (String userRoleName : userRoleNames.split(",")) {
+				final String roleName = userRoleName.trim();
+				if (entry.getAttribute(roleName) != null) {
+					final Collection<String> userRoles = entry.getAttribute(roleName).getStringValues();
+					for (final String possibleRoleDN : userRoles) {
+						if (isValidDn(possibleRoleDN)) {
+							ldapRoles.add(new LdapName(possibleRoleDN));
+						} else {
+							nonLdapRoles.add(possibleRoleDN);
+						}
+					}
+				}
+			}
             
             if(log.isTraceEnabled()) {
                 log.trace("User attr. ldap roles count: {}", ldapRoles.size());
@@ -494,10 +494,10 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                 log.trace("roles count total {}", ldapRoles.size());
             }
             
-            final List<String> nestedRoleFilter = settings.getAsList(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, Collections.emptyList());
-
             // nested roles, makes only sense for DN style role names
             if (settings.getAsBoolean(ConfigConstants.LDAP_AUTHZ_RESOLVE_NESTED_ROLES, false)) {
+
+            	final List<String> nestedRoleFilter = settings.getAsList(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, Collections.emptyList());
 
                 if(log.isTraceEnabled()) {
                     log.trace("Evaluate nested roles");
