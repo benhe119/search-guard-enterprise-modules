@@ -14,11 +14,13 @@
 
 package com.floragunn.dlic.auth.ldap;
 
+import java.util.List;
 import java.util.Map;
 
 import org.ldaptive.LdapAttribute;
 import org.ldaptive.LdapEntry;
 
+import com.floragunn.searchguard.support.WildcardMatcher;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.user.User;
 
@@ -28,7 +30,7 @@ public class LdapUser extends User {
     private final LdapEntry userEntry;
     private final String originalUsername;
 
-    public LdapUser(final String name, String originalUsername, final LdapEntry userEntry, final AuthCredentials credentials) {
+    public LdapUser(final String name, String originalUsername, final LdapEntry userEntry, final AuthCredentials credentials, int customAttrMaxValueLen, List<String> whiteListedAttributes) {
         super(name, null, credentials);
         this.originalUsername = originalUsername;
         this.userEntry = userEntry;
@@ -36,8 +38,22 @@ public class LdapUser extends User {
         attributes.put("ldap.original.username", originalUsername);
         attributes.put("ldap.dn", userEntry.getDn());
         
-        for(LdapAttribute attr: userEntry.getAttributes()) {
-            attributes.put("attr.ldap."+attr.getName(), attr.getStringValue());
+        if(customAttrMaxValueLen > 0) {
+            for(LdapAttribute attr: userEntry.getAttributes()) {
+                if(attr != null && !attr.isBinary() && !attr.getName().toLowerCase().contains("password")) {
+                    final String val = attr.getStringValue();
+                    //only consider attributes which are not binary and where its value is not longer than customAttrMaxValueLen characters
+                    if(val != null && val.length() > 0 && val.length() <= customAttrMaxValueLen) {
+                        if(whiteListedAttributes != null && !whiteListedAttributes.isEmpty()) {
+                            if(WildcardMatcher.matchAny(whiteListedAttributes, attr.getName())) {
+                                attributes.put("attr.ldap."+attr.getName(), val);
+                            }
+                        } else {
+                            attributes.put("attr.ldap."+attr.getName(), val);
+                        }
+                    }
+                }
+            }
         }
     }
 
