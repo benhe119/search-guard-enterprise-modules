@@ -80,6 +80,7 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         Thread.sleep(2000);
         response = rhMon.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        System.out.println(response.getBody());
         assertNotContains(response, "*\"hits\":{\"total\":0,*");
         assertContains(response, "*\"failed\":0},\"hits\":*");
 
@@ -145,6 +146,7 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         Thread.sleep(2000);
         response = rhMon.executeGetRequest("sg6-auditlog-*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        System.out.println(response.getBody());
         assertNotContains(response, "*\"hits\":{\"total\":0,*");
         assertContains(response, "*\"failed\":0},\"hits\":*");
     }
