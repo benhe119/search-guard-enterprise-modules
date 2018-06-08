@@ -71,6 +71,20 @@ userpassword: ssignsecret
 mail: ssign@example.com
 description: cn=dummyempty,ou=groups,o=TEST
 
+dn: cn=Non DN Roles,ou=people,o=TEST
+objectclass: inetOrgPerson
+cn: Non DN Roles
+sn: nondnroles
+uid: nondnroles
+userpassword: nondnroles
+mail: nondnroles@example.com
+# no memberOf IOD registered, so we use 'description'
+description: humanresources
+description: kibanauser
+description: cn=dummyempty,ou=groups,o=TEST
+description: cn=role2,ou=groups,o=TEST
+ou: anotherrole
+
 dn: cn=ceo,ou=groups,o=TEST
 objectClass: groupOfUniqueNames
 cn: ceo
@@ -94,6 +108,7 @@ objectClass: groupOfUniqueNames
 cn: role2
 uniqueMember: cn=Michael Jackson,ou=people,o=TEST
 uniqueMember: cn=nested1,ou=groups,o=TEST
+uniqueMember: cn=Non DN Roles,ou=people,o=TEST
 
 dn: cn=nested1,ou=groups,o=TEST
 objectClass: groupOfUniqueNames
