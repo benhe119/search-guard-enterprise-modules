@@ -1,6 +1,7 @@
 version: 2
 jobs:
   build:
+    parallelism: 4
     working_directory: ~/circleci-sg
     resource_class: large
     docker:
@@ -17,9 +18,18 @@ jobs:
           paths:
             - ~/.m2
           key: circleci-sg-{{ checksum "pom.xml" }}
-      - run: mvn -Pcoverage verify 
+      - run:
+          command: |
+            set -x
+            cd src/test/java         
+            TESTFILES="$(circleci tests glob **/*Test*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
+            echo "$TESTFILES"
+            cd ~/circleci-sg
+            mvn -Pcoverage verify -Dtest="$TESTFILES"
       - store_test_results:
           path: target/surefire-reports
+      - store_artifacts:
+          path: /.circleci-task-data
       - deploy:
           name: Maybe Sonar and Deploy
           command: |

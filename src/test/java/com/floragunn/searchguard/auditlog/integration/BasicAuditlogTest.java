@@ -675,4 +675,33 @@ public class BasicAuditlogTest extends AbstractAuditlogiUnitTest {
         Assert.assertTrue(TestAuditlogImpl.sb.toString(), TestAuditlogImpl.messages.size() >= 2);
         Assert.assertTrue(validateMsgs(TestAuditlogImpl.messages));
     }
+
+    @Test
+    public void testDeleteByQuery() throws Exception {
+        
+        final Settings settings = Settings.builder()
+                .put("searchguard.audit.type", TestAuditlogImpl.class.getName())
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_REST, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RESOLVE_BULK_REQUESTS, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_REST_CATEGORIES, "NONE")
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_TRANSPORT_CATEGORIES, "NONE")
+                .build();
+        setup(settings);
+
+        try (TransportClient tc = getInternalTransportClient()) {                    
+            for(int i=0; i<3; i++)
+            tc.index(new IndexRequest("vulcangov").type("kolinahr").setRefreshPolicy(RefreshPolicy.IMMEDIATE).source("{\"content\":1}", XContentType.JSON)).actionGet();                
+        }
+        
+        TestAuditlogImpl.clear();
+        
+        HttpResponse res;
+        Assert.assertEquals(HttpStatus.SC_OK, (res=rh.executePostRequest("/vulcango*/_delete_by_query?refresh=true&wait_for_completion=true&pretty=true", "{\"query\" : {\"match_all\" : {}}}", encodeBasicHeader("admin", "admin"))).getStatusCode());
+        assertContains(res, "*\"deleted\" : 3,*");
+        String auditlogContents = TestAuditlogImpl.sb.toString();
+        Assert.assertTrue(auditlogContents.contains("indices:data/write/delete/byquery"));
+        Assert.assertTrue(auditlogContents.contains("indices:data/write/bulk"));
+        Assert.assertTrue(auditlogContents.contains("indices:data/read/search"));
+    }
 }
