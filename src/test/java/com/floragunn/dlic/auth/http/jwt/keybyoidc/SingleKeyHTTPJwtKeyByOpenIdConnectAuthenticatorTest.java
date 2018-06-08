@@ -132,7 +132,9 @@ public class SingleKeyHTTPJwtKeyByOpenIdConnectAuthenticatorTest {
 		}
 
 		mockIdpServer = new MockIpdServer(TestJwk.Jwks.RSA_2);
-
+		settings = Settings.builder().put("openid_connect_url", mockIdpServer.getDiscoverUri()).build(); //port changed
+		jwtAuth = new HTTPJwtKeyByOpenIdConnectAuthenticator(settings, null);
+		
 		try {
 			AuthCredentials creds = jwtAuth.extractCredentials(
 					new FakeRestRequest(ImmutableMap.of("Authorization", TestJwts.NoKid.MC_COY_SIGNED_RSA_2),

@@ -38,6 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.floragunn.searchguard.test.helper.file.FileHelper;
+import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.hash.Hashing;
 
 public class KeySetRetrieverTest {
@@ -76,7 +77,7 @@ public class KeySetRetrieverTest {
 	@Test
 	public void clientCertTest() throws Exception {
 
-		try (MockIpdServer sslMockIdpServer = new MockIpdServer(TestJwk.Jwks.ALL, 8084, true) {
+		try (MockIpdServer sslMockIdpServer = new MockIpdServer(TestJwk.Jwks.ALL, SocketUtils.findAvailableTcpPort(), true) {
 			@Override
 			protected void handleDiscoverRequest(HttpRequest request, HttpResponse response, HttpContext context)
 					throws HttpException, IOException {

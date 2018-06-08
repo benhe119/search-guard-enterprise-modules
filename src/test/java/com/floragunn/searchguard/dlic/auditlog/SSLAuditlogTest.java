@@ -16,20 +16,44 @@ package com.floragunn.searchguard.dlic.auditlog;
 
 import org.apache.http.HttpStatus;
 import org.elasticsearch.common.settings.Settings;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.floragunn.searchguard.support.ConfigConstants;
+import com.floragunn.searchguard.test.DynamicSgConfig;
+import com.floragunn.searchguard.test.helper.cluster.ClusterConfiguration;
+import com.floragunn.searchguard.test.helper.cluster.ClusterHelper;
+import com.floragunn.searchguard.test.helper.cluster.ClusterInfo;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
+import com.floragunn.searchguard.test.helper.rest.RestHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
 public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
     
+    private ClusterInfo monitoringClusterInfo;
+    private RestHelper rhMon;
+    private final ClusterHelper monitoringCluster = new ClusterHelper("mon_n"+num.incrementAndGet()+"_f"+System.getProperty("forkno")+"_t"+System.nanoTime());
+
+    @After
+    public void tearDown() throws Exception {
+        monitoringCluster.stopCluster();
+    }
+    
+    private void setupMonitoring() throws Exception {            
+        monitoringClusterInfo =  monitoringCluster.startCluster(minimumSearchGuardSettings(defaultNodeSettings(Settings.EMPTY)), ClusterConfiguration.DEFAULT);
+        initialize(monitoringClusterInfo, Settings.EMPTY, new DynamicSgConfig());
+        rhMon = new RestHelper(monitoringClusterInfo, getResourceFolder());
+    }
+    
     @Test
     public void testExternalPemUserPass() throws Exception {
+        
+        setupMonitoring();
 
         Settings additionalSettings = Settings.builder()
                 .put("searchguard.audit.type", "external_elasticsearch")
+                .put("searchguard.audit.config.http_endpoints", monitoringClusterInfo.httpHost+":"+monitoringClusterInfo.httpPort)
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_THREADPOOL_SIZE, 0)
                 .putList(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_USERS, "*spock*","admin", "CN=kirk,OU=client,O=client,L=Test,C=DE")
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
@@ -49,12 +73,10 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
                 .build();
         
         setup(additionalSettings);
-        System.out.println("### write");
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
         Thread.sleep(2000);
-        response = rh.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
-        System.out.println(response.getBody());
+        response = rhMon.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         assertContains(response, "*\"hits\":{\"total\":1,*");
         
@@ -63,8 +85,11 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
     @Test
     public void testExternalPemClientAuth() throws Exception {
 
+        setupMonitoring();
+        
         Settings additionalSettings = Settings.builder()
                 .put("searchguard.audit.type", "external_elasticsearch")
+                .put("searchguard.audit.config.http_endpoints", monitoringClusterInfo.httpHost+":"+monitoringClusterInfo.httpPort)
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_THREADPOOL_SIZE, 0)
                 .putList(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_USERS, "*spock*","admin", "CN=kirk,OU=client,O=client,L=Test,C=DE")
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
@@ -83,17 +108,19 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
         Thread.sleep(2000);
-        response = rh.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
-        System.out.println(response.getBody());
+        response = rhMon.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         assertContains(response, "*\"hits\":{\"total\":1,*");
     }
     
     @Test
     public void testExternalPemUserPassTp() throws Exception {
+        
+        setupMonitoring();
 
         Settings additionalSettings = Settings.builder()
                 .put("searchguard.audit.type", "external_elasticsearch")
+                .put("searchguard.audit.config.http_endpoints", monitoringClusterInfo.httpHost+":"+monitoringClusterInfo.httpPort)
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_THREADPOOL_SIZE, 10)
                 .putList(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_USERS, "*spock*","admin", "CN=kirk,OU=client,O=client,L=Test,C=DE")
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
@@ -108,12 +135,10 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
                 .build();
         
         setup(additionalSettings);
-        System.out.println("### write");
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
         Thread.sleep(2000);
-        response = rh.executeGetRequest("sg6-auditlog-*/_search", encodeBasicHeader("admin", "admin"));
-        System.out.println(response.getBody());
+        response = rhMon.executeGetRequest("sg6-auditlog-*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         assertContains(response, "*\"hits\":{\"total\":1,*");
     }
