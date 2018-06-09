@@ -78,6 +78,8 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
         Thread.sleep(2000);
+        response = rhMon.executeGetRequest("sg6-auditlog*/_refresh", encodeBasicHeader("admin", "admin"));
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rhMon.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         System.out.println(response.getBody());
@@ -112,6 +114,8 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
         Thread.sleep(2000);
+        response = rhMon.executeGetRequest("sg6-auditlog*/_refresh", encodeBasicHeader("admin", "admin"));
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rhMon.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         System.out.println(response.getBody());
@@ -127,7 +131,7 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         Settings additionalSettings = Settings.builder()
                 .put("searchguard.audit.type", "external_elasticsearch")
                 .put("searchguard.audit.config.http_endpoints", monitoringClusterInfo.httpHost+":"+monitoringClusterInfo.httpPort)
-                .put(ConfigConstants.SEARCHGUARD_AUDIT_THREADPOOL_SIZE, 10)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_THREADPOOL_SIZE, 0)
                 .putList(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_USERS, "*spock*","admin", "CN=kirk,OU=client,O=client,L=Test,C=DE")
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_RESOLVE_BULK_REQUESTS, true)
@@ -144,6 +148,8 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
         Thread.sleep(2000);
+        response = rhMon.executeGetRequest("sg6-auditlog*/_refresh", encodeBasicHeader("admin", "admin"));
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rhMon.executeGetRequest("sg6-auditlog-*/_search", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         System.out.println(response.getBody());
