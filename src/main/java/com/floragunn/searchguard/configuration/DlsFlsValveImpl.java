@@ -22,8 +22,6 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.RealtimeRequest;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions.Type;
 import org.elasticsearch.action.admin.indices.shrink.ResizeRequest;
 import org.elasticsearch.action.bulk.BulkItemRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -105,10 +103,10 @@ public class DlsFlsValveImpl implements DlsFlsRequestValve {
                         return false;
                     }
                     
-                    if(source.suggest() != null) {
-                        listener.onFailure(new ElasticsearchSecurityException("Suggest is not supported when DLS is activated"));
-                        return false;
-                    }
+                    //if(source.suggest() != null) {
+                    //    listener.onFailure(new ElasticsearchSecurityException("Suggest is not supported when DLS is activated"));
+                    //    return false;
+                    //}
                     
                 }
             }
