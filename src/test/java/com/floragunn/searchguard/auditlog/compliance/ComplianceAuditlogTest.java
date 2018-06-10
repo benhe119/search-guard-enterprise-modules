@@ -70,6 +70,8 @@ public class ComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
                 "      }" +
                 "   }" +
                 "}";
+        
+        TestAuditlogImpl.clear();
         HttpResponse response = rh.executePostRequest("_search?pretty", search, encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         System.out.println(response.getBody());
@@ -138,13 +140,13 @@ public class ComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
                 "   }" +
                 "}"+System.lineSeparator();
 
-        
+        TestAuditlogImpl.clear();
         HttpResponse response = rh.executePostRequest("_msearch?pretty", search, encodeBasicHeader("admin", "admin"));
         assertNotContains(response, "*exception*");
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         Thread.sleep(1500);
         System.out.println(TestAuditlogImpl.sb.toString());
-        Assert.assertTrue(TestAuditlogImpl.messages.size() == 2);
+        Assert.assertTrue("Was "+TestAuditlogImpl.messages.size(), TestAuditlogImpl.messages.size() == 2);
         Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("COMPLIANCE_DOC_READ"));
         Assert.assertFalse(TestAuditlogImpl.sb.toString().contains("Salary"));
         Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("Gender"));
@@ -168,6 +170,7 @@ public class ComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
                 .put("searchguard.audit.threadpool.size", 0)
                 .build();
 
+        TestAuditlogImpl.clear();
         setup(additionalSettings);
         
         try (TransportClient tc = getInternalTransportClient()) {
