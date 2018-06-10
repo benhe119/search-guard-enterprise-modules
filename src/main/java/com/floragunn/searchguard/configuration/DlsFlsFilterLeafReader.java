@@ -35,7 +35,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
@@ -45,16 +44,14 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
 import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.bouncycastle.util.encoders.Hex;
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
@@ -81,8 +78,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final Set<String> includesSet;
     private final Set<String> excludesSet;
     private final FieldInfos flsFieldInfos;
-    private final Bits liveDocs;
-    private final int numDocs;
+    private volatile int numDocs = -1;
     private final boolean flsEnabled;
     private final boolean dlsEnabled;
     private String[] includes;
@@ -96,9 +92,10 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final AuditLog auditlog;
     private final Set<String> maskedFields;
     private final ShardId shardId;
+    private BitSet bs;
     
     DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes,
-            final Query dlsQuery, final IndexService indexService, final ThreadContext threadContext,
+            final BitSetProducer bsp, final IndexService indexService, final ThreadContext threadContext,
             final ClusterService clusterService, final ComplianceConfig complianceConfig,
             final AuditLog auditlog, final Set<String> maskedFields, final ShardId shardId) {
         super(delegate);        
@@ -111,7 +108,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         this.maskedFields = maskedFields;
         this.shardId = shardId;
         flsEnabled = includesExcludes != null && !includesExcludes.isEmpty();
-        dlsEnabled = dlsQuery != null;
+        dlsEnabled = bsp != null;
+
         if (flsEnabled) {
 
             final FieldInfos infos = delegate.getFieldInfos();
@@ -189,50 +187,20 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             this.flsFieldInfos = null;
         }
 
-
+            
         if(dlsEnabled) {
             try {
-
-                //borrowed from Apache Lucene (Copyright Apache Software Foundation (ASF))
-                final IndexSearcher searcher = new IndexSearcher(this);
-                searcher.setQueryCache(null);
-                final boolean needsScores = false;
-                final Weight preserveWeight = searcher.createNormalizedWeight(dlsQuery, needsScores);
-
-                final int maxDoc = in.maxDoc();
-                final FixedBitSet bits = new FixedBitSet(maxDoc);
-                final Scorer preverveScorer = preserveWeight.scorer(this.getContext());
-                if (preverveScorer != null) {
-                  bits.or(preverveScorer.iterator());
-                }
-
-                if (in.hasDeletions()) {
-                    final Bits oldLiveDocs = in.getLiveDocs();
-                    assert oldLiveDocs != null;
-                    final DocIdSetIterator it = new BitSetIterator(bits, 0L);
-                    for (int i = it.nextDoc(); i != DocIdSetIterator.NO_MORE_DOCS; i = it.nextDoc()) {
-                      if (!oldLiveDocs.get(i)) {
-                        bits.clear(i);
-                      }
-                    }
-                  }
-
-                  this.liveDocs = bits;
-                  this.numDocs = bits.cardinality();
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+                bs = bsp.getBitSet(this.getContext());
+            } catch (IOException e) {
+                throw ExceptionsHelper.convertToElastic(e);
             }
-        } else {
-            this.liveDocs = null;
-            this.numDocs = -1;
         }
     }
 
     private static class DlsFlsSubReaderWrapper extends FilterDirectoryReader.SubReaderWrapper {
 
         private final Set<String> includes;
-        private final Query dlsQuery;
+        private final BitSetProducer bsp;
         private final IndexService indexService;
         private final ThreadContext threadContext;
         private final ClusterService clusterService;
@@ -241,12 +209,12 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         private final Set<String> maskedFields;
         private final ShardId shardId;
 
-        public DlsFlsSubReaderWrapper(final Set<String> includes, final Query dlsQuery,
+        public DlsFlsSubReaderWrapper(final Set<String> includes, final BitSetProducer bsp,
                 final IndexService indexService, final ThreadContext threadContext,
                 final ClusterService clusterService, final ComplianceConfig complianceConfig,
                 final AuditLog auditlog, final Set<String> maskedFields, ShardId shardId) {
             this.includes = includes;
-            this.dlsQuery = dlsQuery;
+            this.bsp = bsp;
             this.indexService = indexService;
             this.threadContext = threadContext;
             this.clusterService = clusterService;
@@ -258,7 +226,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         public LeafReader wrap(final LeafReader reader) {
-            return new DlsFlsFilterLeafReader(reader, includes, dlsQuery, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
+            return new DlsFlsFilterLeafReader(reader, includes, bsp, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
         }
 
     }
@@ -266,7 +234,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     static class DlsFlsDirectoryReader extends FilterDirectoryReader {
 
         private final Set<String> includes;
-        private final Query dlsQuery;
+        private final BitSetProducer bsp;
         private final IndexService indexService;
         private final ThreadContext threadContext;
         private final ClusterService clusterService;
@@ -275,13 +243,13 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         private final Set<String> maskedFields;
         private final ShardId shardId;
 
-        public DlsFlsDirectoryReader(final DirectoryReader in, final Set<String> includes, final Query dlsQuery,
+        public DlsFlsDirectoryReader(final DirectoryReader in, final Set<String> includes, final BitSetProducer bsp,
                 final IndexService indexService, final ThreadContext threadContext,
                 final ClusterService clusterService, final ComplianceConfig complianceConfig,
                 final AuditLog auditlog, final Set<String> maskedFields, ShardId shardId) throws IOException {
-            super(in, new DlsFlsSubReaderWrapper(includes, dlsQuery, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId));
+            super(in, new DlsFlsSubReaderWrapper(includes, bsp, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId));
             this.includes = includes;
-            this.dlsQuery = dlsQuery;
+            this.bsp = bsp;
             this.indexService = indexService;
             this.threadContext = threadContext;
             this.clusterService = clusterService;
@@ -293,7 +261,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         protected DirectoryReader doWrapDirectoryReader(final DirectoryReader in) throws IOException {
-            return new DlsFlsDirectoryReader(in, includes, dlsQuery, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
+            return new DlsFlsDirectoryReader(in, includes, bsp, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
         }
 
         @Override
@@ -680,40 +648,92 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         return isFls(field) ? in.terms(field) : null;
     }
 
-    @Override
-    public LeafMetaData getMetaData() {
-        return in.getMetaData();
-    }
+    //@Override
+    //public LeafMetaData getMetaData() {
+    //    return in.getMetaData();
+    //}
 
     @Override
     public Bits getLiveDocs() {
 
         if(dlsEnabled) {
-            return liveDocs;
-        }
+            final Bits currentLiveDocs = in.getLiveDocs();
+            
+            if(bs == null) {
+                return new Bits.MatchNoBits(in.maxDoc());
+            } else if (currentLiveDocs == null) {
+                return bs;
+            } else {
 
-        return in.getLiveDocs();
+                return new Bits() {
+
+                    @Override
+                    public boolean get(int index) {
+                        return bs.get(index) && currentLiveDocs.get(index);
+                    }
+
+                    @Override
+                    public int length() {
+                        return bs.length();
+                    }
+                    
+                };
+            
+            }
+        }
+        
+        return in.getLiveDocs(); //no dls
     }
 
     @Override
     public int numDocs() {
 
-        if(dlsEnabled) {
-            return numDocs;
+        if (dlsEnabled) {
+            if (this.numDocs == -1) {
+                final Bits currentLiveDocs = in.getLiveDocs();
+
+                if (bs == null) {
+                    this.numDocs = 0;
+                } else if (currentLiveDocs == null) {
+                    this.numDocs = bs.cardinality();
+                } else {
+
+                    try {
+                        int localNumDocs = 0;
+
+                        DocIdSetIterator it = new BitSetIterator(bs, 0L);
+
+                        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+                            if (currentLiveDocs.get(doc)) {
+                                localNumDocs++;
+                            }
+                        }
+
+                        this.numDocs = localNumDocs;
+                    } catch (IOException e) {
+                        throw ExceptionsHelper.convertToElastic(e);
+                    }
+                }
+
+                return this.numDocs;
+
+            } else {
+                return this.numDocs; // cached
+            }
         }
 
         return in.numDocs();
     }
 
-    @Override
-    public LeafReader getDelegate() {
-        return in;
-    }
-
-    @Override
-    public int maxDoc() {
-        return in.maxDoc();
-    }
+    //@Override
+    //public LeafReader getDelegate() {
+    //    return in;
+    //}
+    
+    //@Override
+    //public int maxDoc() {
+    //    return in.maxDoc();
+    //}
 
     @Override
     public CacheHelper getCoreCacheHelper() {
@@ -722,6 +742,11 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public CacheHelper getReaderCacheHelper() {
-        return in.getReaderCacheHelper();
+        return dlsEnabled?null:in.getReaderCacheHelper();
+    }
+
+    @Override
+    public boolean hasDeletions() {
+        return true;
     }
 }

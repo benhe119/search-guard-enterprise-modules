@@ -27,7 +27,7 @@ import com.floragunn.searchguard.user.User;
 public class LdapUser extends User {
 
     private static final long serialVersionUID = 1L;
-    private final LdapEntry userEntry;
+    private final transient LdapEntry userEntry;
     private final String originalUsername;
 
     public LdapUser(final String name, String originalUsername, final LdapEntry userEntry, final AuthCredentials credentials, int customAttrMaxValueLen, List<String> whiteListedAttributes) {
@@ -57,6 +57,10 @@ public class LdapUser extends User {
         }
     }
 
+    /**
+     * May return null because ldapEntry is transient
+     * @return ldapEntry or null if object was deserialized
+     */
     public LdapEntry getUserEntry() {
         return userEntry;
     }
