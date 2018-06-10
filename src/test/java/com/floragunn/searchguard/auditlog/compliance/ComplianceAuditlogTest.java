@@ -82,6 +82,75 @@ public class ComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("Gender"));
         Assert.assertTrue(validateMsgs(TestAuditlogImpl.messages));
     }
+    
+    @Test
+    public void testSourceFilterMsearch() throws Exception {
+
+        Settings additionalSettings = Settings.builder()
+                .put("searchguard.audit.type", TestAuditlogImpl.class.getName())
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RESOLVE_BULK_REQUESTS, true)
+                .put(ConfigConstants.SEARCHGUARD_COMPLIANCE_HISTORY_EXTERNAL_CONFIG_ENABLED, false)
+                //.put(ConfigConstants.SEARCHGUARD_COMPLIANCE_HISTORY_WRITE_WATCHED_INDICES, "emp")
+                .put(ConfigConstants.SEARCHGUARD_COMPLIANCE_HISTORY_READ_WATCHED_FIELDS, "emp")
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_TRANSPORT_CATEGORIES, "authenticated,GRANTED_PRIVILEGES")
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_REST_CATEGORIES, "authenticated,GRANTED_PRIVILEGES")
+                .put("searchguard.audit.threadpool.size", 0)
+                .build();
+
+        setup(additionalSettings);
+        final boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
+        final String keystore = rh.keystore;
+        rh.sendHTTPClientCertificate = true;
+        rh.keystore = "auditlog/kirk-keystore.jks";
+        rh.executePutRequest("emp/doc/0?refresh", "{\"Designation\" : \"CEO\", \"Gender\" : \"female\", \"Salary\" : 100}", new Header[0]);
+        rh.executePutRequest("emp/doc/1?refresh", "{\"Designation\" : \"IT\", \"Gender\" : \"male\", \"Salary\" : 200}", new Header[0]);
+        rh.executePutRequest("emp/doc/2?refresh", "{\"Designation\" : \"IT\", \"Gender\" : \"female\", \"Salary\" : 300}", new Header[0]);
+        rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
+        rh.keystore = keystore;
+
+        System.out.println("#### test source includes");
+        String search = "{}"+System.lineSeparator()
+                + "{" +
+                "   \"_source\":[" +
+                "      \"Gender\""+
+                "   ]," +
+                "   \"from\":0," +
+                "   \"size\":3," +
+                "   \"query\":{" +
+                "      \"term\":{" +
+                "         \"Salary\": 300" +
+                "      }" +
+                "   }" +
+                "}"+System.lineSeparator()+
+                
+                "{}"+System.lineSeparator()
+                + "{" +
+                "   \"_source\":[" +
+                "      \"Designation\""+
+                "   ]," +
+                "   \"from\":0," +
+                "   \"size\":3," +
+                "   \"query\":{" +
+                "      \"term\":{" +
+                "         \"Salary\": 200" +
+                "      }" +
+                "   }" +
+                "}"+System.lineSeparator();
+
+        
+        HttpResponse response = rh.executePostRequest("_msearch?pretty", search, encodeBasicHeader("admin", "admin"));
+        assertNotContains(response, "*exception*");
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Thread.sleep(1500);
+        System.out.println(TestAuditlogImpl.sb.toString());
+        Assert.assertTrue(TestAuditlogImpl.messages.size() == 2);
+        Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("COMPLIANCE_DOC_READ"));
+        Assert.assertFalse(TestAuditlogImpl.sb.toString().contains("Salary"));
+        Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("Gender"));
+        Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("Designation"));
+        Assert.assertTrue(validateMsgs(TestAuditlogImpl.messages));
+    }
 
     @Test
     public void testInternalConfig() throws Exception {
