@@ -42,6 +42,7 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
@@ -265,7 +266,7 @@ public final class RequestResolver {
             final SearchRequest sr = (SearchRequest) request;
             final String[] indices = arrayOrEmpty(sr.indices());
             final String[] types = arrayOrEmpty(sr.types());
-            msg.addTypes(types);
+            msg.addTypes(types);            
             Map<String, Object> sourceAsMap = sr.source() == null? null:Utils.convertJsonToxToStructuredMap(sr.source());
             addIndicesSourceSafe(msg, indices, resolver, cs, XContentType.JSON, sourceAsMap, settings, resolveIndices, logRequestBody, false, searchguardIndex);
         } else if (request instanceof ClusterUpdateSettingsRequest) {
@@ -286,7 +287,7 @@ public final class RequestResolver {
                         builder.field("transient_settings", Utils.convertJsonToxToStructuredMap(persistentSettings));
                     }
                     builder.endObject();
-                    msg.addUnescapedJsonToRequestBody(builder == null?null:builder.string());
+                    msg.addUnescapedJsonToRequestBody(builder == null?null:Strings.toString(builder));
                 } catch (IOException e) {
                     log.error(e);
                 } finally {

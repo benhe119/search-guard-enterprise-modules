@@ -125,7 +125,7 @@ public final class FieldReadCallback {
                     }*/
 
                     final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
-                    fieldValue = BytesReference.toBytes(xBuilder.bytes());
+                    fieldValue = BytesReference.toBytes(BytesReference.bytes(xBuilder));
                 }
 
                 Map<String, Object> filteredSource = new JsonFlattener(new String(fieldValue, StandardCharsets.UTF_8)).flattenAsMap();

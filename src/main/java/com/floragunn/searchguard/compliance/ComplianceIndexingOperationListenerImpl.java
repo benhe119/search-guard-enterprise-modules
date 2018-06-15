@@ -82,7 +82,7 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
     public void postDelete(final ShardId shardId, final Delete delete, final DeleteResult result) {
         if(complianceConfig.isEnabled()) {
             Objects.requireNonNull(is);
-            if(!result.hasFailure() && result.isFound() && delete.origin() == org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
+            if(result.getFailure() == null && result.isFound() && delete.origin() == org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
                 auditlog.logDocumentDeleted(shardId, delete, result);
             }
         } 
@@ -168,7 +168,7 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
             Objects.requireNonNull(is);
     
             final IndexShard shard;
-            if (result.hasFailure() || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
+            if (result.getFailure() != null || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
                 return;
             }
     
@@ -196,7 +196,7 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
             auditlog.logDocumentWritten(shardId, previousContent, getResult, index, result, complianceConfig);
         } else if (complianceConfig.isEnabled()) {
             //no diffs
-            if (result.hasFailure() || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
+            if (result.getFailure() != null || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
                 return;
             }
             

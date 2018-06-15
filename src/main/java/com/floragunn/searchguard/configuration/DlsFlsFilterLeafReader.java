@@ -416,7 +416,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 }
 
                 final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
-                delegate.binaryField(fieldInfo, BytesReference.toBytes(xBuilder.bytes()));
+                delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
             } else {
                 delegate.binaryField(fieldInfo, value);
             }
@@ -487,7 +487,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 Map<String, Object> filteredSource = bytesRefTuple.v2();
                 MapUtils.deepTraverseMap(filteredSource, HASH_CB);
                 final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
-                delegate.binaryField(fieldInfo, BytesReference.toBytes(xBuilder.bytes()));
+                delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
             } else {
                 delegate.binaryField(fieldInfo, value);
             }

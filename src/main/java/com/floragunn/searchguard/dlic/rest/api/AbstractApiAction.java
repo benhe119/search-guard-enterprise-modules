@@ -35,6 +35,7 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
@@ -403,7 +404,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		builder.startObject(); // 1
 		settingsBuilder.build().toXContent(builder, ToXContent.EMPTY_PARAMS);
 		builder.endObject(); // 2
-		return builder.bytes();
+		return BytesReference.bytes(builder);
 	}
 
 	protected boolean checkConfigUpdateResponse(final ConfigUpdateResponse response) {

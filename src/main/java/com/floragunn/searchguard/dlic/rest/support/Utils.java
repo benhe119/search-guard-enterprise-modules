@@ -27,6 +27,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 
+import com.floragunn.searchguard.support.SearchGuardDeprecationHandler;
+
 public class Utils {
     
     public static Map<String, Object> convertJsonToxToStructuredMap(ToXContent jsonContent) {
@@ -42,7 +44,7 @@ public class Utils {
     }
     
     public static Map<String, Object> convertJsonToxToStructuredMap(String jsonContent) {
-        try (XContentParser parser = XContentType.JSON.xContent().createParser(NamedXContentRegistry.EMPTY, jsonContent)) {
+        try (XContentParser parser = XContentType.JSON.xContent().createParser(NamedXContentRegistry.EMPTY, SearchGuardDeprecationHandler.INSTANCE, jsonContent)) {
             return parser.map();
         } catch (IOException e1) {
             throw ExceptionsHelper.convertToElastic(e1);
@@ -51,7 +53,7 @@ public class Utils {
     
     public static BytesReference convertStructuredMapToBytes(Map<String, Object> structuredMap) {
         try {
-            return JsonXContent.contentBuilder().map(structuredMap).bytes();
+            return BytesReference.bytes(JsonXContent.contentBuilder().map(structuredMap));
         } catch (IOException e) {
             throw new ElasticsearchParseException("Failed to convert map", e);
         }

@@ -362,7 +362,7 @@ public final class AuditMessage {
 	@Override
 	public String toString() {
 		try {
-			return JsonXContent.contentBuilder().map(getAsMap()).string();
+			return Strings.toString(JsonXContent.contentBuilder().map(getAsMap()));
 		} catch (final IOException e) {
 		    throw ExceptionsHelper.convertToElastic(e);
 		}
@@ -370,7 +370,7 @@ public final class AuditMessage {
 
     public String toPrettyString() {
         try {
-            return JsonXContent.contentBuilder().prettyPrint().map(getAsMap()).string();
+            return Strings.toString(JsonXContent.contentBuilder().prettyPrint().map(getAsMap()));
         } catch (final IOException e) {
             throw ExceptionsHelper.convertToElastic(e);
         }

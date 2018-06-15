@@ -41,6 +41,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.document.DocumentField;
@@ -73,6 +74,7 @@ import com.floragunn.searchguard.compliance.ComplianceConfig;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.support.Base64Helper;
 import com.floragunn.searchguard.support.ConfigConstants;
+import com.floragunn.searchguard.support.SearchGuardDeprecationHandler;
 import com.floragunn.searchguard.support.WildcardMatcher;
 import com.floragunn.searchguard.user.User;
 import com.google.common.collect.MapDifference;
@@ -487,7 +489,7 @@ public abstract class AbstractAuditLog implements AuditLog {
                         builder.field("field_names", fieldNameValues.keySet());
                         builder.endObject();
                         builder.close();
-                        msg.addUnescapedJsonToRequestBody(builder.string());
+                        msg.addUnescapedJsonToRequestBody(Strings.toString(builder));
                     } catch (IOException e) {
                         log.error(e.toString(), e);
                     }
@@ -558,7 +560,7 @@ public abstract class AbstractAuditLog implements AuditLog {
                     String originalSource = null;
                     String currentSource = null;
                     if (searchguardIndex.equals(shardId.getIndexName())) {
-                        try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, originalIndex.internalSourceRef(), XContentType.JSON)) {
+                        try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, SearchGuardDeprecationHandler.INSTANCE, originalIndex.internalSourceRef(), XContentType.JSON)) {
                             Object base64 = parser.map().values().iterator().next();
                             if(base64 instanceof String) {
                                 originalSource = (new String(BaseEncoding.base64().decode((String) base64)));
@@ -569,7 +571,7 @@ public abstract class AbstractAuditLog implements AuditLog {
                              log.error(e);
                          }
                         
-                        try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, currentIndex.source(), XContentType.JSON)) {
+                        try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, SearchGuardDeprecationHandler.INSTANCE, currentIndex.source(), XContentType.JSON)) {
                             Object base64 = parser.map().values().iterator().next();
                             if(base64 instanceof String) {
                                 currentSource = (new String(BaseEncoding.base64().decode((String) base64)));
@@ -590,7 +592,7 @@ public abstract class AbstractAuditLog implements AuditLog {
                 }
             } else if (!complianceConfig.logWriteMetadataOnly()){
                 if(searchguardIndex.equals(shardId.getIndexName())) {
-                    try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, currentIndex.source(), XContentType.JSON)) {
+                    try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, SearchGuardDeprecationHandler.INSTANCE, currentIndex.source(), XContentType.JSON)) {
                        Object base64 = parser.map().values().iterator().next();
                        if(base64 instanceof String) {
                            msg.addUnescapedJsonToRequestBody(new String(BaseEncoding.base64().decode((String) base64)));
@@ -674,7 +676,7 @@ public abstract class AbstractAuditLog implements AuditLog {
             builder.endObject();
             builder.endObject();
             builder.close();
-            msg.addUnescapedJsonToRequestBody(builder.string());
+            msg.addUnescapedJsonToRequestBody(Strings.toString(builder));
         } catch (Exception e) {
             log.error("Unable to build message",e);
         }
