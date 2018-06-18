@@ -25,7 +25,7 @@ import org.junit.Test;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
-public class Fls983 extends AbstractDlsFlsTest{
+public class Fls983Test extends AbstractDlsFlsTest{
     
     
     protected void populate(TransportClient tc) {
