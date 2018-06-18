@@ -148,13 +148,14 @@ public class SelfRefreshingKeySet implements KeyProvider {
 		}
 	}
 
-	private JsonWebKey waitForRefreshToFinish(String kid) {
+	private synchronized JsonWebKey waitForRefreshToFinish(String kid) {
 		queuedGetCount++;
 		long currentRefreshCount = refreshCount;
 
 		try {
 			wait(queuedThreadTimeoutMs);
 		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			log.debug(e);
 		}
 
@@ -177,7 +178,7 @@ public class SelfRefreshingKeySet implements KeyProvider {
 		}
 	}
 
-	private JsonWebKey performRefresh(String kid) {
+	private synchronized JsonWebKey performRefresh(String kid) {
 		if (log.isDebugEnabled()) {
 			log.debug("performRefresh({})", kid);
 		}
@@ -243,6 +244,7 @@ public class SelfRefreshingKeySet implements KeyProvider {
 			try {
 				wait(requestTimeoutMs);
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 				log.debug(e);
 			}
 
