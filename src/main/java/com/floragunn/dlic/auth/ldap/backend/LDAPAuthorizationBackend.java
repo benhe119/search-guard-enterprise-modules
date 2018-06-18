@@ -26,6 +26,7 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -76,7 +77,7 @@ import com.floragunn.searchguard.user.User;
 
 public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
-    private static final List<String> DEFAULT_TLS_PROTOCOLS = Arrays.asList(new String[] { "TLSv1.2", "TLSv1.1"});
+    private static final List<String> DEFAULT_TLS_PROTOCOLS = Arrays.asList("TLSv1.2", "TLSv1.1");
     static final String ONE_PLACEHOLDER = "{1}";
     static final String TWO_PLACEHOLDER = "{2}";
     static final String DEFAULT_ROLEBASE = "";
@@ -126,6 +127,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
         final List<String> ldapHosts = settings.getAsList(ConfigConstants.LDAP_HOSTS, Collections.singletonList("localhost"));
 
         Connection connection = null;
+        Exception lastException = null;
 
         for (String ldapHost: ldapHosts) {
             
@@ -137,7 +139,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
                 final String[] split = ldapHost.split(":");
 
-                int port = 389;
+                int port;
 
                 if (split.length > 1) {
                     port = Integer.parseInt(split[1]);
@@ -195,6 +197,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                     break;
                 }
             } catch (final Exception e) {
+                lastException = e;
                 log.warn("Unable to connect to ldapserver {} due to {}. Try next.", ldapHost, e.toString());
                 if(log.isDebugEnabled()) {
                     log.debug("Unable to connect to ldapserver due to ",e);
@@ -205,7 +208,11 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
         }
 
         if (connection == null || !connection.isOpen()) {
-            throw new LdapException("Unable to connect to any of those ldap servers " + ldapHosts);
+            if(lastException == null) {
+                throw new LdapException("Unable to connect to any of those ldap servers " + ldapHosts);
+            } else {
+                throw new LdapException("Unable to connect to any of those ldap servers " + ldapHosts + " due to "+lastException, lastException);
+            }
         }
 
         return connection;
@@ -300,7 +307,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             final List<String> enabledProtocols = settings.getAsList(ConfigConstants.LDAPS_ENABLED_SSL_PROTOCOLS, DEFAULT_TLS_PROTOCOLS);   
             
 
-            if(enabledCipherSuites.size() > 0) {
+            if(!enabledCipherSuites.isEmpty()) {
                 sslConfig.setEnabledCipherSuites(enabledCipherSuites.toArray(new String[0]));
                 log.debug("enabled ssl cipher suites for ldaps {}", enabledCipherSuites);
             }
@@ -313,11 +320,11 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
         config.setUseSSL(enableSSL);
         config.setUseStartTLS(enableStartTLS);
         
-        final long connectTimeout = settings.getAsLong(ConfigConstants.LDAP_CONNECT_TIMEOUT, 5000L);
-        final long responseTimeout = settings.getAsLong(ConfigConstants.LDAP_RESPONSE_TIMEOUT, -1L);
+        final long connectTimeout = settings.getAsLong(ConfigConstants.LDAP_CONNECT_TIMEOUT, 5000L); //0L means TCP default timeout
+        final long responseTimeout = settings.getAsLong(ConfigConstants.LDAP_RESPONSE_TIMEOUT, 0L); //0L means wait infinitely
         
-        config.setConnectTimeout(connectTimeout); // 5 sec by default
-        config.setResponseTimeout(responseTimeout);
+        config.setConnectTimeout(Duration.ofMillis(connectTimeout<0L?0L:connectTimeout)); // 5 sec by default
+        config.setResponseTimeout(Duration.ofMillis(responseTimeout<0L?0L:responseTimeout));
 
         if(log.isDebugEnabled()) {
             log.debug("Connect timeout: "+config.getConnectTimeout()+"/ResponseTimeout: "+config.getResponseTimeout());
@@ -359,7 +366,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
         }
 
         final List<String> skipUsers = settings.getAsList(ConfigConstants.LDAP_AUTHZ_SKIP_USERS, Collections.emptyList());
-        if (skipUsers.size() > 0 && WildcardMatcher.matchAny(skipUsers, authenticatedUser)) {
+        if (!skipUsers.isEmpty() && WildcardMatcher.matchAny(skipUsers, authenticatedUser)) {
             if (log.isDebugEnabled()) {
                 log.debug("Skipped search roles of user {}", authenticatedUser);
             }
@@ -405,34 +412,39 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                 }
             }
 
-            final Set<LdapName> roles = new HashSet<LdapName>(150);
-
+            final Set<LdapName> ldapRoles = new HashSet<>(150);
+            final Set<String> nonLdapRoles = new HashSet<>(150);
+            
             // Roles as an attribute of the user entry
             // default is userrolename: memberOf
-            final String userRoleName = settings
+            final String userRoleNames = settings
                     .get(ConfigConstants.LDAP_AUTHZ_USERROLENAME, DEFAULT_USERROLENAME);
             
             if(log.isTraceEnabled()) {
-                log.trace("userRoleName: {}", userRoleName);
+                log.trace("raw userRoleName(s): {}", userRoleNames);
             }
             
-            if (entry.getAttribute(userRoleName) != null) {
-                final Collection<String> userRoles = entry.getAttribute(userRoleName).getStringValues();
-
-                for (final String possibleRoleDN : userRoles) {
-                    if (isValidDn(possibleRoleDN)) {
-                        roles.add(new LdapName(possibleRoleDN));
-                    } else {
-                        if(log.isDebugEnabled()) {
-                            log.debug("Cannot add {} as a role because its not a valid dn", possibleRoleDN);
+            // we support more than one rolenames, must be separated by a comma
+            for (String userRoleName : userRoleNames.split(",")) {
+                final String roleName = userRoleName.trim();
+                if (entry.getAttribute(roleName) != null) {
+                    final Collection<String> userRoles = entry.getAttribute(roleName).getStringValues();
+                    for (final String possibleRoleDN : userRoles) {
+                        if (isValidDn(possibleRoleDN)) {
+                            ldapRoles.add(new LdapName(possibleRoleDN));
+                        } else {
+                            nonLdapRoles.add(possibleRoleDN);
                         }
                     }
                 }
             }
             
             if(log.isTraceEnabled()) {
-                log.trace("User attr. roles count: {}", roles.size());
-                log.trace("User attr. roles {}", roles);
+                log.trace("User attr. ldap roles count: {}", ldapRoles.size());
+                log.trace("User attr. ldap roles {}", ldapRoles);
+                log.trace("User attr. non-ldap roles count: {}", nonLdapRoles.size());
+                log.trace("User attr. non-ldap roles {}", nonLdapRoles);
+
             }
 
             // The attribute in a role entry containing the name of that role, Default is "name".
@@ -471,30 +483,30 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             if(rolesResult != null && !rolesResult.isEmpty()) {
                 for (final Iterator<LdapEntry> iterator = rolesResult.iterator(); iterator.hasNext();) {
                     final LdapEntry searchResultEntry = iterator.next();
-                    roles.add(new LdapName(searchResultEntry.getDn()));
+                    ldapRoles.add(new LdapName(searchResultEntry.getDn()));
                 }
             }
 
             if(log.isTraceEnabled()) {
                 log.trace("non user attr. roles count: {}", rolesResult != null?rolesResult.size():0);
                 log.trace("non user attr. roles {}", rolesResult);
-                log.trace("roles count total {}", roles.size());
+                log.trace("roles count total {}", ldapRoles.size());
             }
             
-            final List<String> nestedRoleFilter = settings.getAsList(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, Collections.emptyList());
-
-            // nested roles
+            // nested roles, makes only sense for DN style role names
             if (settings.getAsBoolean(ConfigConstants.LDAP_AUTHZ_RESOLVE_NESTED_ROLES, false)) {
+                
+                final List<String> nestedRoleFilter = settings.getAsList(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, Collections.emptyList());
 
                 if(log.isTraceEnabled()) {
                     log.trace("Evaluate nested roles");
                 }
 
-                final Set<LdapName> nestedReturn = new HashSet<LdapName>(roles);
+                final Set<LdapName> nestedReturn = new HashSet<>(ldapRoles);
 
-                for (final LdapName roleLdapName: roles) {
+                for (final LdapName roleLdapName: ldapRoles) {
 
-                    final Set<LdapName> nestedRoles = resolveNestedRoles(roleLdapName, connection, userRoleName, 0, rolesearchEnabled, nestedRoleFilter);
+                    final Set<LdapName> nestedRoles = resolveNestedRoles(roleLdapName, connection, userRoleNames, 0, rolesearchEnabled, nestedRoleFilter);
 
                     if(log.isTraceEnabled()) {
                         log.trace("{} nested roles for {}", nestedRoles.size(), roleLdapName);
@@ -513,14 +525,9 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                     }
                 }
 
-                /*
-                if (user instanceof LdapUser) {
-                    ((LdapUser) user).addRoleEntries(nestedReturn);
-                }*/
-
             } else {
-
-                for (final LdapName roleLdapName: roles) {
+            	// DN roles, extract rolename according to config
+                for (final LdapName roleLdapName: ldapRoles) {
                     final String role = getRoleFromAttribute(roleLdapName, roleName);
                     
                     if(!Strings.isNullOrEmpty(role)) {
@@ -530,12 +537,13 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                     }
                 }
 
-                /*if (user instanceof LdapUser) {
-                    ((LdapUser) user).addRoleEntries(roles.values());
-                }*/
             }
             
-
+            // add all non-LDAP roles from user attributes to the final set of backend roles
+            for(String nonLdapRoleName : nonLdapRoles) {
+            	user.addRole(nonLdapRoleName);
+            }
+            
             if(log.isTraceEnabled()) {
                 log.trace("returned user: {}", user);
             }
@@ -555,7 +563,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             int depth, final boolean rolesearchEnabled, final List<String> roleFilter)
             throws ElasticsearchSecurityException, LdapException {
         
-        if(roleFilter.size() > 0  && WildcardMatcher.matchAny(roleFilter, roleDn.toString())) {
+        if(!roleFilter.isEmpty()  && WildcardMatcher.matchAny(roleFilter, roleDn.toString())) {
             
             if(log.isTraceEnabled()) {
                 log.trace("Filter nested role {}", roleDn);
@@ -566,7 +574,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
               
         depth++;
 
-        final Set<LdapName> result = new HashSet<LdapName>(20);
+        final Set<LdapName> result = new HashSet<>(20);
 
         final LdapEntry e0 = LdapHelper.lookup(ldapConnection, roleDn.toString());
 

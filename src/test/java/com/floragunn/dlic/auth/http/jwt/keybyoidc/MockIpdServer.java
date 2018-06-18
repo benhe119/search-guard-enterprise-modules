@@ -55,6 +55,7 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
 import com.floragunn.searchguard.test.helper.file.FileHelper;
+import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
 class MockIpdServer implements Closeable {
 	final static String CTX_DISCOVER = "/discover";
@@ -67,7 +68,7 @@ class MockIpdServer implements Closeable {
 	private final JsonWebKeys jwks;
 
 	MockIpdServer(JsonWebKeys jwks) throws IOException {
-		this(jwks, 8081, false);
+		this(jwks, SocketUtils.findAvailableTcpPort(), false);
 	}
 
 	MockIpdServer(JsonWebKeys jwks, int port, boolean ssl) throws IOException {

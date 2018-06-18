@@ -1,6 +1,7 @@
 version: 2
 jobs:
   build:
+    parallelism: 4
     working_directory: ~/circleci-sg
     resource_class: large
     docker:
@@ -17,15 +18,38 @@ jobs:
           paths:
             - ~/.m2
           key: circleci-sg-{{ checksum "pom.xml" }}
-      - run: mvn -Pcoverage verify
-      - run: mvn -Pcoverage sonar:sonar -Dsonar.organization=floragunncom-github -Dsonar.login=$SONAR_LOGIN -Dsonar.host.url=https://sonarcloud.io
+      - run:
+          command: |
+            set -x
+            cd src/test/java         
+            TESTFILES="$(circleci tests glob **/*Test*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
+            echo "$TESTFILES"
+            cd ~/circleci-sg
+            mvn -Pcoverage verify -Dtest="$TESTFILES"
       - store_test_results:
           path: target/surefire-reports
+      - store_artifacts:
+          path: /.circleci-task-data
       - deploy:
           name: Maybe Deploy
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              mvn -Pcoverage sonar:sonar -Dsonar.organization=floragunncom-github -Dsonar.login=$SONAR_LOGIN -Dsonar.host.url=https://sonarcloud.io
               mvn deploy -DskipTests -s settings.xml
             fi
 
-#logging
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - build
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 2 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build
