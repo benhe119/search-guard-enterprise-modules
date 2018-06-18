@@ -33,7 +33,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
-import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
@@ -43,13 +42,11 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
+import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
@@ -68,19 +65,19 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final Set<String> includesSet;
     private final Set<String> excludesSet;
     private final FieldInfos flsFieldInfos;
-    private final Bits liveDocs;
-    private final int numDocs;
+    private volatile int numDocs = -1;
     private final boolean flsEnabled;
     private final boolean dlsEnabled;
     private String[] includes;
     private String[] excludes;
     private boolean canOptimize = true;
     private Function<Map<String, ?>, Map<String, Object>> filterFunction;
+    private BitSet bs;
 
-    DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes, final Query dlsQuery) {
+    DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes, final BitSetProducer bsp) {
         super(delegate);
         flsEnabled = includesExcludes != null && !includesExcludes.isEmpty();
-        dlsEnabled = dlsQuery != null;
+        dlsEnabled = bsp != null;
         
         if (flsEnabled) {
 
@@ -159,59 +156,28 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             this.flsFieldInfos = null;
         }
         
-        
         if(dlsEnabled) {
             try {
-                
-                //borrowed from Apache Lucene (Copyright Apache Software Foundation (ASF))
-                final IndexSearcher searcher = new IndexSearcher(this);
-                searcher.setQueryCache(null);
-                final boolean needsScores = false;
-                final Weight preserveWeight = searcher.createNormalizedWeight(dlsQuery, needsScores);
-                
-                final int maxDoc = in.maxDoc();
-                final FixedBitSet bits = new FixedBitSet(maxDoc);
-                final Scorer preverveScorer = preserveWeight.scorer(this.getContext());
-                if (preverveScorer != null) {
-                  bits.or(preverveScorer.iterator());
-                }
-
-                if (in.hasDeletions()) {
-                    final Bits oldLiveDocs = in.getLiveDocs();
-                    assert oldLiveDocs != null;
-                    final DocIdSetIterator it = new BitSetIterator(bits, 0L);
-                    for (int i = it.nextDoc(); i != DocIdSetIterator.NO_MORE_DOCS; i = it.nextDoc()) {
-                      if (!oldLiveDocs.get(i)) {
-                        bits.clear(i);
-                      }
-                    }
-                  }
-
-                  this.liveDocs = bits;
-                  this.numDocs = bits.cardinality();
-                
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+                bs = bsp.getBitSet(this.getContext());
+            } catch (IOException e) {
+                throw ExceptionsHelper.convertToElastic(e);
             }
-        } else {
-            this.liveDocs = null;
-            this.numDocs = -1;
         }
     }
 
     private static class DlsFlsSubReaderWrapper extends FilterDirectoryReader.SubReaderWrapper {
 
         private final Set<String> includes;
-        private final Query dlsQuery;
+        private final BitSetProducer bsp;
 
-        public DlsFlsSubReaderWrapper(final Set<String> includes, final Query dlsQuery) {
+        public DlsFlsSubReaderWrapper(final Set<String> includes, final BitSetProducer bsp) {
             this.includes = includes;
-            this.dlsQuery = dlsQuery;
+            this.bsp = bsp;
         }
 
         @Override
         public LeafReader wrap(final LeafReader reader) {
-            return new DlsFlsFilterLeafReader(reader, includes, dlsQuery);
+            return new DlsFlsFilterLeafReader(reader, includes, bsp);
         }
 
     }
@@ -219,17 +185,17 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     static class DlsFlsDirectoryReader extends FilterDirectoryReader {
 
         private final Set<String> includes;
-        private final Query dlsQuery;
+        private final BitSetProducer bsp;
 
-        public DlsFlsDirectoryReader(final DirectoryReader in, final Set<String> includes, final Query dlsQuery) throws IOException {
-            super(in, new DlsFlsSubReaderWrapper(includes, dlsQuery));
+        public DlsFlsDirectoryReader(final DirectoryReader in, final Set<String> includes, final BitSetProducer bsp) throws IOException {
+            super(in, new DlsFlsSubReaderWrapper(includes, bsp));
             this.includes = includes;
-            this.dlsQuery = dlsQuery;
+            this.bsp = bsp;
         }
 
         @Override
         protected DirectoryReader doWrapDirectoryReader(final DirectoryReader in) throws IOException {
-            return new DlsFlsDirectoryReader(in, includes, dlsQuery);
+            return new DlsFlsDirectoryReader(in, includes, bsp);
         }
         
         @Override
@@ -429,40 +395,92 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         return isFls(field) ? in.terms(field) : null;
     }
 
-    @Override
-    public LeafMetaData getMetaData() {
-        return in.getMetaData();
-    }
+    //@Override
+    //public LeafMetaData getMetaData() {
+    //    return in.getMetaData();
+    //}
 
     @Override
     public Bits getLiveDocs() {
         
         if(dlsEnabled) {
-            return liveDocs;
+            final Bits currentLiveDocs = in.getLiveDocs();
+            
+            if(bs == null) {
+                return new Bits.MatchNoBits(in.maxDoc());
+            } else if (currentLiveDocs == null) {
+                return bs;
+            } else {
+
+                return new Bits() {
+
+                    @Override
+                    public boolean get(int index) {
+                        return bs.get(index) && currentLiveDocs.get(index);
+                    }
+
+                    @Override
+                    public int length() {
+                        return bs.length();
+                    }
+                    
+                };
+            
+            }
         }
         
-        return in.getLiveDocs();
+        return in.getLiveDocs(); //no dls
     }
 
     @Override
     public int numDocs() {
-        
-        if(dlsEnabled) {
-            return numDocs;
+
+        if (dlsEnabled) {
+            if (this.numDocs == -1) {
+                final Bits currentLiveDocs = in.getLiveDocs();
+
+                if (bs == null) {
+                    this.numDocs = 0;
+                } else if (currentLiveDocs == null) {
+                    this.numDocs = bs.cardinality();
+                } else {
+
+                    try {
+                        int localNumDocs = 0;
+
+                        DocIdSetIterator it = new BitSetIterator(bs, 0L);
+
+                        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+                            if (currentLiveDocs.get(doc)) {
+                                localNumDocs++;
+                            }
+                        }
+
+                        this.numDocs = localNumDocs;
+                    } catch (IOException e) {
+                        throw ExceptionsHelper.convertToElastic(e);
+                    }
+                }
+
+                return this.numDocs;
+
+            } else {
+                return this.numDocs; // cached
+            }
         }
-        
+
         return in.numDocs();
     }
 
-    @Override
-    public LeafReader getDelegate() {
-        return in;
-    }
+    //@Override
+    //public LeafReader getDelegate() {
+    //    return in;
+    //}
     
-    @Override
-    public int maxDoc() {
-        return in.maxDoc();
-    }
+    //@Override
+    //public int maxDoc() {
+    //    return in.maxDoc();
+    //}
 
     @Override
     public CacheHelper getCoreCacheHelper() {
@@ -471,6 +489,11 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public CacheHelper getReaderCacheHelper() {
-        return in.getReaderCacheHelper();
+        return dlsEnabled?null:in.getReaderCacheHelper();
+    }
+
+    @Override
+    public boolean hasDeletions() {
+        return true;
     }
 }

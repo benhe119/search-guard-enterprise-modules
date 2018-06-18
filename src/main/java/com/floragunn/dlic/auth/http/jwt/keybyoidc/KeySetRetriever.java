@@ -41,7 +41,7 @@ import com.floragunn.dlic.auth.http.jwt.oidc.json.OpenIdProviderConfiguration;
 public class KeySetRetriever implements KeySetProvider {
 	private final static Logger log = LogManager.getLogger(KeySetRetriever.class);
 	private static final ObjectMapper objectMapper = new ObjectMapper();
-	private static final long CACHE_STATUS_LOG_INTERVAL_MS = 60 * 60 * 1000;
+	private static final long CACHE_STATUS_LOG_INTERVAL_MS = 60L * 60L * 1000L;
 
 	private String openIdConnectEndpoint;
 	private SSLConfig sslConfig;
@@ -60,7 +60,7 @@ public class KeySetRetriever implements KeySetProvider {
 		this.sslConfig = sslConfig;
 
 		if (useCacheForOidConnectEndpoint) {
-			cacheConfig = CacheConfig.custom().setMaxCacheEntries(10).setMaxObjectSize(1024 * 1024).build();
+			cacheConfig = CacheConfig.custom().setMaxCacheEntries(10).setMaxObjectSize(1024L * 1024L).build();
 			oidcHttpCacheStorage = new BasicHttpCacheStorage(cacheConfig);
 		}
 	}
