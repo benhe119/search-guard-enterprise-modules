@@ -124,8 +124,13 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
             if(log.isDebugEnabled()) {
                 log.debug("Authenticated username {}", username);
             }
+            
+            final int customAttrMaxValueLen = settings.getAsInt(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 36);
+            final List<String> whitelistedAttributes = settings.getAsList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST, null);
 
-            return new LdapUser(username, user, entry, credentials);
+            //by default all ldap attributes which are not binary and with a max value length of 36 are included in the user object
+            //if the whitelist contains at least one value then all attributes will be additional check if whitelisted (whitelist can contain wildcard and regex)
+            return new LdapUser(username, user, entry, credentials, customAttrMaxValueLen, whitelistedAttributes);
 
         } catch (final Exception e) {
             if(log.isDebugEnabled()) {
