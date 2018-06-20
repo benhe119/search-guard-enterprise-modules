@@ -14,9 +14,6 @@
 
 package com.floragunn.searchguard.compliance;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 
 import org.apache.logging.log4j.LogManager;
@@ -28,8 +25,8 @@ import org.elasticsearch.index.engine.Engine.DeleteResult;
 import org.elasticsearch.index.engine.Engine.Index;
 import org.elasticsearch.index.engine.Engine.IndexResult;
 import org.elasticsearch.index.get.GetResult;
-import org.elasticsearch.index.mapper.FieldMapper;
-import org.elasticsearch.index.mapper.MapperService;
+import org.elasticsearch.index.mapper.ParentFieldMapper;
+import org.elasticsearch.index.mapper.RoutingFieldMapper;
 import org.elasticsearch.index.shard.IndexShard;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
@@ -59,20 +56,14 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
 
     private static final class Context {
         private final GetResult getResult;
-        private final String[] storedFields;
 
-        public Context(GetResult getResult, String[] storedFields) {
+        public Context(GetResult getResult) {
             super();
             this.getResult = getResult;
-            this.storedFields = storedFields;
         }
 
         public GetResult getGetResult() {
             return getResult;
-        }
-
-        public String[] getStoredFields() {
-            return storedFields;
         }
     }
 
@@ -82,7 +73,7 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
     public void postDelete(final ShardId shardId, final Delete delete, final DeleteResult result) {
         if(complianceConfig.isEnabled()) {
             Objects.requireNonNull(is);
-            if(!result.hasFailure() && result.isFound() && delete.origin() == org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
+            if(result.getFailure() == null && result.isFound() && delete.origin() == org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
                 auditlog.logDocumentDeleted(shardId, delete, result);
             }
         } 
@@ -105,35 +96,16 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
     
             if (shard.isReadAllowed()) {
                 try {
-                    final MapperService mapperService = shard.mapperService();
-                    // final boolean sourceMapperEnabled =
-                    // mapperService.documentMapper(index.type()).sourceMapper().enabled();
-    
-                    // if(!sourceMapperEnabled) {
-                    // log.warn("log_source deactivated"); //TODO single and
-                    // explaining warning
-                    // }
-    
-    
-                    final List<String> storedFields = new ArrayList<String>(30);
-                    final Iterator<FieldMapper> fm = mapperService.documentMapper(index.type()).mappers().iterator();
-                    while(fm.hasNext()) {
-                        FieldMapper fma = fm.next();
-                        if(fma.fieldType().stored() && !fma.name().startsWith("_")) {
-                            storedFields.add(fma.name());
-                        }
-                    }
-    
-                    final String[] storedFieldsA = storedFields.toArray(new String[0]);
     
                     final GetResult getResult = shard.getService().get(index.type(), index.id(),
-                            storedFieldsA, true, index.version(), index.versionType(),
-                            FetchSourceContext.FETCH_SOURCE);
+                            new String[]{RoutingFieldMapper.NAME, ParentFieldMapper.NAME}, true, 
+                            index.version(), index.versionType(), FetchSourceContext.FETCH_SOURCE);
+
     
                     if (getResult.isExists()) {
-                        threadContext.set(new Context(getResult, storedFieldsA));
+                        threadContext.set(new Context(getResult));
                     } else {
-                        threadContext.set(new Context(null, storedFieldsA));
+                        threadContext.set(new Context(null));
                     }
                 } catch (Exception e) {
                     if (log.isDebugEnabled()) {
@@ -161,25 +133,19 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
     @Override
     public void postIndex(ShardId shardId, Index index, IndexResult result) {
         if(complianceConfig.isEnabled() && complianceConfig.logDiffsForWrite()) {
-            final Context context = threadContext.get();// seq.remove(index.startTime()+"/"+shardId+"/"+index.type()+"/"+index.id());
+            final Context context = threadContext.get();
             final GetResult previousContent = context==null?null:context.getGetResult();
-            final String[] storedFieldsA = context==null?null:context.getStoredFields();
             threadContext.remove();
             Objects.requireNonNull(is);
     
-            final IndexShard shard;
-            if (result.hasFailure() || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
+            if (result.getFailure() != null || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
                 return;
             }
     
-            if((shard = is.getShardOrNull(shardId.getId())) == null) {
+            if(is.getShardOrNull(shardId.getId()) == null) {
                 return;
             }
-    
-            final GetResult getResult = shard.getService().get(index.type(), index.id(),
-                    storedFieldsA, true, result.getVersion(), index.versionType(),
-                    FetchSourceContext.FETCH_SOURCE);
-    
+
             if(previousContent == null) {
                 //no previous content
                 if(!result.isCreated()) {
@@ -193,14 +159,14 @@ public final class ComplianceIndexingOperationListenerImpl extends ComplianceInd
                 assert !result.isCreated():"Previous content and created";
             }
     
-            auditlog.logDocumentWritten(shardId, previousContent, getResult, index, result, complianceConfig);
+            auditlog.logDocumentWritten(shardId, previousContent, index, result, complianceConfig);
         } else if (complianceConfig.isEnabled()) {
             //no diffs
-            if (result.hasFailure() || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
+            if (result.getFailure() != null || index.origin() != org.elasticsearch.index.engine.Engine.Operation.Origin.PRIMARY) {
                 return;
             }
             
-            auditlog.logDocumentWritten(shardId, null, null, index, result, complianceConfig);
+            auditlog.logDocumentWritten(shardId, null, index, result, complianceConfig);
         }
     }
 
