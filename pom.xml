@@ -15,7 +15,7 @@
   </parent>
 
   <artifactId>dlic-search-guard-enterprise-modules</artifactId>
-  <version>6.2.2-compliance-enterprise-1-SNAPSHOT</version>
+  <version>6.2.1-compliance-enterprise-2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Search Guard Enterprise Modules</name>
@@ -24,7 +24,7 @@
   <inceptionYear>2016</inceptionYear>
 
   <properties>
-    <sg2.version>6.2.1-compliance-api-1</sg2.version>
+    <sg2.version>6.2-compliance-2-api-SNAPSHOT</sg2.version>
     <elasticsearch.version>6.2.1</elasticsearch.version>
     
     <!-- deps -->
@@ -297,6 +297,27 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        
+        
+        <version>2.21.0</version>
+        
+        <configuration>
+          <forkCount>3</forkCount>
+          <reuseForks>true</reuseForks>
+          <!-- 
+          <parallel>methods</parallel>
+          <threadCount>1</threadCount>
+           -->
+          <systemPropertyVariables>
+              <forkno>fork_${surefire.forkNumber}</forkno>
+          </systemPropertyVariables>
+        
+          <includes>
+              <include>**/*.java</include>
+          </includes>
+        </configuration>
+        
+        
       </plugin>
     </plugins>
   </build>
