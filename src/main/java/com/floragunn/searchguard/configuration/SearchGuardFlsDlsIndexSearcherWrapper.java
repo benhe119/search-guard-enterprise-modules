@@ -20,17 +20,17 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.join.BitSetProducer;
 import org.elasticsearch.cluster.service.ClusterService;
-import org.elasticsearch.common.lucene.index.ElasticsearchDirectoryReader;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.index.IndexService;
+import org.elasticsearch.index.cache.bitset.BitsetFilterCache;
 import org.elasticsearch.index.engine.EngineException;
 import org.elasticsearch.index.mapper.MapperService;
-import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.index.shard.ShardId;
+import org.elasticsearch.index.shard.ShardUtils;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.compliance.ComplianceConfig;
@@ -44,7 +44,6 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
 
     private static final Set<String> metaFields = Sets.union(Sets.newHashSet("_source", "_version"),
             Sets.newHashSet(MapperService.getAllMetaFields()));
-    private final NamedXContentRegistry namedXContentRegistry;
     private final ClusterService clusterService;
     private final IndexService indexService;
     private final ComplianceConfig complianceConfig;
@@ -55,7 +54,6 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
             final ComplianceIndexingOperationListener ciol, final ComplianceConfig complianceConfig) {
         super(indexService, settings, adminDNs);
         ciol.setIs(indexService);
-        this.namedXContentRegistry = indexService.xContentRegistry();
         this.clusterService = clusterService;
         this.indexService = indexService;
         this.complianceConfig = complianceConfig;
@@ -66,9 +64,11 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
     @Override
     protected DirectoryReader dlsFlsWrap(final DirectoryReader reader, boolean isAdmin) throws IOException {
 
+        final ShardId shardId = ShardUtils.extractShardId(reader); 
+        
         Set<String> flsFields = null;
-        Set<String> unparsedDlsQueries = null;
         Set<String> maskedFields = null;
+        BitSetProducer bsp = null;
 
         if(!isAdmin) {
 
@@ -88,23 +88,26 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
                 flsFields.addAll(allowedFlsFields.get(flsEval));
             }
 
-            if (dlsEval != null) {
-                unparsedDlsQueries = queries.get(dlsEval);
+            
+            
+            if (dlsEval != null) { 
+                final Set<String> unparsedDlsQueries = queries.get(dlsEval);
+                if(unparsedDlsQueries != null && !unparsedDlsQueries.isEmpty()) { 
+                    final BitsetFilterCache bsfc = this.indexService.cache().bitsetFilterCache();
+                    //disable reader optimizations
+                    final Query dlsQuery = DlsQueryParser.parse(unparsedDlsQueries, this.indexService.newQueryShardContext(shardId.getId(), null, null, null)
+                            , this.indexService.xContentRegistry());
+                    bsp = dlsQuery==null?null:bsfc.getBitSetProducer(dlsQuery);
+                }
             }
             
             if (maskedEval != null) {
                 maskedFields = new HashSet<>();
                 maskedFields.addAll(maskedFieldsMap.get(maskedEval));
             }
-
         }
         
-        final ShardId shardId = ((ElasticsearchDirectoryReader)((FilterDirectoryReader) reader).getDelegate()).shardId();
-        
-        final QueryShardContext queryShardContext = 
-                indexService.newQueryShardContext(shardId.getId(), reader, () -> 0L, null);
-        
-        return new DlsFlsFilterLeafReader.DlsFlsDirectoryReader(reader, flsFields, DlsQueryParser.parse(unparsedDlsQueries, queryShardContext, this.namedXContentRegistry), 
+        return new DlsFlsFilterLeafReader.DlsFlsDirectoryReader(reader, flsFields, bsp,
                 indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
     }
 

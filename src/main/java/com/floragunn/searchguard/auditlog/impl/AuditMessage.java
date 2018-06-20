@@ -96,7 +96,7 @@ public final class AuditMessage {
     public static final String COMPLIANCE_FILE_INFOS = "audit_compliance_file_infos";
 
     //public static final String COMPLIANCE_DIFF_STORED_IS_NOOP = "audit_compliance_diff_stored_is_noop";
-    public static final String COMPLIANCE_STORED_FIELDS_CONTENT = "audit_compliance_stored_fields_content";
+    //public static final String COMPLIANCE_STORED_FIELDS_CONTENT = "audit_compliance_stored_fields_content";
 
     public static final String REQUEST_LAYER = "audit_request_layer";
 
@@ -177,12 +177,12 @@ public final class AuditMessage {
         }
     }
 
-    public void addComplianceWriteStoredFields(String diff) {
-        if (diff != null && !diff.isEmpty()) {
-            auditInfo.put(COMPLIANCE_STORED_FIELDS_CONTENT, diff);
-            //auditInfo.put(COMPLIANCE_DIFF_STORED_IS_NOOP, false);
-        }
-    }
+//    public void addComplianceWriteStoredFields0(String diff) {
+//        if (diff != null && !diff.isEmpty()) {
+//            auditInfo.put(COMPLIANCE_STORED_FIELDS_CONTENT, diff);
+//            //auditInfo.put(COMPLIANCE_DIFF_STORED_IS_NOOP, false);
+//        }
+//    }
 
     public void addTupleToRequestBody(Tuple<XContentType, BytesReference> xContentTuple) {
         if (xContentTuple != null) {

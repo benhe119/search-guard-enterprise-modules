@@ -59,10 +59,12 @@ public final class ConfigConstants {
     public static final String LDAPS_PEMTRUSTEDCAS_FILEPATH = "pemtrustedcas_filepath";
     public static final String LDAPS_PEMTRUSTEDCAS_CONTENT = "pemtrustedcas_content";
 
-    
-    
     public static final String LDAPS_ENABLED_SSL_CIPHERS = "enabled_ssl_ciphers";
     public static final String LDAPS_ENABLED_SSL_PROTOCOLS = "enabled_ssl_protocols";
+    
+    //custom attributes
+    public static final String LDAP_CUSTOM_ATTR_MAXVAL_LEN = "custom_attr_maxval_len";
+    public static final String LDAP_CUSTOM_ATTR_WHITELIST = "custom_attr_whitelist";
 
     private ConfigConstants() {
 

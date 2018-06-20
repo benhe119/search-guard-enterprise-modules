@@ -43,7 +43,6 @@ import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
@@ -75,8 +74,6 @@ import com.floragunn.searchguard.support.Base64Helper;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.support.WildcardMatcher;
 import com.floragunn.searchguard.user.User;
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 
 public abstract class AbstractAuditLog implements AuditLog {
@@ -514,7 +511,7 @@ public abstract class AbstractAuditLog implements AuditLog {
     }
 
     @Override
-    public void logDocumentWritten(ShardId shardId, GetResult originalIndex, GetResult currentGet, Index currentIndex, IndexResult result, ComplianceConfig complianceConfig) {
+    public void logDocumentWritten(ShardId shardId, GetResult originalResult, Index currentIndex, IndexResult result, ComplianceConfig complianceConfig) {
         
         if(complianceConfig == null || !complianceConfig.writeHistoryEnabledForIndex(shardId.getIndexName())) {
             return;
@@ -540,72 +537,72 @@ public abstract class AbstractAuditLog implements AuditLog {
         msg.addComplianceDocVersion(result.getVersion());
         msg.addComplianceOperation(result.isCreated()?Operation.CREATE:Operation.UPDATE);
 
-        if(complianceConfig.logDiffsForWrite()) {
-
-            final Map<String, DocumentField> currentFields = currentGet.getFields();
-
-            if(originalIndex != null) {
-                final Map<String, DocumentField> originalFields = originalIndex.getFields();
-                MapDifference<String, Object> mapDiff = Maps.difference(currentFields, originalFields);
-                msg.addComplianceWriteStoredFields(mapDiff.areEqual()?"":mapDiff.toString());
-            } else if (currentGet.getFields().size() > 0) {
-                msg.addComplianceWriteStoredFields(currentGet.getFields().toString());
-            }
-
-
-            if(originalIndex != null && originalIndex.isExists() && originalIndex.internalSourceRef() != null) {
-                try {
-                    String originalSource = null;
-                    String currentSource = null;
-                    if (searchguardIndex.equals(shardId.getIndexName())) {
-                        try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, originalIndex.internalSourceRef(), XContentType.JSON)) {
-                            Object base64 = parser.map().values().iterator().next();
-                            if(base64 instanceof String) {
-                                originalSource = (new String(BaseEncoding.base64().decode((String) base64)));
-                             } else {
-                                 originalSource = XContentHelper.convertToJson(originalIndex.internalSourceRef(), false, XContentType.JSON);
-                            }
-                         } catch (Exception e) {
-                             log.error(e);
-                         }
-                        
-                        try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, currentIndex.source(), XContentType.JSON)) {
-                            Object base64 = parser.map().values().iterator().next();
-                            if(base64 instanceof String) {
-                                currentSource = (new String(BaseEncoding.base64().decode((String) base64)));
-                             } else {
-                                currentSource = XContentHelper.convertToJson(currentIndex.source(), false, XContentType.JSON);
-                            }
-                         } catch (Exception e) {
-                             log.error(e);
-                         }
-                    } else {
-                        originalSource = XContentHelper.convertToJson(originalIndex.internalSourceRef(), false, XContentType.JSON);
-                        currentSource = XContentHelper.convertToJson(currentIndex.source(), false, XContentType.JSON);
-                    }
-                    final JsonNode diffnode = JsonDiff.asJson(mapper.readTree(originalSource), mapper.readTree(currentSource));
-                    msg.addComplianceWriteDiffSource(diffnode.size() == 0?"":diffnode.toString());
-                } catch (Exception e) {
-                    log.error("Unable to generate diff for {}",msg.toPrettyString(),e);
-                }
-            } else if (!complianceConfig.logWriteMetadataOnly()){
-                if(searchguardIndex.equals(shardId.getIndexName())) {
+        if(complianceConfig.logDiffsForWrite() && originalResult != null && originalResult.isExists() && originalResult.internalSourceRef() != null) {
+            try {
+                String originalSource = null;
+                String currentSource = null;
+                if (searchguardIndex.equals(shardId.getIndexName())) {
+                    try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, originalResult.internalSourceRef(), XContentType.JSON)) {
+                        Object base64 = parser.map().values().iterator().next();
+                        if(base64 instanceof String) {
+                            originalSource = (new String(BaseEncoding.base64().decode((String) base64)));
+                         } else {
+                             originalSource = XContentHelper.convertToJson(originalResult.internalSourceRef(), false, XContentType.JSON);
+                        }
+                     } catch (Exception e) {
+                         log.error(e);
+                     }
+                    
                     try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, currentIndex.source(), XContentType.JSON)) {
-                       Object base64 = parser.map().values().iterator().next();
-                       if(base64 instanceof String) {
-                           msg.addUnescapedJsonToRequestBody(new String(BaseEncoding.base64().decode((String) base64)));
-                        } else {
-                           msg.addTupleToRequestBody(new Tuple<XContentType, BytesReference>(XContentType.JSON, currentIndex.source()));
-                       }
-                    } catch (Exception e) {
-                        log.error(e);
-                    }
+                        Object base64 = parser.map().values().iterator().next();
+                        if(base64 instanceof String) {
+                            currentSource = (new String(BaseEncoding.base64().decode((String) base64)));
+                         } else {
+                            currentSource = XContentHelper.convertToJson(currentIndex.source(), false, XContentType.JSON);
+                        }
+                     } catch (Exception e) {
+                         log.error(e);
+                     }
                 } else {
-                    msg.addTupleToRequestBody(new Tuple<XContentType, BytesReference>(XContentType.JSON, currentIndex.source()));
+                    originalSource = XContentHelper.convertToJson(originalResult.internalSourceRef(), false, XContentType.JSON);
+                    currentSource = XContentHelper.convertToJson(currentIndex.source(), false, XContentType.JSON);
+                }
+                final JsonNode diffnode = JsonDiff.asJson(mapper.readTree(originalSource), mapper.readTree(currentSource));
+                msg.addComplianceWriteDiffSource(diffnode.size() == 0?"":diffnode.toString());
+            } catch (Exception e) {
+                log.error("Unable to generate diff for {}",msg.toPrettyString(),e);
+            }   
+         }
+        
+        
+         if (!complianceConfig.logWriteMetadataOnly()){
+            if(searchguardIndex.equals(shardId.getIndexName())) {
+                //current source, normally not null or empty
+                try (XContentParser parser = XContentHelper.createParser(NamedXContentRegistry.EMPTY, currentIndex.source(), XContentType.JSON)) {
+                   Object base64 = parser.map().values().iterator().next();
+                   if(base64 instanceof String) {
+                       msg.addUnescapedJsonToRequestBody(new String(BaseEncoding.base64().decode((String) base64)));
+                    } else {
+                       msg.addTupleToRequestBody(new Tuple<XContentType, BytesReference>(XContentType.JSON, currentIndex.source()));
+                   }
+                } catch (Exception e) {
+                    log.error(e);
                 }
                 
+                //if we want to have msg.ComplianceWritePreviousSource we need to do the same as above
+                
+            } else {
+                
+                //previous source, can be null if document is a new one
+                //msg.ComplianceWritePreviousSource(new Tuple<XContentType, BytesReference>(XContentType.JSON, originalResult.internalSourceRef()));
+                
+                //current source, normally not null or empty
+                msg.addTupleToRequestBody(new Tuple<XContentType, BytesReference>(XContentType.JSON, currentIndex.source()));             
             }
-        }
+            
+         }
+        
+        
         save(msg);
     }
 
