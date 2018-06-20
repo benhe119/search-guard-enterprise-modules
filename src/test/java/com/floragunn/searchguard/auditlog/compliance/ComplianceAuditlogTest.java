@@ -333,4 +333,49 @@ public class ComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         //System.out.println(TestAuditlogImpl.sb.toString());
         
     }
+    
+    @Test
+    public void testWriteHistory() throws Exception {
+
+        Settings additionalSettings = Settings.builder()
+                .put("searchguard.audit.type", TestAuditlogImpl.class.getName())
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, false)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_REST, false)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RESOLVE_BULK_REQUESTS, true)
+                .put(ConfigConstants.SEARCHGUARD_COMPLIANCE_HISTORY_WRITE_LOG_DIFFS, true)
+                .put(ConfigConstants.SEARCHGUARD_COMPLIANCE_HISTORY_WRITE_WATCHED_INDICES, "humanresources")
+                .put("searchguard.audit.threadpool.size", 0)
+                .build();
+        
+        setup(additionalSettings);
+        
+        
+        try (TransportClient tc = getInternalTransportClient()) {
+            tc.prepareIndex("humanresources", "employees", "100")
+            .setRefreshPolicy(RefreshPolicy.IMMEDIATE)
+            .setSource("Age", 456)
+            .execute()
+            .actionGet();
+        }
+        
+        TestAuditlogImpl.clear();
+        
+        String body = "{\"doc\": {\"Age\":123}}";
+        
+        HttpResponse response = rh.executePostRequest("humanresources/employees/100/_update?pretty", body, encodeBasicHeader("admin", "admin"));
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        System.out.println(response.getBody());
+        Thread.sleep(1500);
+        System.out.println(TestAuditlogImpl.sb.toString());
+        Assert.assertTrue(TestAuditlogImpl.sb.toString().split(".*audit_compliance_diff_content.*replace.*").length == 2);
+        
+        body = "{\"Age\":555}";
+        TestAuditlogImpl.clear();
+        response = rh.executePostRequest("humanresources/employees/100?pretty", body, encodeBasicHeader("admin", "admin"));
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        System.out.println(response.getBody());
+        Thread.sleep(1500);
+        System.out.println(TestAuditlogImpl.sb.toString());
+        Assert.assertTrue(TestAuditlogImpl.sb.toString().split(".*audit_compliance_diff_content.*replace.*").length == 2);
+    }
 }
