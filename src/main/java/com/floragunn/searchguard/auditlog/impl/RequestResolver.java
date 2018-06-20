@@ -266,6 +266,7 @@ public final class RequestResolver {
             final SearchRequest sr = (SearchRequest) request;
             final String[] indices = arrayOrEmpty(sr.indices());
             final String[] types = arrayOrEmpty(sr.types());
+
             msg.addTypes(types);            
             Map<String, Object> sourceAsMap = sr.source() == null? null:Utils.convertJsonToxToStructuredMap(sr.source());
             addIndicesSourceSafe(msg, indices, resolver, cs, XContentType.JSON, sourceAsMap, settings, resolveIndices, logRequestBody, false, searchguardIndex);
