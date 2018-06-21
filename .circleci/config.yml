@@ -33,9 +33,9 @@ jobs:
       - deploy:
           name: Maybe Deploy
           command: |
+            mvn deploy -DskipTests -s settings.xml
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
               mvn -Pcoverage sonar:sonar -Dsonar.organization=floragunncom-github -Dsonar.login=$SONAR_LOGIN -Dsonar.host.url=https://sonarcloud.io
-              mvn deploy -DskipTests -s settings.xml
             fi
 
 workflows:
