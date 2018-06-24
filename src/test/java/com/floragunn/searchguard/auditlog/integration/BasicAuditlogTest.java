@@ -30,7 +30,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.util.concurrent.ThreadContext.StoredContext;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.floragunn.searchguard.auditlog.AbstractAuditlogiUnitTest;
@@ -71,9 +70,10 @@ public class BasicAuditlogTest extends AbstractAuditlogiUnitTest {
     }
     
     @Test
-    @Ignore("flaky")
     public void testSSLPlainText() throws Exception {
-
+    //if this fails permanently look in the logs for an abstract method error or method not found error.
+    //needs proper ssl plugin version
+        
         Settings additionalSettings = Settings.builder()
                 .put("searchguard.ssl.http.enabled",true)
                 .put("searchguard.ssl.http.keystore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore.jks"))
@@ -96,6 +96,7 @@ public class BasicAuditlogTest extends AbstractAuditlogiUnitTest {
 
         Thread.sleep(1500);
         System.out.println(TestAuditlogImpl.sb.toString());
+        Assert.assertFalse(TestAuditlogImpl.messages.isEmpty());
         Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("SSL_EXCEPTION"));
         Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("exception_stacktrace"));
         Assert.assertTrue(TestAuditlogImpl.sb.toString().contains("not an SSL/TLS record"));
