@@ -40,6 +40,11 @@ import com.floragunn.searchguard.ssl.util.SSLConfigConstants;
 import com.floragunn.searchguard.support.PemKeyReader;
 import com.google.common.collect.ImmutableList;
 
+
+/**
+ * TODO move to a general location
+ *
+ */
 public class SettingsBasedSSLConfigurator {
 
 	public static final String CERT_ALIAS = "cert_alias";
@@ -68,7 +73,7 @@ public class SettingsBasedSSLConfigurator {
 	private char[] effectiveKeyPassword;
 	private String effectiveKeyAlias;
 
-	SettingsBasedSSLConfigurator(Settings settings, Path configPath, String settingsKeyPrefix) {
+	public SettingsBasedSSLConfigurator(Settings settings, Path configPath, String settingsKeyPrefix) {
 		this.settings = settings;
 		this.configPath = configPath;
 		this.settingsKeyPrefix = normalizeSettingsKeyPrefix(settingsKeyPrefix);
@@ -88,7 +93,7 @@ public class SettingsBasedSSLConfigurator {
 		return delegate.build();
 	}
 
-	SSLConfig buildSSLConfig() throws Exception {
+	public SSLConfig buildSSLConfig() throws Exception {
 		SSLContext sslContext = buildSSLContext();
 
 		if (sslContext == null) {
