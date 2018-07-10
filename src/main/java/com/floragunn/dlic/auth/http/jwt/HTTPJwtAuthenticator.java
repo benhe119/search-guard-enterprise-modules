@@ -43,7 +43,7 @@ import com.floragunn.searchguard.user.AuthCredentials;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.impl.TextCodec;
+import io.jsonwebtoken.impl.TextCodec; 
 
 public class HTTPJwtAuthenticator implements HTTPAuthenticator {
 
