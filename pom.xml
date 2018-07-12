@@ -27,7 +27,7 @@
   <properties>
     <sg2.version>6.x-HEAD-SNAPSHOT</sg2.version>
     <elasticsearch.version>6.3.0</elasticsearch.version>
-    
+
     <!-- deps -->
     <log4j.version>2.9.1</log4j.version>
     <jjwt.version>0.9.0</jjwt.version>
@@ -272,6 +272,14 @@
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+      <scope>test</scope>
+    </dependency>
+
 
   </dependencies>
 

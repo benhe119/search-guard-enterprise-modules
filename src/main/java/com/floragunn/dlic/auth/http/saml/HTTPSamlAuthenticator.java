@@ -35,6 +35,7 @@ import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.opensaml.core.config.InitializationException;
 import org.opensaml.core.config.InitializationService;
+import org.opensaml.saml.metadata.resolver.MetadataResolver;
 import org.opensaml.saml.metadata.resolver.impl.AbstractReloadingMetadataResolver;
 
 import com.floragunn.dlic.auth.http.jwt.AbstractHTTPJwtAuthenticator;
@@ -68,7 +69,7 @@ public class HTTPSamlAuthenticator implements HTTPAuthenticator, Destroyable {
     private Boolean useForceAuthn;
     private PrivateKey spSignaturePrivateKey;
     private Saml2SettingsProvider saml2SettingsProvider;
-    private AbstractReloadingMetadataResolver metadataResolver;
+    private MetadataResolver metadataResolver;
     private AuthTokenProcessorHandler authTokenProcessorHandler;
     private HTTPJwtAuthenticator httpJwtAuthenticator;
     private Settings jwtSettings;
@@ -224,7 +225,7 @@ public class HTTPSamlAuthenticator implements HTTPAuthenticator, Destroyable {
         }
     }
 
-    private static void ensureOpenSamlInitialization() {
+    static void ensureOpenSamlInitialization() {
         if (openSamlInitialized) {
             return;
         }
@@ -318,16 +319,16 @@ public class HTTPSamlAuthenticator implements HTTPAuthenticator, Destroyable {
         return settingsBuilder.build();
     }
 
-    private void initLogoutUrl(RestRequest restRequest, ThreadContext threadContext, AuthCredentials authCredentials) {
+    String buildLogoutUrl(AuthCredentials authCredentials) {
         try {
             if (authCredentials == null) {
-                return;
+                return null;
             }
 
             Saml2Settings saml2Settings = this.saml2SettingsProvider.getCached();
 
             if (!isSingleLogoutAvailable(saml2Settings)) {
-                return;
+                return null;
             }
 
             String nameIdClaim = this.subjectKey == null ? "sub" : "saml_ni";
@@ -338,13 +339,18 @@ public class HTTPSamlAuthenticator implements HTTPAuthenticator, Destroyable {
 
             LogoutRequest logoutRequest = new LogoutRequest(saml2Settings, null, nameId, sessionIndex, nameIdFormat);
 
-            String url = getSamlRequestRedirectBindingLocation(IdpEndpointType.SLO, saml2Settings,
+            return getSamlRequestRedirectBindingLocation(IdpEndpointType.SLO, saml2Settings,
                     logoutRequest.getEncodedLogoutRequest(true));
 
-            threadContext.putTransient(ConfigConstants.SSO_LOGOUT_URL, url);
         } catch (Exception e) {
             log.error("Error while creating logout URL. Logout will be not available", e);
+            return null;
         }
+
+    }
+
+    private void initLogoutUrl(RestRequest restRequest, ThreadContext threadContext, AuthCredentials authCredentials) {
+        threadContext.putTransient(ConfigConstants.SSO_LOGOUT_URL, buildLogoutUrl(authCredentials));
     }
 
     private String getSamlRequestRedirectBindingLocation(IdpEndpointType idpEndpointType, Saml2Settings saml2Settings,

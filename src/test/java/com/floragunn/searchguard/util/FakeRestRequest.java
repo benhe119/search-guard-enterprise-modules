@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package com.floragunn.dlic.auth.http.jwt;
+package com.floragunn.searchguard.util;
 
 import java.util.Collections;
 import java.util.HashMap;
