@@ -273,7 +273,7 @@ public final class RequestResolver {
                     builder.close();
                 }
             }
-            addIndicesSourceSafe(msg, indices, resolver, cs, builder == null? null:BytesReference.bytes(builder), settings, resolveIndices, logRequestBody, false, searchguardIndex);
+            addIndicesSourceSafe(msg, indices, resolver, cs, builder == null? null: builder.bytes(), settings, resolveIndices, logRequestBody, false, searchguardIndex);
         } else if (request instanceof ClusterUpdateSettingsRequest) {
             if(logRequestBody) {
                 final ClusterUpdateSettingsRequest cusr = (ClusterUpdateSettingsRequest) request;

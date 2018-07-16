@@ -261,7 +261,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 }
                 
                 final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
-                delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
+                delegate.binaryField(fieldInfo, BytesReference.toBytes(xBuilder.bytes()));
             } else {
                 delegate.binaryField(fieldInfo, value);
             }

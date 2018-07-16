@@ -22,7 +22,6 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.RealtimeRequest;
-import org.elasticsearch.action.admin.indices.shrink.ResizeRequest;
 import org.elasticsearch.action.bulk.BulkItemRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkShardRequest;
@@ -75,12 +74,7 @@ public class DlsFlsValveImpl implements DlsFlsRequestValve {
                     }
                 }
             }
-            
-            if(request instanceof ResizeRequest) {
-                listener.onFailure(new ElasticsearchSecurityException("Resize is not supported when FLS or DLS is activated"));
-                return false;
-            }
-            
+                        
             /*if(request instanceof IndicesAliasesRequest) {
                 final IndicesAliasesRequest aliasRequest = (IndicesAliasesRequest) request;
                 aliasRequest.getAliasActions().stream().filter(a->a.actionType() == Type.ADD).forEach(a->{

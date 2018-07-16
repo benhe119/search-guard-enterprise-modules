@@ -124,7 +124,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
     CertificateException, FileNotFoundException, IOException, LdapException {
         final boolean enableSSL = settings.getAsBoolean(ConfigConstants.LDAPS_ENABLE_SSL, false);
 
-        final List<String> ldapHosts = settings.getAsList(ConfigConstants.LDAP_HOSTS, Collections.singletonList("localhost"));
+        final String[] ldapHosts = settings.getAsArray(ConfigConstants.LDAP_HOSTS, new String[] {"localhost"});
 
         Connection connection = null;
         Exception lastException = null;
@@ -272,7 +272,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                         , settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_PASSWORD, SSLConfigConstants.DEFAULT_STORE_PASSWORD)
                         , settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_TYPE));
                 
-                final List<String> trustStoreAliases = settings.getAsList(ConfigConstants.LDAPS_JKS_TRUST_ALIAS, null);
+                final String[] trustStoreAliases = settings.getAsArray(ConfigConstants.LDAPS_JKS_TRUST_ALIAS, null);
                 
                 //for client authentication
                 final KeyStore keyStore = PemKeyReader.loadKeyStore(PemKeyReader.resolve(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_KEYSTORE_FILEPATH, settings, configPath, enableClientAuth)
@@ -292,7 +292,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                     log.debug("trustStoreAliases: {}, keyStoreAlias: {}",  trustStoreAliases, keyStoreAlias);
                 }
                 
-                cc = CredentialConfigFactory.createKeyStoreCredentialConfig(trustStore, trustStoreAliases==null?null:trustStoreAliases.toArray(new String[0]), keyStore, keyStorePassword, keyStoreAliases);
+                cc = CredentialConfigFactory.createKeyStoreCredentialConfig(trustStore, trustStoreAliases==null?null:trustStoreAliases, keyStore, keyStorePassword, keyStoreAliases);
 
             }
             
@@ -303,8 +303,8 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             }
        
             //https://github.com/floragunncom/search-guard/issues/227
-            final List<String> enabledCipherSuites = settings.getAsList(ConfigConstants.LDAPS_ENABLED_SSL_CIPHERS, Collections.emptyList());   
-            final List<String> enabledProtocols = settings.getAsList(ConfigConstants.LDAPS_ENABLED_SSL_PROTOCOLS, DEFAULT_TLS_PROTOCOLS);   
+            final List<String> enabledCipherSuites = Arrays.asList(settings.getAsArray(ConfigConstants.LDAPS_ENABLED_SSL_CIPHERS, new String[0]));   
+            final List<String> enabledProtocols = Arrays.asList(settings.getAsArray(ConfigConstants.LDAPS_ENABLED_SSL_PROTOCOLS, DEFAULT_TLS_PROTOCOLS.toArray(new String[0])));   
             
 
             if(!enabledCipherSuites.isEmpty()) {
@@ -365,8 +365,8 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             log.trace("dn: {}", dn);
         }
 
-        final List<String> skipUsers = settings.getAsList(ConfigConstants.LDAP_AUTHZ_SKIP_USERS, Collections.emptyList());
-        if (!skipUsers.isEmpty() && WildcardMatcher.matchAny(skipUsers, authenticatedUser)) {
+        final String[] skipUsers = settings.getAsArray(ConfigConstants.LDAP_AUTHZ_SKIP_USERS, new String[0]);
+        if (skipUsers.length > 0 && WildcardMatcher.matchAny(skipUsers, authenticatedUser)) {
             if (log.isDebugEnabled()) {
                 log.debug("Skipped search roles of user {}", authenticatedUser);
             }
@@ -496,7 +496,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             // nested roles, makes only sense for DN style role names
             if (settings.getAsBoolean(ConfigConstants.LDAP_AUTHZ_RESOLVE_NESTED_ROLES, false)) {
                 
-                final List<String> nestedRoleFilter = settings.getAsList(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, Collections.emptyList());
+                final String[] nestedRoleFilter = settings.getAsArray(ConfigConstants.LDAP_AUTHZ_NESTEDROLEFILTER, new String[0]);
 
                 if(log.isTraceEnabled()) {
                     log.trace("Evaluate nested roles");
@@ -560,10 +560,10 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
     }
 
     protected Set<LdapName> resolveNestedRoles(final LdapName roleDn, final Connection ldapConnection, String userRoleName,
-            int depth, final boolean rolesearchEnabled, final List<String> roleFilter)
+            int depth, final boolean rolesearchEnabled, String ... roleFilter)
             throws ElasticsearchSecurityException, LdapException {
         
-        if(!roleFilter.isEmpty()  && WildcardMatcher.matchAny(roleFilter, roleDn.toString())) {
+        if(roleFilter.length > 0  && WildcardMatcher.matchAny(roleFilter, roleDn.toString())) {
             
             if(log.isTraceEnabled()) {
                 log.trace("Filter nested role {}", roleDn);

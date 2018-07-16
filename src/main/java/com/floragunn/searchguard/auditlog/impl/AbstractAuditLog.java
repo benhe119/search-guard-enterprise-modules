@@ -58,10 +58,8 @@ public abstract class AbstractAuditLog implements AuditLog {
     private final List<String> ignoreAuditRequests;
     private final List<String> disabledRestCategories;
     private final List<String> disabledTransportCategories;
-    private final List<String> defaultDisabledCategories = 
-            Arrays.asList(new String[]{Category.AUTHENTICATED.toString(), Category.GRANTED_PRIVILEGES.toString()});
-    private final List<String> defaultIgnoredUsers = 
-            Arrays.asList(new String[]{"kibanaserver"});
+    private final String[] defaultDisabledCategories = new String[]{Category.AUTHENTICATED.toString(), Category.GRANTED_PRIVILEGES.toString()};
+    private final String[] defaultIgnoredUsers = new String[]{"kibanaserver"};
     
     private final String searchguardIndex;
 
@@ -80,8 +78,8 @@ public abstract class AbstractAuditLog implements AuditLog {
         restAuditingEnabled = settings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_REST, true);
         transportAuditingEnabled = settings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true);
         
-        disabledRestCategories = new ArrayList<>(settings.getAsList(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_REST_CATEGORIES, defaultDisabledCategories).stream()
-                .map(c->c.toUpperCase()).collect(Collectors.toList()));
+        disabledRestCategories = Arrays.asList(settings.getAsArray(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_REST_CATEGORIES, defaultDisabledCategories)).stream()
+                .map(c->c.toUpperCase()).collect(Collectors.toList());
         
         if(disabledRestCategories.size() == 1 && "NONE".equals(disabledRestCategories.get(0))) {
             disabledRestCategories.clear();
@@ -91,8 +89,8 @@ public abstract class AbstractAuditLog implements AuditLog {
             log.info("Configured categories on rest layer to ignore: {}", disabledRestCategories);
         }
         
-        disabledTransportCategories = new ArrayList<>(settings.getAsList(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_TRANSPORT_CATEGORIES, defaultDisabledCategories).stream()
-                .map(c->c.toUpperCase()).collect(Collectors.toList()));
+        disabledTransportCategories = Arrays.asList(settings.getAsArray(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_TRANSPORT_CATEGORIES, defaultDisabledCategories)).stream()
+                .map(c->c.toUpperCase()).collect(Collectors.toList());
         
         if(disabledTransportCategories.size() == 1 && "NONE".equals(disabledTransportCategories.get(0))) {
             disabledTransportCategories.clear();
@@ -105,7 +103,7 @@ public abstract class AbstractAuditLog implements AuditLog {
         logRequestBody = settings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_LOG_REQUEST_BODY, true);
         resolveIndices = settings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_RESOLVE_INDICES, true);
         
-        ignoreAuditUsers = new ArrayList<>(settings.getAsList(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_USERS, defaultIgnoredUsers));
+        ignoreAuditUsers = Arrays.asList(settings.getAsArray(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_USERS, defaultIgnoredUsers));
         
         if(ignoreAuditUsers.size() == 1 && "NONE".equals(ignoreAuditUsers.get(0))) {
             ignoreAuditUsers.clear();
@@ -115,7 +113,7 @@ public abstract class AbstractAuditLog implements AuditLog {
             log.info("Configured Users to ignore: {}", ignoreAuditUsers);
         }
         
-        ignoreAuditRequests = settings.getAsList(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_REQUESTS, Collections.emptyList());
+        ignoreAuditRequests = Arrays.asList(settings.getAsArray(ConfigConstants.SEARCHGUARD_AUDIT_IGNORE_REQUESTS, new String[0]));
         if (ignoreAuditUsers.size() > 0) {
             log.info("Configured Requests to ignore: {}", ignoreAuditRequests);
         }

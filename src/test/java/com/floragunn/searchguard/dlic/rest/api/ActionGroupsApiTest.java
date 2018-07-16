@@ -14,6 +14,7 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.http.Header;
@@ -43,7 +44,7 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 		HttpResponse response = rh.executeGetRequest("/_searchguard/api/actiongroup/CRUD", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();		
-		List<String> permissions = settings.getAsList("CRUD.permissions");
+		List<String> permissions = Arrays.asList(settings.getAsArray("CRUD.permissions"));
 		Assert.assertNotNull(permissions);
 		Assert.assertEquals(2, permissions.size());
 		Assert.assertTrue(permissions.contains("READ"));

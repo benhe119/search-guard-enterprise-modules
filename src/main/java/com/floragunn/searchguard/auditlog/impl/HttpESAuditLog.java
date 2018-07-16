@@ -38,7 +38,7 @@ import com.floragunn.searchguard.support.PemKeyReader;
 
 public final class HttpESAuditLog extends AuditLogSink {
 
-    private static final List<String> DEFAULT_TLS_PROTOCOLS = Arrays.asList(new String[] { "TLSv1.2", "TLSv1.1"});
+    private static final String[] DEFAULT_TLS_PROTOCOLS = new String[] { "TLSv1.2", "TLSv1.1"};
 	// config in elasticsearch.yml
 	private final String index;
 	private final String type;
@@ -53,7 +53,7 @@ public final class HttpESAuditLog extends AuditLogSink {
 
 		super(settings, threadPool, resolver, clusterService);
 		
-		servers = settings.getAsList(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_HTTP_ENDPOINTS, Collections.singletonList("localhost:9200"));
+		servers = Arrays.asList(settings.getAsArray(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_HTTP_ENDPOINTS, new String[] {"localhost:9200"}));
 		this.index = settings.get(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_INDEX, "'sg6-auditlog-'YYYY.MM.dd");
 		
 		try {
@@ -138,11 +138,11 @@ public final class HttpESAuditLog extends AuditLogSink {
                 
             }   
 		    
-		    final List<String> enabledCipherSuites = settings.getAsList(ConfigConstants.SEARCHGUARD_AUDIT_SSL_ENABLED_SSL_CIPHERS, null);   
-            final List<String> enabledProtocols = settings.getAsList(ConfigConstants.SEARCHGUARD_AUDIT_SSL_ENABLED_SSL_PROTOCOLS, DEFAULT_TLS_PROTOCOLS);   
+		    final String[] enabledCipherSuites = settings.getAsArray(ConfigConstants.SEARCHGUARD_AUDIT_SSL_ENABLED_SSL_CIPHERS, null);   
+            final String[] enabledProtocols = settings.getAsArray(ConfigConstants.SEARCHGUARD_AUDIT_SSL_ENABLED_SSL_PROTOCOLS, DEFAULT_TLS_PROTOCOLS);   
             
-            builder.setSupportedCipherSuites(enabledCipherSuites==null?null:enabledCipherSuites.toArray(new String[0]));
-            builder.setSupportedProtocols(enabledProtocols.toArray(new String[0]));
+            builder.setSupportedCipherSuites(enabledCipherSuites==null?null:enabledCipherSuites);
+            builder.setSupportedProtocols(enabledProtocols);
 		    
             builder.enableSsl(effectiveTruststore, verifyHostnames); //trust all aliases
 

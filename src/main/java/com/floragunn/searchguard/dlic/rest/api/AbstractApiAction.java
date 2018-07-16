@@ -400,8 +400,8 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		final XContentBuilder builder = XContentFactory.jsonBuilder();
 		builder.startObject(); // 1
 		settingsBuilder.build().toXContent(builder, ToXContent.EMPTY_PARAMS);
-		builder.endObject(); // 2
-		return BytesReference.bytes(builder);
+		builder.endObject(); // 2		
+		return builder.bytes();
 	}
 
 	protected boolean checkConfigUpdateResponse(final ConfigUpdateResponse response) {

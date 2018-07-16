@@ -14,6 +14,7 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.http.Header;
@@ -231,7 +232,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertNotEquals(null, Strings.emptyToNull(settings.get("picard.hash")));
-		List<String> roles = settings.getAsList("picard.roles");
+		List<String> roles = Arrays.asList(settings.getAsArray("picard.roles"));
 		Assert.assertNotNull(roles);
 		Assert.assertEquals(2, roles.size());
 		Assert.assertTrue(roles.contains("starfleet"));

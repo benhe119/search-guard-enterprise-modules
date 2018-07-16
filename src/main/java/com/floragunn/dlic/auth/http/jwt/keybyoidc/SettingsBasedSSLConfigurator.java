@@ -20,6 +20,7 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -234,7 +235,7 @@ public class SettingsBasedSSLConfigurator {
 	}
 
 	private List<String> getSettingAsList(String key, List<String> defaultValue) {
-		return settings.getAsList(settingsKeyPrefix + key, defaultValue);
+		return Arrays.asList(settings.getAsArray(settingsKeyPrefix + key, defaultValue.toArray(new String[0])));
 	}
 
 	private String[] getSettingAsArray(String key, List<String> defaultValue) {
