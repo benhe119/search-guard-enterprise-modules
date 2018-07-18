@@ -50,6 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
+import org.elasticsearch.client.Node;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -159,12 +160,15 @@ public class HttpClient implements Closeable {
                 
         
         RestClientBuilder builder = RestClient.builder(hosts);
+        
         //builder.setMaxRetryTimeoutMillis(10000);
         builder.setFailureListener(new RestClient.FailureListener() {
+
             @Override
-            public void onFailure(HttpHost host) {
-                
+            public void onFailure(Node node) {
+                super.onFailure(node);
             }
+ 
         });
         /*builder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
             @Override
