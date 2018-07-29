@@ -5,7 +5,8 @@
   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either 
   express or implied. -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -162,8 +163,8 @@
 
     <dependency>
       <groupId>com.github.wnameless</groupId>
-	  <artifactId>json-flattener</artifactId>
-	  <version>0.5.0</version>
+      <artifactId>json-flattener</artifactId>
+      <version>0.5.0</version>
     </dependency>
 
     <dependency>
@@ -181,18 +182,18 @@
         </exclusion>
       </exclusions>
     </dependency>
-	<dependency>
-    	<groupId>org.apache.kafka</groupId>
-    	<artifactId>kafka-clients</artifactId>
-    	<version>1.0.1</version>
-    	<exclusions>
-    	  <exclusion>
-    	    <artifactId>slf4j-api</artifactId>
-    	    <groupId>org.slf4j</groupId>
-    	  </exclusion>
-    	</exclusions>
-	</dependency>    
-	<dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>1.0.1</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>slf4j-api</artifactId>
+          <groupId>org.slf4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>com.onelogin</groupId>
       <artifactId>java-saml</artifactId>
       <version>2.3.0</version>
@@ -218,8 +219,19 @@
           <groupId>joda-time</groupId>
           <artifactId>joda-time</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>commons-collections</groupId>
+          <artifactId>commons-collections</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
+
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>3.2.2</version>
+    </dependency>
+
 
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -256,14 +268,14 @@
       <version>2.1.4.RELEASE</version>
       <scope>test</scope>
     </dependency>
-	<dependency>
-    	<groupId>org.apache.kafka</groupId>
-    	<artifactId>kafka-clients</artifactId>
-    	<version>1.0.1</version>
-    	<scope>test</scope>
-        <classifier>test</classifier>
-	</dependency>
-   
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>1.0.1</version>
+      <scope>test</scope>
+      <classifier>test</classifier>
+    </dependency>
+
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
