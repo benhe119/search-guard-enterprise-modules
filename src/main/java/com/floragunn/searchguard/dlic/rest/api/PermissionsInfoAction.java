@@ -97,7 +97,7 @@ public class PermissionsInfoAction extends BaseRestHandler {
             		Map<Endpoint, List<Method>> disabledEndpoints = restApiPrivilegesEvaluator.getDisabledEndpointsForCurrentUser(user.getName(), userRoles);
 
                     builder.startObject();
-                    builder.field("user", user);
+                    builder.field("user", user==null?null:user.toString());
                     builder.field("user_name", user==null?null:user.getName()); //NOSONAR
                     builder.field("has_api_access", hasApiAccess);
                     builder.startObject("disabled_endpoints");
@@ -108,6 +108,7 @@ public class PermissionsInfoAction extends BaseRestHandler {
                     builder.endObject();
                     response = new BytesRestResponse(RestStatus.OK, builder);
                 } catch (final Exception e1) {
+                    e1.printStackTrace();
                     builder = channel.newBuilder(); //NOSONAR
                     builder.startObject();
                     builder.field("error", e1.toString());
