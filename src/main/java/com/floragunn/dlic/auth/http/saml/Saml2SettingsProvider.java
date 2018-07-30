@@ -209,9 +209,9 @@ public class Saml2SettingsProvider {
     private String buildKibanaAssertionConsumerEndpoint(String kibanaRoot) {
 
         if (kibanaRoot.endsWith("/")) {
-            return kibanaRoot + "sg/saml/acs";
+            return kibanaRoot + "searchguard/saml/acs";
         } else {
-            return kibanaRoot + "/sg/saml/acs";
+            return kibanaRoot + "/searchguard/saml/acs";
         }
     }
 

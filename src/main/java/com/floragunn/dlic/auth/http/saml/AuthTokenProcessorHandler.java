@@ -49,7 +49,6 @@ import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestStatus;
 import org.joda.time.DateTime;
-import org.joda.time.Instant;
 import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -323,7 +322,6 @@ class AuthTokenProcessorHandler {
 
     private long getJwtExpiration(SamlResponse samlResponse) throws Exception {
         DateTime sessionNotOnOrAfter = samlResponse.getSessionNotOnOrAfter();
-        Instant assertionNotOnOrAfter = getAssertionNotOnOrAfter(samlResponse);
 
         if (this.expiryBaseValue == ExpiryBaseValue.NOW) {
             return System.currentTimeMillis() / 1000 + this.expiryOffset;
@@ -343,19 +341,6 @@ class AuthTokenProcessorHandler {
                 return System.currentTimeMillis() / 1000 + (this.expiryOffset > 0 ? this.expiryOffset : 60 * 60);
             }
         }
-    }
-
-    private Instant getAssertionNotOnOrAfter(SamlResponse samlResponse) throws XPathExpressionException {
-        List<Instant> conditions = samlResponse.getAssertionNotOnOrAfter();
-        Instant result = null;
-
-        for (Instant condition : conditions) {
-            if (result == null || condition.isBefore(result)) {
-                result = condition;
-            }
-        }
-
-        return result;
     }
 
     private void initJwtExpirySettings(Settings settings) {

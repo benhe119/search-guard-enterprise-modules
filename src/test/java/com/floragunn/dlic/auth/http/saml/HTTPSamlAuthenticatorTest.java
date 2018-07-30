@@ -1,3 +1,17 @@
+/*
+ * Copyright 2016-2018 by floragunn GmbH - All rights reserved
+ * 
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed here is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * 
+ * This software is free of charge for non-commercial and academic use. 
+ * For commercial use in a production environment you have to obtain a license 
+ * from https://floragunn.com
+ * 
+ */
+
 package com.floragunn.dlic.auth.http.saml;
 
 import java.io.FileInputStream;
@@ -49,6 +63,35 @@ public class HTTPSamlAuthenticatorTest {
     private static final Pattern WWW_AUTHENTICATE_PATTERN = Pattern
             .compile("([^\\s]+)\\s*([^\\s=]+)=\"([^\"]+)\"\\s*([^\\s=]+)=\"([^\"]+)\"\\s*([^\\s=]+)=\"([^\"]+)\"\\s*");
 
+    private static final String SPOCK_KEY = "-----BEGIN ENCRYPTED PRIVATE KEY-----\n"
+            + "MIIE6TAbBgkqhkiG9w0BBQMwDgQI0JMa7PyPedwCAggABIIEyLdPL2RXj8jjKqFT\n"
+            + "p+7vywwyxyUQOQvvIIU6H+lKZPd/y6pxzYtGd1suT2aermrrlh4b/ZXXfj/EcKcw\n"
+            + "GgcXB60Kr7UHIv7Xr498S4EKa9R7UG0NtWtsA3FVR5ndwXI+CiRSShhkskmpseVH\n"
+            + "dNWAoUsKQFbZRLnoINMKIw1/lpQBUwAUcYVB7LxLeKSTVHn/h9kvq0tad1kbE5OY\n"
+            + "GnOLEVW311++XQ3Ep/13tGEZCrxef+QsnmXuYxXBq4RvbyGZOvyM2FC7va8KzJxl\n"
+            + "P38SPEL1TzqokQB/eLDBMBOCqkhTbP/8lNuoEVm44T6//ijBp6VdBB+YRIFh3NrS\n"
+            + "1fPuDVgHr1jrRGICe8lzWy/bSa+4FlxYjn5qpEzZQtbC6C+iRzlwtlCiDdKl8zJ1\n"
+            + "YF80OW9Gr3Kvph2LJukBiODcyWUAsAf5vJH3vfPV4T9kWTNMu2NCy3Ch8u9d906k\n"
+            + "zojB/tRRdZ/XCftkU05gYU/5ruU1YA49U60s0KWXvSLmecFo2SjkcEoPDI+Y80Uw\n"
+            + "OB/5kdh1M1uu/qjoJTPWBbZ28L6e0fiMsr7eWSG7PQFwnN6VzY6Oesm8AS8LMe3V\n"
+            + "Dr4Syec8vVfGg/EDsjNC1yeZTzlO66NQYGkpnHwK1kgX/XXe7fjDfztPyM9crBXj\n"
+            + "YcYpNULAkMj9QUVDQqQ7L8TjoAFQiSdvNa+kkDhaxnAXoxfqeacTtkpKcHADsAQL\n"
+            + "azfoyflnpuZ1dIn0noRFsVuguKDp4k990bhXu9RkQ1H5IzIoYqJwypacVdt3m74o\n"
+            + "jpZvBY6z0EtBNkze6WA0Vj0BSWpy/IzndDwroG4Xf+54hn0R/Tp5K5UNttOaJN8c\n"
+            + "9U/NTiGJTJg1O4x6xbPD7C5bBdoJ/MH5yJuk/dUc7pVkisLpuH9sAPETjYCdFIjX\n"
+            + "MSRJCtq2ouT0ZRW1yBIrKIadgHLExhjZjTSQCBXJMbO7r2DjPHMZU23GTiPtC8ua\n"
+            + "L2BmC+AW7RQ2Fyo3hJDT2TM4XlMMlTtGuFxkWwmjV+FiwfjbiR3cp0+99/X6OFu5\n"
+            + "ysgZLuTMQsmWNJ8ZARZqBnkGnN92Aw4D5GLCFv3QXO+fqJnOP1PbkPwpjq59Yytf\n"
+            + "U4XqyTwRYSXRzwPFFb7RcgL9HbmjpRBEnvqEjKYeXxkBnhs+WOWN/PuJzGgP5uAk\n"
+            + "jAjQbtgLEPd4WpGcwEhkX6S1DBi8NrGapuehCjXsN1axify8Kx4eRuTiPdINlgsq\n"
+            + "d2MsPIuDgU2+0QXrXjRLwABcMGuKcmmfZjC+zZomj+yr4+Togs3vhSj9yGK3HHMh\n"
+            + "NgOlPBTibruXXa4AI07c28j3sEry+CMZrUGyYg6o1HLBpBfOmp7V5HJcvkMFWCVy\n"
+            + "DPFm5LZu0jZMDj9a+oGkv4hfp1xSXSUjhjiGz47xFJb6PH9pOUIkhTEdFCgEXbaR\n"
+            + "fXcR+kakLOotL4X1cT9cpxdimN3CCTBpr03gCv2NCVYMYhHKHK+CQVngJrY+PzMH\n"
+            + "q6fw81bUNcixZyeXFfLFN6GK75k51UV7YS/X2H8YkqGeIVNaFjrcqUoVAN8jQOeb\n"
+            + "XXIa8gT/MdNT0+W3NHKcbE31pDhOI92COZWlhOyp1cLhyo1ytayjxPTl/2RM/Vtj\n" + "T9IKkp7810LOKhrCDQ==\n"
+            + "-----END ENCRYPTED PRIVATE KEY-----";
+
     private static X509Certificate spSigningCertificate;
     private static PrivateKey spSigningPrivateKey;
 
@@ -73,7 +116,7 @@ public class HTTPSamlAuthenticatorTest {
     public void basicTest() throws Exception {
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").build();
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
 
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
@@ -108,7 +151,7 @@ public class HTTPSamlAuthenticatorTest {
     public void wrongCertTest() throws Exception {
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").build();
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
 
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
@@ -134,7 +177,7 @@ public class HTTPSamlAuthenticatorTest {
     public void noSignatureTest() throws Exception {
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").build();
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
 
         mockSamlIdpServer.setSignResponses(false);
         mockSamlIdpServer.setAuthenticateUser("horst");
@@ -158,7 +201,7 @@ public class HTTPSamlAuthenticatorTest {
     public void rolesTest() throws Exception {
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").build();
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
 
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
@@ -197,7 +240,8 @@ public class HTTPSamlAuthenticatorTest {
     public void commaSeparatedRolesTest() throws Exception {
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").put("roles_seperator", ",").build();
+                .put("exchange_key", "abc").put("roles_key", "roles").put("roles_seperator", ",").put("path.home", ".")
+                .build();
 
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSignResponses(true);
@@ -236,8 +280,34 @@ public class HTTPSamlAuthenticatorTest {
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles")
-                .put("sp.signature_private_key", Base64.getEncoder().encodeToString(spSigningPrivateKey.getEncoded()))
-                .build();
+                .put("sp.signature_private_key", "-BEGIN PRIVATE KEY-\n"
+                        + Base64.getEncoder().encodeToString(spSigningPrivateKey.getEncoded()) + "-END PRIVATE KEY-")
+                .put("path.home", ".").build();
+
+        mockSamlIdpServer.setSignResponses(true);
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
+
+        HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
+
+        AuthCredentials authCredentials = new AuthCredentials("horst");
+        authCredentials.addAttribute("attr.jwt.sub", "horst");
+        authCredentials.addAttribute("attr.jwt.saml_nif", NameIDType.UNSPECIFIED);
+        authCredentials.addAttribute("attr.jwt.saml_si", "si123");
+
+        String logoutUrl = samlAuthenticator.buildLogoutUrl(authCredentials);
+
+        mockSamlIdpServer.handleSloGetRequestURI(logoutUrl);
+
+    }
+
+    @Test
+    public void basicLogoutTestEncryptedKey() throws Exception {
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("sp.signature_private_key", SPOCK_KEY)
+                .put("sp.signature_private_key_password", "changeit").put("path.home", ".").build();
 
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");

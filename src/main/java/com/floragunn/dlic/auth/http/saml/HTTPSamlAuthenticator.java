@@ -45,8 +45,8 @@ import com.floragunn.dlic.auth.http.jwt.keybyoidc.KeyProvider;
 import com.floragunn.searchguard.auth.Destroyable;
 import com.floragunn.searchguard.auth.HTTPAuthenticator;
 import com.floragunn.searchguard.support.ConfigConstants;
+import com.floragunn.searchguard.support.PemKeyReader;
 import com.floragunn.searchguard.user.AuthCredentials;
-import com.google.common.base.Strings;
 import com.onelogin.saml2.authn.AuthnRequest;
 import com.onelogin.saml2.logout.LogoutRequest;
 import com.onelogin.saml2.settings.Saml2Settings;
@@ -84,7 +84,7 @@ public class HTTPSamlAuthenticator implements HTTPAuthenticator, Destroyable {
             idpMetadataUrl = settings.get("idp.metadata_url");
             idpMetadataFile = settings.get("idp.metadata_file");
             spSignatureAlgorithm = settings.get("sp.signature_algorithm", Constants.RSA_SHA256);
-            spSignaturePrivateKey = getSpSignaturePrivateKey(settings);
+            spSignaturePrivateKey = getSpSignaturePrivateKey(settings, configPath);
             useForceAuthn = settings.getAsBoolean("sp.forceAuthn", null);
 
             if (rolesKey == null || rolesKey.length() == 0) {
@@ -192,15 +192,17 @@ public class HTTPSamlAuthenticator implements HTTPAuthenticator, Destroyable {
         return new AuthnRequest(saml2Settings, forceAuthn, false, true);
     }
 
-    private PrivateKey getSpSignaturePrivateKey(Settings settings) throws Exception {
+    private PrivateKey getSpSignaturePrivateKey(Settings settings, Path configPath) throws Exception {
         try {
-            String setting = settings.get("sp.signature_private_key");
+            PrivateKey result = PemKeyReader.loadKeyFromStream(settings.get("sp.signature_private_key_password"),
+                    PemKeyReader.resolveStream("sp.signature_private_key", settings));
 
-            if (Strings.isNullOrEmpty(setting)) {
-                return null;
+            if (result == null) {
+                result = PemKeyReader.loadKeyFromFile(settings.get("sp.signature_private_key_password"),
+                        PemKeyReader.resolve("sp.signature_private_key_filepath", settings, configPath, false));
             }
 
-            return Util.loadPrivateKey(setting.trim());
+            return result;
         } catch (Exception e) {
             throw new Exception("Invalid value for sp.signature_private_key", e);
         }
