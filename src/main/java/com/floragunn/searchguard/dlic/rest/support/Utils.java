@@ -22,29 +22,46 @@ import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 
+import com.floragunn.searchguard.support.SearchGuardDeprecationHandler;
+
 public class Utils {
     
     public static Map<String, Object> convertJsonToxToStructuredMap(ToXContent jsonContent) {
-        Map<String, Object> disabledEndpointsSettings = null;
+        Map<String, Object> map = null;
         try {
             final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, false);
-            disabledEndpointsSettings = XContentHelper.convertToMap(bytes, false, XContentType.JSON).v2();
+            map = XContentHelper.convertToMap(bytes, false, XContentType.JSON).v2();
         } catch (IOException e1) {
             throw ExceptionsHelper.convertToElastic(e1);
         }
         
-        return disabledEndpointsSettings;
+        return map;
+    }
+    
+    public static Map<String, Object> convertJsonToxToStructuredMap(String jsonContent) {
+        try (XContentParser parser = XContentType.JSON.xContent().createParser(NamedXContentRegistry.EMPTY, SearchGuardDeprecationHandler.INSTANCE, jsonContent)) {
+            return parser.map();
+        } catch (IOException e1) {
+            throw ExceptionsHelper.convertToElastic(e1);
+        }
     }
     
     public static BytesReference convertStructuredMapToBytes(Map<String, Object> structuredMap) {
         try {
             return BytesReference.bytes(JsonXContent.contentBuilder().map(structuredMap));
+        } catch (IOException e) {
+            throw new ElasticsearchParseException("Failed to convert map", e);
+        }
+    }
+    
+    public static String convertStructuredMapToJson(Map<String, Object> structuredMap) {
+        try {
+            return XContentHelper.convertToJson(convertStructuredMapToBytes(structuredMap), false, XContentType.JSON);
         } catch (IOException e) {
             throw new ElasticsearchParseException("Failed to convert map", e);
         }

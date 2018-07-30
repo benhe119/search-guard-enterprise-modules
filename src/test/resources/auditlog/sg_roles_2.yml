@@ -1,0 +1,47 @@
+sg_all_access:
+  cluster:
+    - '*'
+  indices:
+    '*':
+      '*':  
+        - READ
+        
+sg_picard:
+  cluster:
+    - '**'
+  indices:
+    'pica*':
+      '*':  
+        - READ
+
+sg_dls_without_field_perm:
+  cluster:
+    - '*'
+  indices:
+    'deals':
+       '*':  
+         - READ
+       _fls_:
+         - 'customer.*'
+         - zip
+       _dls_: | 
+                 {
+                   "range" : {
+                      "amount" : {
+                          "gte" : 1000,
+                          "lte" : 20000
+                      }
+                    }
+                 }
+                 
+sg_dls_without_field_perm3:
+  cluster:
+    - '*'
+  indices:
+    'deals':
+       '*':  
+         - READ
+       _fls_:
+         - 'customer.*'
+         - zip
+       _dls_: '{"term" : {"msgid" : "12"}}'
