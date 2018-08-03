@@ -14,11 +14,6 @@
 
 package com.floragunn.dlic.auth.http.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.impl.TextCodec;
-
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.Key;
@@ -44,6 +39,11 @@ import org.elasticsearch.rest.RestStatus;
 
 import com.floragunn.searchguard.auth.HTTPAuthenticator;
 import com.floragunn.searchguard.user.AuthCredentials;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.impl.TextCodec;
 
 public class HTTPJwtAuthenticator implements HTTPAuthenticator {
 
@@ -152,8 +152,10 @@ public class HTTPJwtAuthenticator implements HTTPAuthenticator {
         final int index;
         if((index = jwtToken.toLowerCase().indexOf(BEARER)) > -1) { //detect Bearer 
             jwtToken = jwtToken.substring(index+BEARER.length());
+        } else {
+        	log.warn("No Bearer scheme found in header");
         }
-                
+        
         try {
             final Claims claims = jwtParser.parseClaimsJws(jwtToken).getBody();
             
