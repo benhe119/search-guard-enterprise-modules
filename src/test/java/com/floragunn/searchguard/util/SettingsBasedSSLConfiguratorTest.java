@@ -14,6 +14,9 @@
 
 package com.floragunn.searchguard.util;
 
+import static org.hamcrest.CoreMatchers.either;
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -63,7 +66,6 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -166,7 +168,6 @@ public class SettingsBasedSSLConfiguratorTest {
     }
 
     @Test
-    @Ignore
     public void testPemClientAuthFailure() throws Exception {
 
         try (TestServer testServer = new TestServer("sslConfigurator/pem/truststore.jks",
@@ -188,7 +189,10 @@ public class SettingsBasedSSLConfiguratorTest {
             try (CloseableHttpClient httpClient = HttpClients.custom()
                     .setSSLSocketFactory(sslConfig.toSSLConnectionSocketFactory()).build()) {
 
-                thrown.expect(SocketException.class);
+                // Due to some race condition in Java's internal network stack, this can be one
+                // of the following exceptions
+
+                thrown.expect(either(instanceOf(SocketException.class)).or(instanceOf(SSLHandshakeException.class)));
 
                 try (CloseableHttpResponse response = httpClient.execute(new HttpGet(testServer.getUri()))) {
                     Assert.fail("Connection should have failed due to wrong client cert");
@@ -225,7 +229,6 @@ public class SettingsBasedSSLConfiguratorTest {
             }
         }
     }
-    
 
     @Test
     public void testPemHostnameVerificationOff() throws Exception {
