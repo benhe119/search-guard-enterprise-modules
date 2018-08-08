@@ -38,6 +38,7 @@ public class SamlHTTPMetadataResolver extends HTTPMetadataResolver {
         super(createHttpClient(esSettings, configPath), esSettings.get("idp.metadata_url"));
         setId(HTTPSamlAuthenticator.class.getName() + "_" + (++componentIdCounter));
         setRequireValidMetadata(true);
+        setFailFastInitialization(false);
         BasicParserPool basicParserPool = new BasicParserPool();
         basicParserPool.initialize();
         setParserPool(basicParserPool);
