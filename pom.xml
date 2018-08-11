@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.floragunn</groupId>
     <artifactId>search-guard-parent</artifactId>
-    <version>6.20.0</version>
+    <version>6.21.0</version>
   </parent>
 
   <artifactId>dlic-search-guard-enterprise-modules</artifactId>
@@ -26,7 +26,7 @@
 
   <properties>
     <sg2.version>6.x-HEAD-SNAPSHOT</sg2.version>
-    <elasticsearch.version>6.3.0</elasticsearch.version>
+    <elasticsearch.version>6.3.2</elasticsearch.version>
 
     <!-- deps -->
     <log4j.version>2.9.1</log4j.version>
