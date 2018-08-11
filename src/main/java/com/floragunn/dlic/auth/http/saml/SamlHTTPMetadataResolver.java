@@ -38,6 +38,10 @@ public class SamlHTTPMetadataResolver extends HTTPMetadataResolver {
         super(createHttpClient(esSettings, configPath), esSettings.get("idp.metadata_url"));
         setId(HTTPSamlAuthenticator.class.getName() + "_" + (++componentIdCounter));
         setRequireValidMetadata(true);
+        setFailFastInitialization(false);
+        setMinRefreshDelay(esSettings.getAsLong("idp.min_refresh_delay", 60L * 1000L));
+        setMaxRefreshDelay(esSettings.getAsLong("idp.max_refresh_delay", 14400000L));
+        setRefreshDelayFactor(esSettings.getAsFloat("idp.refresh_delay_factor", 0.75f));
         BasicParserPool basicParserPool = new BasicParserPool();
         basicParserPool.initialize();
         setParserPool(basicParserPool);
