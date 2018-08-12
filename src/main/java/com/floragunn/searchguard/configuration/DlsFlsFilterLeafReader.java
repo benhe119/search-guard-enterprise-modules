@@ -1,15 +1,15 @@
 /*
  * Copyright 2016-2017 by floragunn GmbH - All rights reserved
- * 
+ *
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed here is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * 
- * This software is free of charge for non-commercial and academic use. 
- * For commercial use in a production environment you have to obtain a license 
+ *
+ * This software is free of charge for non-commercial and academic use.
+ * For commercial use in a production environment you have to obtain a license
  * from https://floragunn.com
- * 
+ *
  */
 
 package com.floragunn.searchguard.configuration;
@@ -20,8 +20,10 @@ package com.floragunn.searchguard.configuration;
 //https://github.com/salyh/elasticsearch-security-plugin/blob/4b53974a43b270ae77ebe79d635e2484230c9d01/src/main/java/org/elasticsearch/plugins/security/filter/DlsWriteFilter.java
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -46,16 +48,27 @@ import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
+import org.bouncycastle.crypto.digests.Blake2bDigest;
+import org.bouncycastle.util.encoders.Hex;
+import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.util.concurrent.ThreadContext;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
+import org.elasticsearch.index.IndexService;
+import org.elasticsearch.index.shard.ShardId;
 
+import com.floragunn.searchguard.auditlog.AuditLog;
+import com.floragunn.searchguard.compliance.ComplianceConfig;
+import com.floragunn.searchguard.compliance.FieldReadCallback;
+import com.floragunn.searchguard.support.MapUtils;
 import com.floragunn.searchguard.support.WildcardMatcher;
+import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 
@@ -72,13 +85,31 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private String[] excludes;
     private boolean canOptimize = true;
     private Function<Map<String, ?>, Map<String, Object>> filterFunction;
+    private final IndexService indexService;
+    private final ThreadContext threadContext;
+    private final ClusterService clusterService;
+    private final ComplianceConfig complianceConfig;
+    private final AuditLog auditlog;
+    private final Set<String> maskedFields;
+    private final ShardId shardId;
     private BitSet bs;
-
-    DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes, final BitSetProducer bsp) {
-        super(delegate);
+    
+    DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes,
+            final BitSetProducer bsp, final IndexService indexService, final ThreadContext threadContext,
+            final ClusterService clusterService, final ComplianceConfig complianceConfig,
+            final AuditLog auditlog, final Set<String> maskedFields, final ShardId shardId) {
+        super(delegate);        
+        
+        this.indexService = indexService;
+        this.threadContext = threadContext;
+        this.clusterService = clusterService;
+        this.complianceConfig = complianceConfig;
+        this.auditlog = auditlog;
+        this.maskedFields = maskedFields;
+        this.shardId = shardId;
         flsEnabled = includesExcludes != null && !includesExcludes.isEmpty();
         dlsEnabled = bsp != null;
-        
+
         if (flsEnabled) {
 
             final FieldInfos infos = delegate.getFieldInfos();
@@ -91,7 +122,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 }
 
                 final char firstChar = incExc.charAt(0);
-                
+
                 if (firstChar == '!' || firstChar == '~') {
                     excludesSet.add(incExc.substring(1));
                 } else {
@@ -136,7 +167,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
                     this.includes = includesSet.toArray(EMPTY_STRING_ARRAY);
                 }
-                
+
                 if (!excludesSet.isEmpty()) {
                     filterFunction = XContentMapValues.filter(null, excludes);
                 } else {
@@ -147,15 +178,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             final FieldInfo[] tmp = new FieldInfo[i];
             System.arraycopy(fa, 0, tmp, 0, i);
             this.flsFieldInfos = new FieldInfos(tmp);
-            
-            
-            
+
+
+
         } else {
             this.includesSet = null;
             this.excludesSet = null;
             this.flsFieldInfos = null;
         }
-        
+
+            
         if(dlsEnabled) {
             try {
                 bs = bsp.getBitSet(this.getContext());
@@ -169,15 +201,32 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         private final Set<String> includes;
         private final BitSetProducer bsp;
+        private final IndexService indexService;
+        private final ThreadContext threadContext;
+        private final ClusterService clusterService;
+        private final ComplianceConfig complianceConfig;
+        private final AuditLog auditlog;
+        private final Set<String> maskedFields;
+        private final ShardId shardId;
 
-        public DlsFlsSubReaderWrapper(final Set<String> includes, final BitSetProducer bsp) {
+        public DlsFlsSubReaderWrapper(final Set<String> includes, final BitSetProducer bsp,
+                final IndexService indexService, final ThreadContext threadContext,
+                final ClusterService clusterService, final ComplianceConfig complianceConfig,
+                final AuditLog auditlog, final Set<String> maskedFields, ShardId shardId) {
             this.includes = includes;
             this.bsp = bsp;
+            this.indexService = indexService;
+            this.threadContext = threadContext;
+            this.clusterService = clusterService;
+            this.complianceConfig = complianceConfig;
+            this.auditlog = auditlog;
+            this.maskedFields = maskedFields;
+            this.shardId = shardId;
         }
 
         @Override
         public LeafReader wrap(final LeafReader reader) {
-            return new DlsFlsFilterLeafReader(reader, includes, bsp);
+            return new DlsFlsFilterLeafReader(reader, includes, bsp, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
         }
 
     }
@@ -186,18 +235,35 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         private final Set<String> includes;
         private final BitSetProducer bsp;
+        private final IndexService indexService;
+        private final ThreadContext threadContext;
+        private final ClusterService clusterService;
+        private final ComplianceConfig complianceConfig;
+        private final AuditLog auditlog;
+        private final Set<String> maskedFields;
+        private final ShardId shardId;
 
-        public DlsFlsDirectoryReader(final DirectoryReader in, final Set<String> includes, final BitSetProducer bsp) throws IOException {
-            super(in, new DlsFlsSubReaderWrapper(includes, bsp));
+        public DlsFlsDirectoryReader(final DirectoryReader in, final Set<String> includes, final BitSetProducer bsp,
+                final IndexService indexService, final ThreadContext threadContext,
+                final ClusterService clusterService, final ComplianceConfig complianceConfig,
+                final AuditLog auditlog, final Set<String> maskedFields, ShardId shardId) throws IOException {
+            super(in, new DlsFlsSubReaderWrapper(includes, bsp, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId));
             this.includes = includes;
             this.bsp = bsp;
+            this.indexService = indexService;
+            this.threadContext = threadContext;
+            this.clusterService = clusterService;
+            this.complianceConfig = complianceConfig;
+            this.auditlog = auditlog;
+            this.maskedFields = maskedFields;
+            this.shardId = shardId;
         }
 
         @Override
         protected DirectoryReader doWrapDirectoryReader(final DirectoryReader in) throws IOException {
-            return new DlsFlsDirectoryReader(in, includes, bsp);
+            return new DlsFlsDirectoryReader(in, includes, bsp, indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
         }
-        
+
         @Override
         public CacheHelper getReaderCacheHelper() {
             return in.getReaderCacheHelper();
@@ -206,32 +272,121 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
-        if(flsEnabled) {
-            in.document(docID, new FlsStoredFieldVisitor(visitor));
+        final boolean maskFields = (complianceConfig.isEnabled() && maskedFields != null && maskedFields.size() > 0);
+        
+        if(complianceConfig.readHistoryEnabledForIndex(indexService.index().getName())) {
+            final ComplianceAwareStoredFieldVisitor cv = new ComplianceAwareStoredFieldVisitor(visitor);
+            
+            if(flsEnabled) {
+                in.document(docID, new FlsStoredFieldVisitor(maskFields?new HashingStoredFieldVisitor(cv):cv));
+            } else {
+                in.document(docID, maskFields?new HashingStoredFieldVisitor(cv):cv);
+            }
+
+            cv.finished();
         } else {
-            in.document(docID, visitor);
+            if(flsEnabled) {
+                in.document(docID, new FlsStoredFieldVisitor(maskFields?new HashingStoredFieldVisitor(visitor):visitor));
+            } else {
+                in.document(docID, maskFields?new HashingStoredFieldVisitor(visitor):visitor);
+            }
         }
+
     }
 
     private boolean isFls(final String name) {
-        
+
         if(!flsEnabled) {
             return true;
         }
-        
+
         return flsFieldInfos.fieldInfo(name) != null;
     }
 
     @Override
     public FieldInfos getFieldInfos() {
-        
+
         if(!flsEnabled) {
             return in.getFieldInfos();
         }
-        
+
         return flsFieldInfos;
     }
 
+    private class ComplianceAwareStoredFieldVisitor extends StoredFieldVisitor {
+
+        private final StoredFieldVisitor delegate;
+        private FieldReadCallback fieldReadCallback = 
+                new FieldReadCallback(threadContext, indexService, clusterService, complianceConfig, auditlog, maskedFields, shardId);
+
+        public ComplianceAwareStoredFieldVisitor(final StoredFieldVisitor delegate) {
+            super();
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void binaryField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
+            fieldReadCallback.binaryFieldRead(fieldInfo, value);
+            delegate.binaryField(fieldInfo, value);
+        }
+
+
+        @Override
+        public Status needsField(final FieldInfo fieldInfo) throws IOException {
+            return delegate.needsField(fieldInfo);
+        }
+
+        @Override
+        public int hashCode() {
+            return delegate.hashCode();
+        }
+
+        @Override
+        public void stringField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
+            fieldReadCallback.stringFieldRead(fieldInfo, value);
+            delegate.stringField(fieldInfo, value);
+        }
+
+        @Override
+        public void intField(final FieldInfo fieldInfo, final int value) throws IOException {
+            fieldReadCallback.numericFieldRead(fieldInfo, value);
+            delegate.intField(fieldInfo, value);
+        }
+
+        @Override
+        public void longField(final FieldInfo fieldInfo, final long value) throws IOException {
+            fieldReadCallback.numericFieldRead(fieldInfo, value);
+            delegate.longField(fieldInfo, value);
+        }
+
+        @Override
+        public void floatField(final FieldInfo fieldInfo, final float value) throws IOException {
+            fieldReadCallback.numericFieldRead(fieldInfo, value);
+            delegate.floatField(fieldInfo, value);
+        }
+
+        @Override
+        public void doubleField(final FieldInfo fieldInfo, final double value) throws IOException {
+            fieldReadCallback.numericFieldRead(fieldInfo, value);
+            delegate.doubleField(fieldInfo, value);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            return delegate.equals(obj);
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
+
+        public void finished() {
+            fieldReadCallback.finished();
+            fieldReadCallback = null;
+        }
+
+    }
 
     private class FlsStoredFieldVisitor extends StoredFieldVisitor {
 
@@ -249,7 +404,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 final BytesReference bytesRef = new BytesArray(value);
                 final Tuple<XContentType, Map<String, Object>> bytesRefTuple = XContentHelper.convertToMap(bytesRef, false, XContentType.JSON);
                 Map<String, Object> filteredSource = bytesRefTuple.v2();
-                
+
                 if (!canOptimize) {
                     filteredSource = filterFunction.apply(bytesRefTuple.v2());
                 } else {
@@ -259,7 +414,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                         filteredSource.keySet().retainAll(includesSet);
                     }
                 }
-                
+
                 final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
                 delegate.binaryField(fieldInfo, BytesReference.toBytes(xBuilder.bytes()));
             } else {
@@ -267,7 +422,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             }
         }
 
-        
+
         @Override
         public Status needsField(final FieldInfo fieldInfo) throws IOException {
             return isFls(fieldInfo.name) ? delegate.needsField(fieldInfo) : Status.NO;
@@ -312,7 +467,105 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         public String toString() {
             return delegate.toString();
         }
+    }
+    
+    private class HashingStoredFieldVisitor extends StoredFieldVisitor {
 
+        private final StoredFieldVisitor delegate;
+
+        public HashingStoredFieldVisitor(final StoredFieldVisitor delegate) {
+            super();
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void binaryField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
+
+            if (fieldInfo.name.equals("_source")) {
+                final BytesReference bytesRef = new BytesArray(value);
+                final Tuple<XContentType, Map<String, Object>> bytesRefTuple = XContentHelper.convertToMap(bytesRef, false, XContentType.JSON);
+                Map<String, Object> filteredSource = bytesRefTuple.v2();
+                MapUtils.deepTraverseMap(filteredSource, HASH_CB);
+                final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
+                delegate.binaryField(fieldInfo, BytesReference.toBytes(xBuilder.bytes()));
+            } else {
+                delegate.binaryField(fieldInfo, value);
+            }
+        }
+
+
+        @Override
+        public Status needsField(final FieldInfo fieldInfo) throws IOException {
+            return isFls(fieldInfo.name) ? delegate.needsField(fieldInfo) : Status.NO;
+        }
+
+        @Override
+        public int hashCode() {
+            return delegate.hashCode();
+        }
+
+        @Override
+        public void stringField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
+            delegate.stringField(fieldInfo, hash(value));
+        }
+
+        @Override
+        public void intField(final FieldInfo fieldInfo, final int value) throws IOException {
+            delegate.intField(fieldInfo, value);
+        }
+
+        @Override
+        public void longField(final FieldInfo fieldInfo, final long value) throws IOException {
+            delegate.longField(fieldInfo, value);
+        }
+
+        @Override
+        public void floatField(final FieldInfo fieldInfo, final float value) throws IOException {
+            delegate.floatField(fieldInfo, value);
+        }
+
+        @Override
+        public void doubleField(final FieldInfo fieldInfo, final double value) throws IOException {
+            delegate.doubleField(fieldInfo, value);
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            return delegate.equals(obj);
+        }
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
+    }
+    
+    private byte[] hash(byte[] in) {
+        final Blake2bDigest hash = new Blake2bDigest(null, 32, null, complianceConfig.getSalt16());
+        hash.update(in, 0, in.length);
+        final byte[] out = new byte[hash.getDigestSize()];
+        hash.doFinal(out, 0);
+        return Hex.encode(out);
+    }
+    
+    private String hash(String in) {
+        return new String(hash(in.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+    }
+    
+    private final MapUtils.Callback HASH_CB = new HashingCallback();
+    
+    private class HashingCallback implements MapUtils.Callback {
+        @Override
+        public void call(String key, Map<String, Object> map, List<String> stack) {
+            Object v = map.get(key);
+            if(v != null && v instanceof String) {
+                final String field = stack.isEmpty()?key:Joiner.on('.').join(stack)+"."+key;
+                if(WildcardMatcher.matchAny(maskedFields, field)) {
+                    map.replace(key, hash((String) v));
+                }
+            }
+        }
+        
     }
 
     @Override
@@ -384,7 +637,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     public NumericDocValues getNormValues(final String field) throws IOException {
         return isFls(field) ? in.getNormValues(field) : null;
     }
-    
+
     @Override
     public PointValues getPointValues(String field) throws IOException {
         return isFls(field) ? in.getPointValues(field) : null;
@@ -402,7 +655,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public Bits getLiveDocs() {
-        
+
         if(dlsEnabled) {
             final Bits currentLiveDocs = in.getLiveDocs();
             
