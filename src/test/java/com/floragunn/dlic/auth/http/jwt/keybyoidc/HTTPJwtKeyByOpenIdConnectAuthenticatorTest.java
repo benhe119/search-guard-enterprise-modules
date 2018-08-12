@@ -22,8 +22,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.floragunn.dlic.auth.http.jwt.FakeRestRequest;
 import com.floragunn.searchguard.user.AuthCredentials;
+import com.floragunn.searchguard.util.FakeRestRequest;
 import com.google.common.collect.ImmutableMap;
 
 public class HTTPJwtKeyByOpenIdConnectAuthenticatorTest {
