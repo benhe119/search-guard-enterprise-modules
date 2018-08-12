@@ -14,19 +14,13 @@
 
 package com.floragunn.searchguard.configuration;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionRequest;
-import org.elasticsearch.action.CompositeIndicesRequest;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest.Replaceable;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -40,7 +34,6 @@ import org.elasticsearch.action.get.MultiGetRequest.Item;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.replication.ReplicationRequest;
 import org.elasticsearch.action.support.single.shard.SingleShardRequest;
 import org.elasticsearch.action.termvectors.MultiTermVectorsRequest;
@@ -52,12 +45,10 @@ import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 
-import com.floragunn.searchguard.configuration.PrivilegesEvaluator.IndexType;
 import com.floragunn.searchguard.user.User;
 
 public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
 
-    private final static IndicesOptions DEFAULT_INDICES_OPTIONS = IndicesOptions.lenientExpandOpen();
     private static final String USER_TENANT = "__user__";
     private static final String EMPTY_STRING = "";
 
@@ -297,200 +288,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             log.warn("Dont know what to do (2) with {}", request.getClass());
         }
     }
-
-    @Override
-    public boolean replaceAllowedIndices(final ActionRequest request, final String action, final User user, final Settings config,
-            final Map<String, Set<PrivilegesEvaluator.IndexType>> leftOvers) {
-
-        final boolean enabled = config.getAsBoolean("searchguard.dynamic.kibana.do_not_fail_on_forbidden", false);
-
-        if (!enabled || leftOvers.size() == 0) {
-            return false;
-        }
-
-        if (!action.startsWith("indices:data/read/") 
-                && !action.startsWith("indices:admin/mappings/fields/get")) {
-            return false;
-        }
-        
-        Entry<String, Set<IndexType>> min = null;
-        
-        //find role with smallest number of leftovers
-        //what when two ore more als equal in size??
-        
-        for(Entry<String, Set<IndexType>> entry: leftOvers.entrySet()) {
-            if(min == null || entry.getValue().size() < min.getValue().size()) {
-                min = entry;
-            }
-        }
-        
-        if(min == null) {
-            log.warn("No valid leftover found");
-            return false;
-        }
-
-        final Set<String> leftOversIndex = new HashSet<String>();
-
-        for (IndexType indexType: min.getValue()) {
-            leftOversIndex.add(indexType.getIndex());
-        }
-
-        if(log.isDebugEnabled()) {
-            log.debug("handle {}/{} for leftovers {}", action, request.getClass(), leftOversIndex);
-        }
-        
-        if (request instanceof CompositeIndicesRequest) {
-            
-            if(request instanceof BulkRequest) {
-
-                for(DocWriteRequest<?> ar: ((BulkRequest) request).requests()) {
-                    final boolean ok = applyIndexReduce0(ar, action, leftOversIndex);
-                    if (!ok) {
-                        return false;
-                    }
-                }
-                
-            } else if(request instanceof MultiGetRequest) {
-                
-                for(Item item: ((MultiGetRequest) request).getItems()) {
-                    final boolean ok = applyIndexReduce0(item, action, leftOversIndex);
-                    if (!ok) {
-                        return false;
-                    }
-                }
-                
-            } else if(request instanceof MultiSearchRequest) {
-                
-                for(ActionRequest ar: ((MultiSearchRequest) request).requests()) {
-                    final boolean ok = applyIndexReduce0(ar, action, leftOversIndex);
-                    if (!ok) {
-                        return false;
-                    }
-                }
-                
-            } else if(request instanceof MultiTermVectorsRequest) {
-                
-                for(ActionRequest ar: (Iterable<TermVectorsRequest>) () -> ((MultiTermVectorsRequest) request).iterator()) {
-                    final boolean ok = applyIndexReduce0(ar, action, leftOversIndex);
-                    if (!ok) {
-                        return false;
-                    }
-                }
-                
-            } else if (request instanceof Replaceable) {
-                applyIndexReduce0(request, action, leftOversIndex);
-            } else {
-                log.warn("Can not handle composite request of type '"+request.getClass()+"' here");
-            }
-
-            return true;
-
-        } else {
-            return applyIndexReduce0(request, action, leftOversIndex);
-        }
-    }
-
-    private boolean applyIndexReduce0(final Object request, final String action, final Set<String> leftOversIndex) {
-
-        if (request instanceof Replaceable) {
-            final Replaceable ir = (Replaceable) request;
-            
-            if(log.isDebugEnabled()) {
-                log.debug("handle Replaceable, indices: {}", Arrays.toString(ir.indices()));
-            }
-            
-            final String[] resolved = resolve(ir.indices(), leftOversIndex);
-            
-            if(resolved == null) {
-                return false;
-            }
-            
-            ir.indices(resolved);
-        } else if (request instanceof SingleShardRequest) {
-            final SingleShardRequest<?> gr = (SingleShardRequest<?>) request;
-            final String[] indices = gr.indices();
-            final String index = gr.index();
-
-            final List<String> indicesL = new ArrayList<String>();
-
-            if (index != null) {
-                indicesL.add(index);
-            }
-
-            if (indices != null && indices.length > 0) {
-                indicesL.addAll(Arrays.asList(indices));
-            }
-
-            if(log.isDebugEnabled()) {
-                log.debug("handle SingleShardRequest, indices: {}", indicesL);
-            }
-            
-            final String[] resolved = resolve(indicesL.toArray(new String[0]), leftOversIndex);
-            
-            if(resolved == null) {
-                return false;
-            }
-            
-            gr.index(resolved[0]);
-            
-            //if (r.length == 0) {
-            //    gr.index(EMPTY_STRING);
-            //}
-
-        } else if (request instanceof MultiGetRequest.Item) {
-            final MultiGetRequest.Item i = (MultiGetRequest.Item) request;
-            
-            if(log.isDebugEnabled()) {
-                log.debug("handle MultiGetRequest.Item, indices: {}", Arrays.toString(i.indices()));
-            }
-            
-            final String[] resolved = resolve(i.indices(), leftOversIndex);
-            
-            if(resolved == null) {
-                return false;
-            }
-            
-            i.index(resolved[0]);
-            
-        } else {
-            log.error(request.getClass() + " not supported");
-            return false;
-        }
-
-        return true;
-    }
-    
-    private String[] resolve(final String[] unresolved, final Set<String> leftOversIndex) {
-
-        if (leftOversIndex.contains("*") || leftOversIndex.contains("_all")) {
-            
-            if(log.isDebugEnabled()) {
-                log.debug("resolved {} with {} to [''] because of * leftovers", Arrays.toString(unresolved), leftOversIndex);
-            }
-            
-            return null;
-        }
-
-        final String[] concreteIndices = resolver.concreteIndexNames(clusterService.state(), DEFAULT_INDICES_OPTIONS, unresolved);
-        final Set<String> survivors = new HashSet<String>(Arrays.asList(concreteIndices));
-        survivors.removeAll(leftOversIndex);
-
-        if (survivors.isEmpty()) {
-            
-            if(log.isDebugEnabled()) {
-                log.debug("resolved {} with {} to [''] because of no survivors", Arrays.toString(unresolved), leftOversIndex);
-            }
-            
-            return null;
-        }
-        
-        if(log.isDebugEnabled()) {
-            log.debug("resolved {} with {} - survived: {}", Arrays.toString(unresolved), leftOversIndex, survivors);
-        }
-
-        return survivors.toArray(new String[0]);
-    }
-
 
     private String toUserIndexName(final String originalKibanaIndex, final String tenant) {
         
