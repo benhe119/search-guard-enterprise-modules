@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -41,14 +40,11 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.util.concurrent.ThreadContext.StoredContext;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
-import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestController;
@@ -144,7 +140,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return badRequestResponse("No " + getResourceName() + " specified");
 		}
 
-		final Settings existingAsSettings = loadAsSettings(getConfigName());
+		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
 		
 		// check if resource is read only
 		Boolean readOnly = existingAsSettings.getAsBoolean(name+ "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
@@ -173,7 +169,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return badRequestResponse("No " + getResourceName() + " specified");
 		}
 
-		final Settings existingAsSettings = loadAsSettings(getConfigName());
+		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
 		
 		// check if resource is writeable
 		Boolean readOnly = existingAsSettings.getAsBoolean(name+ "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
@@ -209,7 +205,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		final String resourcename = request.param("name");
 
-		final Settings configurationSettings = loadAsSettings(getConfigName());
+		final Settings configurationSettings = loadAsSettings(getConfigName(), true);
 
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
@@ -232,12 +228,12 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	}
 
 
-	protected final Settings.Builder load(final String config) {
-		return Settings.builder().put(loadAsSettings(config));
+	protected final Settings.Builder load(final String config, boolean triggerComplianceWhenCached) {
+		return Settings.builder().put(loadAsSettings(config, triggerComplianceWhenCached));
 	}
 
-	protected final Settings loadAsSettings(final String config) {
-		return cl.getConfiguration(config);
+	protected final Settings loadAsSettings(final String config, boolean triggerComplianceWhenCached) {
+		return cl.getConfiguration(config, triggerComplianceWhenCached);
 	}
 
 	protected boolean ensureIndexExists(final Client client) {
@@ -328,9 +324,16 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		final List<Throwable> exception = new ArrayList<Throwable>(1);
 		final Tuple<String[], RestResponse> response;
 
+		final Object originalUser = threadPool.getThreadContext().getTransient(ConfigConstants.SG_USER);
+		final Object originalRemoteAddress = threadPool.getThreadContext().getTransient(ConfigConstants.SG_REMOTE_ADDRESS);
+		final Object originalOrigin = threadPool.getThreadContext().getTransient(ConfigConstants.SG_ORIGIN);
+		
 		try (StoredContext ctx = threadPool.getThreadContext().stashContext()) {
 
 			threadPool.getThreadContext().putHeader(ConfigConstants.SG_CONF_REQUEST_HEADER, "true");
+			threadPool.getThreadContext().putTransient(ConfigConstants.SG_USER, originalUser);
+			threadPool.getThreadContext().putTransient(ConfigConstants.SG_REMOTE_ADDRESS, originalRemoteAddress);
+			threadPool.getThreadContext().putTransient(ConfigConstants.SG_ORIGIN, originalOrigin);
 
 			response = handleApiRequest(request, client);
 
