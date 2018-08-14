@@ -30,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.floragunn.searchguard.user.AuthCredentials;
+import com.floragunn.searchguard.util.FakeRestRequest;
 import com.google.common.io.BaseEncoding;
 
 public class HTTPJwtAuthenticatorTest {

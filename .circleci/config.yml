@@ -3,7 +3,7 @@ jobs:
   build:
     parallelism: 4
     working_directory: ~/circleci-sg
-    resource_class: large
+    resource_class: xlarge
     docker:
       - image: circleci/openjdk:8-jdk-browsers
     steps:
@@ -31,7 +31,7 @@ jobs:
       - store_artifacts:
           path: /.circleci-task-data
       - deploy:
-          name: Maybe Deploy
+          name: Maybe Sonar and Deploy
           command: |
             mvn deploy -DskipTests -s settings.xml
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
