@@ -6,6 +6,17 @@ sg_all_access:
       '*':  
         - '*'
 
+sg_masked:
+  cluster:
+    - '*'
+  indices:
+    '*':
+      '*':
+        - indices:data/read/*
+      _masked_fields_:
+        - '*ip*'
+
+
 sg_midsized_deals:
   cluster:
     - '*'
