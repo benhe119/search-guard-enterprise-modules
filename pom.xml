@@ -15,6 +15,12 @@
   </parent>
 
   <artifactId>dlic-search-guard-enterprise-modules</artifactId>
+  
+  <!-- When performing a automated release "version" must be something like:
+       <esversion>-<sgenterpriseversion>-SNAPSHOT
+       
+       Example: 6.3.2-32.1-SNAPSHOT
+  -->
   <version>6.3.2-32.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -24,7 +30,15 @@
   <inceptionYear>2016</inceptionYear>
 
   <properties>
-    <sg2.version>6.3.2-23.1-api</sg2.version>
+  
+    <!-- When performing a automated release "sg2.version" must be something like:
+         <esversion>-<sgversion>-SNAPSHOT
+       
+         Example: 6.3.2-23.1-SNAPSHOT
+         
+         (Creating a "api" version and release is handled automatically by the release scripts)
+    -->
+    <sg2.version>6.3.2-23.1-SNAPSHOT</sg2.version>
     <elasticsearch.version>6.3.2</elasticsearch.version>
 
     <!-- deps -->
