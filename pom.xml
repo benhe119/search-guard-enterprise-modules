@@ -25,9 +25,9 @@
 
   <properties>
     <sg2.version>6.x-HEAD-SNAPSHOT</sg2.version>
-    <elasticsearch.version>6.3.2</elasticsearch.version>
+    <elasticsearch.version>6.4.0</elasticsearch.version>
     <!-- deps -->
-    <log4j.version>2.9.1</log4j.version>
+    <log4j.version>2.11.1</log4j.version>
     <jjwt.version>0.9.1</jjwt.version>
     <ldaptive.version>1.2.3</ldaptive.version>
     <jackson-databind.version>2.8.11.1</jackson-databind.version>
