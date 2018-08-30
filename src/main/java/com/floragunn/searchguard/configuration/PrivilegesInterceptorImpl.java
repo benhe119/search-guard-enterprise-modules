@@ -14,6 +14,7 @@
 
 package com.floragunn.searchguard.configuration;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -208,12 +209,13 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             return null;
         }
 
-        // TODO is this right? this is the private tenant, right? this probably has a different config key?
-        if (USER_TENANT.equals(requestedTenant)) {
-            requestedTenant = user.getName();
+        Set<String> tenantPermissions;
+        
+        if (isPrivateTenant(requestedTenant)) {
+            tenantPermissions = Collections.singleton("kibana:saved_objects/*");
+        } else {
+            tenantPermissions = roles.getApplicationPermissionsForTenant(requestedTenant);
         }
-
-        Set<String> tenantPermissions = roles.getApplicationPermissionsForTenant(requestedTenant);
 
         if (tenantPermissions.isEmpty()) {
             return false;
@@ -227,14 +229,8 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
 
     }
 
-    private boolean isReadOnly(Set<String> tenantPermissions) {
-        for (String permission : tenantPermissions) {
-            if (permission.startsWith("kibana:") && !permission.endsWith("/read")) {
-                return false;
-            }
-        }
-
-        return true;
+    private boolean isPrivateTenant(String requestedTenant) {
+        return USER_TENANT.equals(requestedTenant);
     }
 
     private void replaceIndex(final ActionRequest request, final String oldIndexName, final String newIndexName,
