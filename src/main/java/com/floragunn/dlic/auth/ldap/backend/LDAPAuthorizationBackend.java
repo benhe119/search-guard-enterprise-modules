@@ -14,6 +14,8 @@
 
 package com.floragunn.dlic.auth.ldap.backend;
 
+import io.netty.util.internal.PlatformDependent;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,6 +29,7 @@ import java.security.PrivilegedExceptionAction;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +39,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.ArrayList;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -56,13 +58,17 @@ import org.ldaptive.DefaultConnectionFactory;
 import org.ldaptive.LdapAttribute;
 import org.ldaptive.LdapEntry;
 import org.ldaptive.LdapException;
+import org.ldaptive.Response;
 import org.ldaptive.SearchScope;
+import org.ldaptive.control.RequestControl;
+import org.ldaptive.provider.ProviderConnection;
 import org.ldaptive.sasl.ExternalConfig;
 import org.ldaptive.ssl.AllowAnyHostnameVerifier;
 import org.ldaptive.ssl.CredentialConfig;
 import org.ldaptive.ssl.CredentialConfigFactory;
 import org.ldaptive.ssl.HostnameVerifyingTrustManager;
 import org.ldaptive.ssl.SslConfig;
+import org.ldaptive.ssl.ThreadLocalTLSSocketFactory;
 
 import com.floragunn.dlic.auth.ldap.LdapUser;
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
@@ -110,7 +116,14 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<Connection>() {
                 @Override
                 public Connection run() throws Exception {
-                    return getConnection0(settings, configPath);
+                    boolean isJava9OrHigher = PlatformDependent.javaVersion() >= 9;
+                    ClassLoader originalClassloader = null;
+                    if(isJava9OrHigher) {
+                        originalClassloader = Thread.currentThread().getContextClassLoader();
+                        Thread.currentThread().setContextClassLoader(new Java9CL());
+                    }
+                    
+                    return getConnection0(settings, configPath, originalClassloader, isJava9OrHigher);
                 }
             });
         } catch (PrivilegedActionException e) {
@@ -120,7 +133,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
     }
     
 	@SuppressWarnings("unchecked")
-	private static Connection getConnection0(final Settings settings, final Path configPath) throws KeyStoreException, NoSuchAlgorithmException,
+	private static Connection getConnection0(final Settings settings, final Path configPath, final ClassLoader cl, final boolean needRestore) throws KeyStoreException, NoSuchAlgorithmException,
     CertificateException, FileNotFoundException, IOException, LdapException {
         final boolean enableSSL = settings.getAsBoolean(ConfigConstants.LDAPS_ENABLE_SSL, false);
 
@@ -214,8 +227,81 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                 throw new LdapException("Unable to connect to any of those ldap servers " + ldapHosts + " due to "+lastException, lastException);
             }
         }
+        
+        final Connection delegate = connection;
 
-        return connection;
+        return new Connection() {
+            
+            @Override
+            public Response<Void> reopen(BindRequest request) throws LdapException {
+                return delegate.reopen(request);
+            }
+            
+            @Override
+            public Response<Void> reopen() throws LdapException {
+                return delegate.reopen();
+            }
+            
+            @Override
+            public Response<Void> open(BindRequest request) throws LdapException {
+                return delegate.open(request);
+            }
+            
+            @Override
+            public Response<Void> open() throws LdapException {
+                return delegate.open();
+            }
+            
+            @Override
+            public boolean isOpen() {
+                return delegate.isOpen();
+            }
+            
+            @Override
+            public ProviderConnection getProviderConnection() {
+                return delegate.getProviderConnection();
+            }
+            
+            @Override
+            public ConnectionConfig getConnectionConfig() {
+                return delegate.getConnectionConfig();
+            }
+            
+            @Override
+            public void close(RequestControl[] controls) {
+                try {
+                    delegate.close(controls);
+                } finally {
+                    restoreClassLoader();
+                }
+            }
+            
+            @Override
+            public void close() {
+                try {
+                    delegate.close(); 
+                } finally {
+                    restoreClassLoader();
+                }
+            }
+            
+            
+            private void restoreClassLoader() {
+                if(needRestore) {
+                    try {
+                        AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+                            @Override
+                            public Void run() throws Exception {
+                                Thread.currentThread().setContextClassLoader(cl);
+                                return null;
+                            }
+                        });
+                    } catch (PrivilegedActionException e) {
+                        log.warn("Unable to restore classloader because of "+e.getException(), e.getException());
+                    }
+                }
+            }
+        };
     }
     
 
@@ -682,4 +768,27 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
         return null;
     }
 
+    private final static Class clazz = ThreadLocalTLSSocketFactory.class;
+    
+    private final static class Java9CL extends ClassLoader {
+
+        public Java9CL() {
+            super();
+        }
+
+        public Java9CL(ClassLoader parent) {
+            super(parent);
+        }
+
+        @Override
+        public Class loadClass(String name) throws ClassNotFoundException {
+            
+            if(!name.equalsIgnoreCase("org.ldaptive.ssl.ThreadLocalTLSSocketFactory")) {
+                return super.loadClass(name);
+            }
+
+            return clazz;
+        }
+
+    }
 }
