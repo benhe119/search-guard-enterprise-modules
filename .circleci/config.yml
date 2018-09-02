@@ -5,19 +5,20 @@ jobs:
     working_directory: ~/circleci-sg
     resource_class: xlarge
     docker:
-      - image: circleci/openjdk:11-jdk-browsers
+      - image: circleci/openjdk:${SG_JAVA_BUILD_VERSION:-11}-jdk-browsers
     steps:
+      - run:
+          name: Install and Update
+          command: sudo apt-get update -yqq && sudo apt-get install -yqq libapr1 openssl libxml2-utils
       - run:
           name: Versions
           command: 'uname -a;java -version;openssl version'
       - checkout
       - restore_cache:
-          key: circleci-sg-{{ checksum "pom.xml" }}
-      - run: mvn dependency:go-offline
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: circleci-sg-{{ checksum "pom.xml" }}
+          keys:
+            - maven-repo-v3-{{ .Branch }}-{{ checksum "pom.xml" }}
+            - maven-repo-v3-{{ .Branch }}-
+            - maven-repo-v3-
       - run:
           command: |
             set -x
@@ -25,7 +26,7 @@ jobs:
             TESTFILES="$(circleci tests glob **/*Test*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
             echo "$TESTFILES"
             cd ~/circleci-sg
-            mvn -Pcoverage verify -Dtest="$TESTFILES"
+            mvn -U -Pcoverage verify -Dtest="$TESTFILES"
       - store_test_results:
           path: target/surefire-reports
       - store_artifacts:
@@ -33,23 +34,30 @@ jobs:
       - deploy:
           name: Maybe Sonar and Deploy
           command: |
-            mvn deploy -DskipTests -s settings.xml
+            mvn deploy -U  -DskipTests -s settings.xml
+            
+            set +e
+            
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              mvn -Pcoverage sonar:sonar -Dsonar.organization=floragunncom-github -Dsonar.login=$SONAR_LOGIN -Dsonar.host.url=https://sonarcloud.io
+              mvn -U -Pcoverage sonar:sonar -Dsonar.organization=floragunncom-github -Dsonar.login=$SONAR_LOGIN -Dsonar.host.url=https://sonarcloud.io
             fi
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: maven-repo-v3-{{ .Branch }}-{{ checksum "pom.xml" }}
 
-workflows:
-  version: 2
-  commit:
-    jobs:
-      - build
-  nightly:
-    triggers:
-      - schedule:
-          cron: "30 * * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build
+#workflows:
+#  version: 2
+#  commit:
+#    jobs:
+#      - build
+#  nightly:
+#    triggers:
+#      - schedule:
+#          cron: "30 * * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
+#    jobs:
+#      - build
