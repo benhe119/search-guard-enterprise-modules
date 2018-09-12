@@ -18,6 +18,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.WeakKeyException;
 
 import java.nio.file.Path;
 import java.security.AccessController;
@@ -176,6 +178,9 @@ public class HTTPJwtAuthenticator implements HTTPAuthenticator {
             
             return ac;        
             
+        } catch (WeakKeyException e) {
+            log.error("Cannot authenticate user with JWT because of "+e, e);
+            return null;
         } catch (Exception e) {
             if(log.isDebugEnabled()) {
                 log.debug("Invalid or expired JWT token.", e);
