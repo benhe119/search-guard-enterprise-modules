@@ -163,5 +163,22 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 		Assert.assertTrue(response.getBody().contains("Resource 'GET' is read-only."));
 
+		// -- Filter by application
+	    rh.sendHTTPClientCertificate = true;
+
+	    response = rh.executeGetRequest("/_searchguard/api/actiongroups?application=kibana", new Header[0]);
+	    Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+	    settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+	    permissions = settings.getAsList("KIBANA_RECURSIVE.permissions");
+	    Assert.assertTrue(permissions.stream().allMatch(permission -> permission.startsWith("kibana:") || permission.startsWith("KIBANA_")));
+	    
+	       // -- Filter by application; negate
+        rh.sendHTTPClientCertificate = true;
+
+        response = rh.executeGetRequest("/_searchguard/api/actiongroups?application=-kibana", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+        permissions = settings.getAsList("KIBANA_RECURSIVE.permissions");
+        Assert.assertTrue(permissions.stream().allMatch(permission -> !permission.startsWith("kibana:")));
 	}
 }
