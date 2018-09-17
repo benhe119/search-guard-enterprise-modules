@@ -190,7 +190,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                     if(enableClientAuth && bindDn == null) {
                         log.debug("Will perform External SASL bind because client cert authentication is enabled");
                     } else if(bindDn == null) {
-                        log.debug("Will perform anonymous bind because to bind dn is given");
+                        log.debug("Will perform anonymous bind because no bind dn is given");
                     } else if(enableClientAuth && bindDn != null) {
                         log.debug("Will perform simple bind with bind dn because to bind dn is given and overrides client cert authentication");
                     } else if(!enableClientAuth && bindDn != null) {
@@ -442,6 +442,9 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
         
         final boolean rolesearchEnabled = settings.getAsBoolean(ConfigConstants.LDAP_AUTHZ_ROLESEARCH_ENABLED, true);
 
+        if(log.isDebugEnabled()) {
+            log.debug("Try to get roles for {}", authenticatedUser);
+        }
         
         if(log.isTraceEnabled()) {
             log.trace("user class: {}", user.getClass());
@@ -628,6 +631,10 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             // add all non-LDAP roles from user attributes to the final set of backend roles
             for(String nonLdapRoleName : nonLdapRoles) {
             	user.addRole(nonLdapRoleName);
+            }
+            
+            if(log.isDebugEnabled()) {
+                log.debug("Roles for {} -> {}", user.getName(), user.getRoles());
             }
             
             if(log.isTraceEnabled()) {
