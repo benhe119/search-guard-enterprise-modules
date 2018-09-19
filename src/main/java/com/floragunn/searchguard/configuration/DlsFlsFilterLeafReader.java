@@ -48,6 +48,7 @@ import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.bouncycastle.util.encoders.Hex;
 import org.elasticsearch.cluster.service.ClusterService;
@@ -93,12 +94,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final Set<String> maskedFields;
     private final ShardId shardId;
     private BitSet bs;
+    private final boolean maskFields;
+    
     
     DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes,
             final BitSetProducer bsp, final IndexService indexService, final ThreadContext threadContext,
             final ClusterService clusterService, final ComplianceConfig complianceConfig,
             final AuditLog auditlog, final Set<String> maskedFields, final ShardId shardId) {
         super(delegate);        
+        
+        maskFields = (complianceConfig.isEnabled() && maskedFields != null && maskedFields.size() > 0);
         
         this.indexService = indexService;
         this.threadContext = threadContext;
@@ -272,8 +277,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
-        final boolean maskFields = (complianceConfig.isEnabled() && maskedFields != null && maskedFields.size() > 0);
-        
+         
         if(complianceConfig.readHistoryEnabledForIndex(indexService.index().getName())) {
             final ComplianceAwareStoredFieldVisitor cv = new ComplianceAwareStoredFieldVisitor(visitor);
             
@@ -506,7 +510,11 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         public void stringField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
-            delegate.stringField(fieldInfo, hash(value));
+            if(WildcardMatcher.matchAny(maskedFields, fieldInfo.name)) {
+                delegate.stringField(fieldInfo, hash(value));
+            } else {
+                delegate.stringField(fieldInfo, value);
+            }
         }
 
         @Override
@@ -548,6 +556,10 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         return Hex.encode(out);
     }
     
+    private BytesRef hash(BytesRef in) {
+        return new BytesRef(hash(in.bytes));
+    }
+    
     private String hash(String in) {
         return new String(hash(in.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
     }
@@ -558,10 +570,14 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         @Override
         public void call(String key, Map<String, Object> map, List<String> stack) {
             Object v = map.get(key);
-            if(v != null && v instanceof String) {
+            if(v != null && (v instanceof String || v instanceof byte[])) {
                 final String field = stack.isEmpty()?key:Joiner.on('.').join(stack)+"."+key;
                 if(WildcardMatcher.matchAny(maskedFields, field)) {
-                    map.replace(key, hash((String) v));
+                    if(v instanceof String) {
+                        map.replace(key, hash((String) v));
+                    } else {
+                        map.replace(key, hash((byte[]) v));
+                    }
                 }
             }
         }
@@ -596,7 +612,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                     return null;
                 }
 
-                return in.terms(field);
+                return wrapTerms(field, in.terms(field));
 
             }
 
@@ -615,12 +631,101 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public BinaryDocValues getBinaryDocValues(final String field) throws IOException {
-        return isFls(field) ? in.getBinaryDocValues(field) : null;
+        return isFls(field) ? wrapBinaryDocValues(field, in.getBinaryDocValues(field)) : null;
     }
+    
+    private BinaryDocValues wrapBinaryDocValues(final String field, final BinaryDocValues binaryDocValues) {
+        if(maskFields && binaryDocValues != null && WildcardMatcher.matchAny(maskedFields, field)) {
+            return new BinaryDocValues() {
+                
+                @Override
+                public int nextDoc() throws IOException {
+                    return binaryDocValues.nextDoc();
+                }
+                
+                @Override
+                public int docID() {
+                    return binaryDocValues.docID();
+                }
+                
+                @Override
+                public long cost() {
+                    return binaryDocValues.cost();
+                }
+                
+                @Override
+                public int advance(int target) throws IOException {
+                    return binaryDocValues.advance(target);
+                }
+                
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                    return binaryDocValues.advanceExact(target);
+                }
+
+                @Override
+                public BytesRef binaryValue() throws IOException {
+                    return hash(binaryDocValues.binaryValue());
+                }
+            };
+        } else {
+            return binaryDocValues;
+        }
+    }
+
 
     @Override
     public SortedDocValues getSortedDocValues(final String field) throws IOException {
-        return isFls(field) ? in.getSortedDocValues(field) : null;
+        return isFls(field) ? wrapSortedDocValues(field, in.getSortedDocValues(field)) : null;
+    }
+    
+    private SortedDocValues wrapSortedDocValues(final String field, final SortedDocValues sortedDocValues) {
+        if(maskFields && sortedDocValues != null && WildcardMatcher.matchAny(maskedFields, field)) {
+            return new SortedDocValues() {
+                
+                @Override
+                public int nextDoc() throws IOException {
+                    return sortedDocValues.nextDoc();
+                }
+                
+                @Override
+                public int docID() {
+                    return sortedDocValues.docID();
+                }
+                
+                @Override
+                public long cost() {
+                    return sortedDocValues.cost();
+                }
+                
+                @Override
+                public int advance(int target) throws IOException {
+                    return sortedDocValues.advance(target);
+                }
+                
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                    return sortedDocValues.advanceExact(target);
+                }
+                
+                @Override
+                public int ordValue() throws IOException {
+                    return sortedDocValues.ordValue();
+                }
+
+                @Override
+                public BytesRef lookupOrd(int ord) throws IOException {
+                    return hash(sortedDocValues.lookupOrd(ord));
+                }
+
+                @Override
+                public int getValueCount() {
+                    return sortedDocValues.getValueCount();
+                }
+            };
+        } else {
+            return sortedDocValues;
+        }
     }
 
     @Override
@@ -629,8 +734,57 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public SortedSetDocValues getSortedSetDocValues(final String field) throws IOException {
-        return isFls(field) ? in.getSortedSetDocValues(field) : null;
+    public SortedSetDocValues getSortedSetDocValues(final String field) throws IOException {  
+        return isFls(field) ? wrapSortedSetDocValues(field, in.getSortedSetDocValues(field)) : null;
+    }
+
+    private SortedSetDocValues wrapSortedSetDocValues(final String field, final SortedSetDocValues sortedSetDocValues) {
+        if(maskFields && sortedSetDocValues != null && WildcardMatcher.matchAny(maskedFields, field)) {
+            return new SortedSetDocValues() {
+                
+                @Override
+                public int nextDoc() throws IOException {
+                    return sortedSetDocValues.nextDoc();
+                }
+                
+                @Override
+                public int docID() {
+                    return sortedSetDocValues.docID();
+                }
+                
+                @Override
+                public long cost() {
+                    return sortedSetDocValues.cost();
+                }
+                
+                @Override
+                public int advance(int target) throws IOException {
+                    return sortedSetDocValues.advance(target);
+                }
+                
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                    return sortedSetDocValues.advanceExact(target);
+                }
+                
+                @Override
+                public long nextOrd() throws IOException {
+                    return sortedSetDocValues.nextOrd();
+                }
+                
+                @Override
+                public BytesRef lookupOrd(long ord) throws IOException {
+                    return hash(sortedSetDocValues.lookupOrd(ord));
+                }
+                
+                @Override
+                public long getValueCount() {
+                    return sortedSetDocValues.getValueCount();
+                }
+            };
+        } else {
+            return sortedSetDocValues;
+        }
     }
 
     @Override
@@ -645,9 +799,108 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public Terms terms(String field) throws IOException {
-        return isFls(field) ? in.terms(field) : null;
+        return isFls(field) ? wrapTerms(field, in.terms(field)) : null;
     }
 
+    private Terms wrapTerms(final String field, Terms terms) {
+        if(maskFields && terms != null && WildcardMatcher.matchAny(maskedFields, field)) {
+            return null;
+            /*return new Terms() {
+                
+                @Override
+                public long size() throws IOException {
+                    return terms.size();
+                }
+                
+                @Override
+                public TermsEnum iterator() throws IOException {
+                    final TermsEnum termsEnum = terms.iterator();
+                    return new TermsEnum() {
+
+                        @Override
+                        public BytesRef next() throws IOException {
+                            return termsEnum.next();
+                        }
+
+                        @Override
+                        public SeekStatus seekCeil(BytesRef text) throws IOException {
+                            return termsEnum.seekCeil(text);
+                        }
+
+                        @Override
+                        public void seekExact(long ord) throws IOException {
+                            termsEnum.seekExact(ord);
+                            
+                        }
+
+                        @Override
+                        public BytesRef term() throws IOException {
+                            return termsEnum.term();
+                        }
+
+                        @Override
+                        public long ord() throws IOException {
+                            return termsEnum.ord();
+                        }
+
+                        @Override
+                        public int docFreq() throws IOException {
+                            return termsEnum.docFreq();
+                        }
+
+                        @Override
+                        public long totalTermFreq() throws IOException {
+                            return termsEnum.totalTermFreq();
+                        }
+
+                        @Override
+                        public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
+                            return termsEnum.postings(reuse, flags);
+                        }
+                        
+                    };
+                }
+                
+                @Override
+                public boolean hasPositions() {
+                    return terms.hasPositions();
+                }
+                
+                @Override
+                public boolean hasPayloads() {
+                    return terms.hasPayloads();
+                }
+                
+                @Override
+                public boolean hasOffsets() {
+                    return terms.hasOffsets();
+                }
+                
+                @Override
+                public boolean hasFreqs() {
+                    return terms.hasFreqs();
+                }
+                
+                @Override
+                public long getSumTotalTermFreq() throws IOException {
+                    return terms.getSumTotalTermFreq();
+                }
+                
+                @Override
+                public long getSumDocFreq() throws IOException {
+                    return terms.getSumDocFreq();
+                }
+                
+                @Override
+                public int getDocCount() throws IOException {
+                    return terms.getDocCount();
+                }
+            }; */
+        } else {
+            return terms;
+        }
+    }
+    
     //@Override
     //public LeafMetaData getMetaData() {
     //    return in.getMetaData();
