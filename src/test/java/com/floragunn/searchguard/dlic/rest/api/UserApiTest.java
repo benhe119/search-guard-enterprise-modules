@@ -28,7 +28,6 @@ import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValid
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
-import com.google.common.base.Strings;
 
 public class UserApiTest extends AbstractRestApiUnitTest {
 
@@ -54,8 +53,8 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(1, settings.size());
-		Assert.assertEquals("$2a$12$VcCDgh2NDk07JGN0rjGbM.Ad41qVR/YFJcgHp0UGns5JDymv..TOG",
-				settings.get("admin.hash"));
+		// hash must be filtered
+		Assert.assertEquals("", settings.get("admin.hash"));
 
 		// GET, user does not exist
 		response = rh.executeGetRequest("/_searchguard/api/user/nothinghthere", new Header[0]);
@@ -164,7 +163,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/user/nagilum", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertTrue(settings.get("nagilum.hash").equals("$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m"));
+		Assert.assertTrue(settings.get("nagilum.hash").equals(""));
 
 		
 		// ROLES
@@ -231,8 +230,10 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/user/picard", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertNotEquals(null, Strings.emptyToNull(settings.get("picard.hash")));
-		List<String> roles = Arrays.asList(settings.getAsArray("picard.roles"));
+
+		Assert.assertEquals("", settings.get("picard.hash"));
+        List<String> roles = Arrays.asList(settings.getAsArray("picard.roles"));
+
 		Assert.assertNotNull(roles);
 		Assert.assertEquals(2, roles.size());
 		Assert.assertTrue(roles.contains("starfleet"));
