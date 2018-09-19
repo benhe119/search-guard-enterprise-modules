@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -41,14 +40,11 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.util.concurrent.ThreadContext.StoredContext;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
-import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestController;
@@ -209,14 +205,21 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		final String resourcename = request.param("name");
 
-		final Settings configurationSettings = loadAsSettings(getConfigName());
+		final Settings.Builder settingsBuilder = load(getConfigName());
+
+		// filter hidden resources and sensitive settings
+		filter(settingsBuilder);
+		
+		final Settings configurationSettings = settingsBuilder.build();
 
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
 			return new Tuple<String[], RestResponse>(new String[0],
 					new BytesRestResponse(RestStatus.OK, convertToJson(configurationSettings)));
 		}
-
+		
+		
+		
 		final Map<String, Object> con = 
 		        new HashMap<>(Utils.convertJsonToxToStructuredMap(Settings.builder().put(configurationSettings).build()))
 		        .entrySet()
@@ -245,6 +248,10 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return false;
 		}
 		return true;
+	}
+	
+	protected void filter(Settings.Builder builder) {
+	    // subclasses can implement resource filtering
 	}
 	
 	protected void save(final Client client, final RestRequest request, final String config,
