@@ -206,14 +206,21 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		final String resourcename = request.param("name");
 
-		final Settings configurationSettings = loadAsSettings(getConfigName(), true);
+		final Settings.Builder settingsBuilder = load(getConfigName(), true);
+
+		// filter hidden resources and sensitive settings
+		filter(settingsBuilder);
+		
+		final Settings configurationSettings = settingsBuilder.build();
 
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
 			return new Tuple<String[], RestResponse>(new String[0],
 					new BytesRestResponse(RestStatus.OK, convertToJson(configurationSettings)));
 		}
-
+		
+		
+		
 		final Map<String, Object> con = 
 		        new HashMap<>(Utils.convertJsonToxToStructuredMap(Settings.builder().put(configurationSettings).build()))
 		        .entrySet()
@@ -242,6 +249,10 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return false;
 		}
 		return true;
+	}
+	
+	protected void filter(Settings.Builder builder) {
+	    // subclasses can implement resource filtering
 	}
 	
 	protected void save(final Client client, final RestRequest request, final String config,
