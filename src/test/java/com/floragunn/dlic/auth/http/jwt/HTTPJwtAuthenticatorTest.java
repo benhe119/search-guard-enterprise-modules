@@ -21,6 +21,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,11 +36,16 @@ import com.google.common.io.BaseEncoding;
 
 public class HTTPJwtAuthenticatorTest {
 
+    final static byte[] secretKey = new byte[1024];
+    
+    static {
+        new SecureRandom().nextBytes(secretKey);
+    }
     
     @Test
     public void testNoKey() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().build();
         
@@ -56,7 +62,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testEmptyKey() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().put("signing_key", "").build();
         
@@ -73,7 +79,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testBadKey() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().put("signing_key", BaseEncoding.base64().encode(new byte[]{1,3,3,4,3,6,7,8,3,10})).build();
         
@@ -90,7 +96,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testTokenMissing() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().put("signing_key", BaseEncoding.base64().encode(secretKey)).build();
                 
@@ -104,7 +110,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testInvalid() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().put("signing_key", BaseEncoding.base64().encode(secretKey)).build();
         
@@ -121,7 +127,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testBearer() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().put("signing_key", BaseEncoding.base64().encode(secretKey)).build();
         
@@ -141,7 +147,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testBearerWrongPosition() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().put("signing_key", BaseEncoding.base64().encode(secretKey)).build();
         
@@ -158,7 +164,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testNonBearer() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder().put("signing_key", BaseEncoding.base64().encode(secretKey)).build();
         
@@ -177,7 +183,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testRoles() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -202,7 +208,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testNullClaim() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -227,7 +233,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testNonStringClaim() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -253,7 +259,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testRolesMissing() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -277,7 +283,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testWrongSubjectKey() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -300,7 +306,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testAlternativeSubject() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -326,7 +332,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testNonStringAlternativeSubject() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -352,7 +358,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testUrlParam() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -377,7 +383,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testExp() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -399,7 +405,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void testNbf() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))
@@ -422,6 +428,7 @@ public class HTTPJwtAuthenticatorTest {
     public void testRS256() throws Exception {
         
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(2048);
         KeyPair pair = keyGen.generateKeyPair();
         PrivateKey priv = pair.getPrivate();
         PublicKey pub = pair.getPublic();
@@ -443,6 +450,7 @@ public class HTTPJwtAuthenticatorTest {
     public void testES512() throws Exception {
         
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+        keyGen.initialize(571);
         KeyPair pair = keyGen.generateKeyPair();
         PrivateKey priv = pair.getPrivate();
         PublicKey pub = pair.getPublic();
@@ -463,7 +471,7 @@ public class HTTPJwtAuthenticatorTest {
     @Test
     public void rolesArray() throws Exception {
         
-        byte[] secretKey = new byte[]{1,2,3,4,5,6,7,8,9,10};
+        
         
         Settings settings = Settings.builder()
                 .put("signing_key", BaseEncoding.base64().encode(secretKey))

@@ -73,3 +73,7 @@ sg_bbb:
 sg_combined:
   users:
     - user_combined
+
+sg_masked:
+  users:
+    - user_masked
