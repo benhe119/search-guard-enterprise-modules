@@ -14,6 +14,13 @@
 
 package com.floragunn.dlic.auth.http.jwt;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.WeakKeyException;
+
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.Key;
@@ -39,11 +46,6 @@ import org.elasticsearch.rest.RestStatus;
 
 import com.floragunn.searchguard.auth.HTTPAuthenticator;
 import com.floragunn.searchguard.user.AuthCredentials;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.impl.TextCodec;
 
 public class HTTPJwtAuthenticator implements HTTPAuthenticator {
 
@@ -75,7 +77,7 @@ public class HTTPJwtAuthenticator implements HTTPAuthenticator {
                 signingKey = signingKey.replace("-----BEGIN PUBLIC KEY-----\n", "");
                 signingKey = signingKey.replace("-----END PUBLIC KEY-----", "");
 
-                byte[] decoded = TextCodec.BASE64.decode(signingKey);
+                byte[] decoded = Decoders.BASE64.decode(signingKey);
                 Key key = null;
 
                 try {
@@ -176,6 +178,9 @@ public class HTTPJwtAuthenticator implements HTTPAuthenticator {
             
             return ac;        
             
+        } catch (WeakKeyException e) {
+            log.error("Cannot authenticate user with JWT because of "+e, e);
+            return null;
         } catch (Exception e) {
             if(log.isDebugEnabled()) {
                 log.debug("Invalid or expired JWT token.", e);
