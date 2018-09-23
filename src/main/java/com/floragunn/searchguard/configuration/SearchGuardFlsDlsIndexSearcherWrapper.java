@@ -37,7 +37,7 @@ import com.floragunn.searchguard.compliance.ComplianceConfig;
 import com.floragunn.searchguard.compliance.ComplianceIndexingOperationListener;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.support.HeaderHelper;
-import com.floragunn.searchguard.support.WildcardMatcher;
+import com.floragunn.searchguard.support.SgUtils;
 import com.google.common.collect.Sets;
 
 public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearcherWrapper {
@@ -79,9 +79,9 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
             final Map<String, Set<String>> maskedFieldsMap = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                     ConfigConstants.SG_MASKED_FIELD_HEADER);
 
-            final String flsEval = evalMap(allowedFlsFields, index.getName());
-            final String dlsEval = evalMap(queries, index.getName());
-            final String maskedEval = evalMap(maskedFieldsMap, index.getName());
+            final String flsEval = SgUtils.evalMap(allowedFlsFields, index.getName());
+            final String dlsEval = SgUtils.evalMap(queries, index.getName());
+            final String maskedEval = SgUtils.evalMap(maskedFieldsMap, index.getName());
 
             if (flsEval != null) {
                 flsFields = new HashSet<>(metaFields);
@@ -121,31 +121,5 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
         }
 
         return searcher;
-    }
-
-    private String evalMap(final Map<String,Set<String>> map, final String index) {
-
-        if (map == null) {
-            return null;
-        }
-
-        if (map.get(index) != null) {
-            return index;
-        } else if (map.get("*") != null) {
-            return "*";
-        }
-        if (map.get("_all") != null) {
-            return "_all";
-        }
-
-        //regex
-        for(final String key: map.keySet()) {
-            if(WildcardMatcher.containsWildcard(key)
-                    && WildcardMatcher.match(key, index)) {
-                return key;
-            }
-        }
-
-        return null;
     }
 }

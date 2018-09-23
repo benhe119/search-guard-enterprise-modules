@@ -38,6 +38,8 @@ public class HttpClientTest extends SingleClusterTest {
                 .build();
 
         setup(Settings.EMPTY, new DynamicSgConfig(), settings);
+        
+        Thread.sleep(1000);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
                 .setBasicCredentials("admin", "admin").build()) {
@@ -82,6 +84,8 @@ public class HttpClientTest extends SingleClusterTest {
                 .build();
 
         setup(Settings.EMPTY, new DynamicSgConfig(), settings);
+        
+        Thread.sleep(1000);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
                 .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore.jks","changeit"), false)
@@ -113,6 +117,8 @@ public class HttpClientTest extends SingleClusterTest {
                 .build();
 
         setup(Settings.EMPTY, new DynamicSgConfig(), settings);
+        
+        Thread.sleep(1000);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
                 .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore.jks","changeit"), false)
