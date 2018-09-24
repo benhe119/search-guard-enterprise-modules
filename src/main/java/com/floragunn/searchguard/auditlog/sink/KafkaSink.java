@@ -54,7 +54,9 @@ public class KafkaSink extends AuditLogSink {
         final Properties producerProps = new Properties();
         
         for(String key: sinkSettings.names()) {
-            producerProps.put(key.replace('_', '.'), sinkSettings.get(key));
+            if(!key.equals("topic_name")) {
+                producerProps.put(key.replace('_', '.'), sinkSettings.get(key));
+            }
         }
         
 		producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName());

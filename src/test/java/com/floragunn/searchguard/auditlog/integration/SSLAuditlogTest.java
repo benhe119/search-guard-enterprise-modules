@@ -77,7 +77,7 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         setup(additionalSettings);
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
-        Thread.sleep(2000);
+        Thread.sleep(5000);
         response = rhMon.executeGetRequest("sg6-auditlog*/_refresh", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rhMon.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
@@ -113,7 +113,7 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         setup(additionalSettings);
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
-        Thread.sleep(2000);
+        Thread.sleep(5000);
         response = rhMon.executeGetRequest("sg6-auditlog*/_refresh", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rhMon.executeGetRequest("sg6-auditlog*/_search", encodeBasicHeader("admin", "admin"));
@@ -147,7 +147,7 @@ public class SSLAuditlogTest extends AbstractAuditlogiUnitTest {
         setup(additionalSettings);
         HttpResponse response = rh.executeGetRequest("_search");
         Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED, response.getStatusCode());
-        Thread.sleep(2000);
+        Thread.sleep(5000);
         response = rhMon.executeGetRequest("sg6-auditlog*/_refresh", encodeBasicHeader("admin", "admin"));
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rhMon.executeGetRequest("sg6-auditlog-*/_search", encodeBasicHeader("admin", "admin"));
