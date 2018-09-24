@@ -192,7 +192,10 @@ public class SettingsBasedSSLConfiguratorTest {
                 // Due to some race condition in Java's internal network stack, this can be one
                 // of the following exceptions
 
-                thrown.expect(either(instanceOf(SocketException.class)).or(instanceOf(SSLHandshakeException.class)));
+                thrown.expect(either(instanceOf(SocketException.class))
+                        .or(instanceOf(SSLHandshakeException.class))
+                        .or(instanceOf(SSLException.class)) //Java 11: javax.net.ssl.SSLException: readHandshakeRecord
+                        );
 
                 try (CloseableHttpResponse response = httpClient.execute(new HttpGet(testServer.getUri()))) {
                     Assert.fail("Connection should have failed due to wrong client cert");
