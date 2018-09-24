@@ -21,6 +21,7 @@ package com.floragunn.searchguard.configuration;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -48,10 +49,11 @@ import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.bouncycastle.util.encoders.Hex;
-import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.ExceptionsHelper;
+import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
@@ -66,7 +68,10 @@ import org.elasticsearch.index.shard.ShardId;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.compliance.ComplianceConfig;
 import com.floragunn.searchguard.compliance.FieldReadCallback;
+import com.floragunn.searchguard.support.ConfigConstants;
+import com.floragunn.searchguard.support.HeaderHelper;
 import com.floragunn.searchguard.support.MapUtils;
+import com.floragunn.searchguard.support.SgUtils;
 import com.floragunn.searchguard.support.WildcardMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
@@ -93,12 +98,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final Set<String> maskedFields;
     private final ShardId shardId;
     private BitSet bs;
+    private final boolean maskFields;
+    
     
     DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes,
             final BitSetProducer bsp, final IndexService indexService, final ThreadContext threadContext,
             final ClusterService clusterService, final ComplianceConfig complianceConfig,
             final AuditLog auditlog, final Set<String> maskedFields, final ShardId shardId) {
         super(delegate);        
+        
+        maskFields = (complianceConfig.isEnabled() && maskedFields != null && maskedFields.size() > 0);
         
         this.indexService = indexService;
         this.threadContext = threadContext;
@@ -272,8 +281,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
-        final boolean maskFields = (complianceConfig.isEnabled() && maskedFields != null && maskedFields.size() > 0);
-        
+         
         if(complianceConfig.readHistoryEnabledForIndex(indexService.index().getName())) {
             final ComplianceAwareStoredFieldVisitor cv = new ComplianceAwareStoredFieldVisitor(visitor);
             
@@ -506,7 +514,11 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         public void stringField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
-            delegate.stringField(fieldInfo, hash(value));
+            if(WildcardMatcher.matchAny(maskedFields, fieldInfo.name)) {
+                delegate.stringField(fieldInfo, hash(value));
+            } else {
+                delegate.stringField(fieldInfo, value);
+            }
         }
 
         @Override
@@ -548,7 +560,14 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         return Hex.encode(out);
     }
     
+    private BytesRef hash(BytesRef in) {
+        final BytesRef copy = BytesRef.deepCopyOf(in);
+        //System.out.println("AGG--Hash: "+copy.utf8ToString()+" -> "+new String(hash(copy.bytes))+" with Salt: "+Arrays.hashCode(complianceConfig.getSalt16()));
+        return new BytesRef(hash(copy.bytes));
+    }
+    
     private String hash(String in) {
+        //System.out.println("Search--Hash: "+in+" -> "+new String(hash(in.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)+" with Salt: "+Arrays.hashCode(complianceConfig.getSalt16()));;
         return new String(hash(in.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
     }
     
@@ -558,10 +577,14 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         @Override
         public void call(String key, Map<String, Object> map, List<String> stack) {
             Object v = map.get(key);
-            if(v != null && v instanceof String) {
+            if(v != null && (v instanceof String || v instanceof byte[])) {
                 final String field = stack.isEmpty()?key:Joiner.on('.').join(stack)+"."+key;
                 if(WildcardMatcher.matchAny(maskedFields, field)) {
-                    map.replace(key, hash((String) v));
+                    if(v instanceof String) {
+                        map.replace(key, hash((String) v));
+                    } else {
+                        map.replace(key, hash((byte[]) v));
+                    }
                 }
             }
         }
@@ -596,7 +619,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                     return null;
                 }
 
-                return in.terms(field);
+                return wrapTerms(field, in.terms(field));
 
             }
 
@@ -615,12 +638,123 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public BinaryDocValues getBinaryDocValues(final String field) throws IOException {
-        return isFls(field) ? in.getBinaryDocValues(field) : null;
+        return isFls(field) ? wrapBinaryDocValues(field, in.getBinaryDocValues(field)) : null;
     }
+    
+    private BinaryDocValues wrapBinaryDocValues(final String field, final BinaryDocValues binaryDocValues) {
+
+        if (binaryDocValues != null && evaluateMaskedFields(field)) {
+            return new BinaryDocValues() {
+
+                @Override
+                public int nextDoc() throws IOException {
+                    return binaryDocValues.nextDoc();
+                }
+
+                @Override
+                public int docID() {
+                    return binaryDocValues.docID();
+                }
+
+                @Override
+                public long cost() {
+                    return binaryDocValues.cost();
+                }
+
+                @Override
+                public int advance(int target) throws IOException {
+                    return binaryDocValues.advance(target);
+                }
+
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                    return binaryDocValues.advanceExact(target);
+                }
+
+                @Override
+                public BytesRef binaryValue() throws IOException {
+                    return hash(binaryDocValues.binaryValue());
+                }
+            };
+        } else {
+            return binaryDocValues;
+        }
+    }
+
 
     @Override
     public SortedDocValues getSortedDocValues(final String field) throws IOException {
-        return isFls(field) ? in.getSortedDocValues(field) : null;
+        return isFls(field) ? wrapSortedDocValues(field, in.getSortedDocValues(field)) : null;
+    }
+    
+    private SortedDocValues wrapSortedDocValues(final String field, final SortedDocValues sortedDocValues) {
+
+        if (sortedDocValues != null && evaluateMaskedFields(field)) {
+            return new SortedDocValues() {
+
+                @Override
+                public BytesRef binaryValue() throws IOException {
+                    return hash(sortedDocValues.binaryValue());
+                }
+
+                /*@Override
+                public int lookupTerm(BytesRef key) throws IOException {
+                    throw new RuntimeException("sdv lookupTerm");
+                }
+
+                @Override
+                public TermsEnum termsEnum() throws IOException {
+                    throw new RuntimeException("sdv termsEnum()");
+                }
+
+                @Override
+                public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
+                    throw new RuntimeException("sdv intersetc");
+                }*/
+
+                @Override
+                public int nextDoc() throws IOException {
+                    return sortedDocValues.nextDoc();
+                }
+
+                @Override
+                public int docID() {
+                    return sortedDocValues.docID();
+                }
+
+                @Override
+                public long cost() {
+                    return sortedDocValues.cost();
+                }
+
+                @Override
+                public int advance(int target) throws IOException {
+                    return sortedDocValues.advance(target);
+                }
+
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                    return sortedDocValues.advanceExact(target);
+                }
+
+                @Override
+                public int ordValue() throws IOException {
+                    return sortedDocValues.ordValue();
+                }
+
+                @Override
+                public BytesRef lookupOrd(int ord) throws IOException {
+                    return hash(sortedDocValues.lookupOrd(ord));
+                }
+
+                @Override
+                public int getValueCount() {
+                    return sortedDocValues.getValueCount();
+                }
+            };
+        } else {
+            return sortedDocValues;
+        }
     }
 
     @Override
@@ -629,8 +763,73 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     }
 
     @Override
-    public SortedSetDocValues getSortedSetDocValues(final String field) throws IOException {
-        return isFls(field) ? in.getSortedSetDocValues(field) : null;
+    public SortedSetDocValues getSortedSetDocValues(final String field) throws IOException {  
+        return isFls(field) ? wrapSortedSetDocValues(field, in.getSortedSetDocValues(field)) : null;
+    }
+
+    private SortedSetDocValues wrapSortedSetDocValues(final String field, final SortedSetDocValues sortedSetDocValues) {
+
+        if (sortedSetDocValues != null && evaluateMaskedFields(field)) {
+            return new SortedSetDocValues() {
+
+                /*@Override
+                public long lookupTerm(BytesRef key) throws IOException {
+                    throw new RuntimeException("ssdv lookupTerm");
+                }
+                
+                @Override
+                public TermsEnum termsEnum() throws IOException {
+                    throw new RuntimeException("ssdv termsenum");
+                }
+                
+                @Override
+                public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
+                    throw new RuntimeException("ssdv intersect");
+                }*/
+
+                @Override
+                public int nextDoc() throws IOException {
+                    return sortedSetDocValues.nextDoc();
+                }
+
+                @Override
+                public int docID() {
+                    return sortedSetDocValues.docID();
+                }
+
+                @Override
+                public long cost() {
+                    return sortedSetDocValues.cost();
+                }
+
+                @Override
+                public int advance(int target) throws IOException {
+                    return sortedSetDocValues.advance(target);
+                }
+
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                    return sortedSetDocValues.advanceExact(target);
+                }
+
+                @Override
+                public long nextOrd() throws IOException {
+                    return sortedSetDocValues.nextOrd();
+                }
+
+                @Override
+                public BytesRef lookupOrd(long ord) throws IOException {
+                    return hash(sortedSetDocValues.lookupOrd(ord));
+                }
+
+                @Override
+                public long getValueCount() {
+                    return sortedSetDocValues.getValueCount();
+                }
+            };
+        } else {
+            return sortedSetDocValues;
+        }
     }
 
     @Override
@@ -645,9 +844,17 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public Terms terms(String field) throws IOException {
-        return isFls(field) ? in.terms(field) : null;
+        return isFls(field) ? wrapTerms(field, in.terms(field)) : null;
     }
 
+    private Terms wrapTerms(final String field, Terms terms) {
+        if(evaluateMaskedFields(field)) {
+            return null;
+        } else {
+            return terms;
+        }
+    }
+    
     //@Override
     //public LeafMetaData getMetaData() {
     //    return in.getMetaData();
@@ -749,4 +956,26 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     public boolean hasDeletions() {
         return true;
     }
+    
+    private boolean evaluateMaskedFields(String field) {
+        
+        if(!complianceConfig.isEnabled()) {
+            return false;
+        }
+
+        final Map<String, Set<String>> maskedFieldsMap = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
+        ConfigConstants.SG_MASKED_FIELD_HEADER);
+        final String maskedEval = SgUtils.evalMap(maskedFieldsMap, indexService.index().getName());
+        
+        if(maskedEval != null) {
+            final Set<String> mf = maskedFieldsMap.get(maskedEval);
+            if(mf != null && !mf.isEmpty()) {
+                return WildcardMatcher.matchAny(mf, field);
+            }
+            
+        } 
+
+        return false;
+    }
+    
 }

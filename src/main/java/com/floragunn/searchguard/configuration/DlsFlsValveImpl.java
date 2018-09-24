@@ -38,12 +38,16 @@ public class DlsFlsValveImpl implements DlsFlsRequestValve {
      * @param listener
      * @return false on error
      */
-    public boolean invoke(final ActionRequest request, final ActionListener<?> listener, final Map<String,Set<String>> allowedFlsFields, final Map<String,Set<String>> queries) {
+    public boolean invoke(final ActionRequest request, final ActionListener<?> listener, 
+            final Map<String,Set<String>> allowedFlsFields, 
+            final Map<String,Set<String>> maskedFields, 
+            final Map<String,Set<String>> queries) {
         
         final boolean fls = allowedFlsFields != null && !allowedFlsFields.isEmpty();
+        final boolean masked = maskedFields != null && !maskedFields.isEmpty();
         final boolean dls = queries != null && !queries.isEmpty();
         
-        if(fls || dls) {
+        if(fls || masked || dls) {
             
             if(request instanceof RealtimeRequest) {
                 ((RealtimeRequest) request).realtime(Boolean.FALSE);
@@ -54,14 +58,14 @@ public class DlsFlsValveImpl implements DlsFlsRequestValve {
             }
             
             if(request instanceof UpdateRequest) {
-                listener.onFailure(new ElasticsearchSecurityException("Update is not supported when FLS or DLS is activated"));
+                listener.onFailure(new ElasticsearchSecurityException("Update is not supported when FLS or DLS or Fieldmasking is activated"));
                 return false;
             }
             
             if(request instanceof BulkRequest) {
                 for(DocWriteRequest<?> inner:((BulkRequest) request).requests()) {
                     if(inner instanceof UpdateRequest) {
-                        listener.onFailure(new ElasticsearchSecurityException("Update is not supported when FLS or DLS is activated"));
+                        listener.onFailure(new ElasticsearchSecurityException("Update is not supported when FLS or DLS or Fieldmasking is activated"));
                         return false;
                     }
                 }
@@ -70,14 +74,14 @@ public class DlsFlsValveImpl implements DlsFlsRequestValve {
             if(request instanceof BulkShardRequest) {
                 for(BulkItemRequest inner:((BulkShardRequest) request).items()) {
                     if(inner.request() instanceof UpdateRequest) {
-                        listener.onFailure(new ElasticsearchSecurityException("Update is not supported when FLS or DLS is activated"));
+                        listener.onFailure(new ElasticsearchSecurityException("Update is not supported when FLS or DLS or Fieldmasking is activated"));
                         return false;
                     }
                 }
             }
             
             if(request instanceof ResizeRequest) {
-                listener.onFailure(new ElasticsearchSecurityException("Resize is not supported when FLS or DLS is activated"));
+                listener.onFailure(new ElasticsearchSecurityException("Resize is not supported when FLS or DLS or Fieldmasking is activated"));
                 return false;
             }
             
