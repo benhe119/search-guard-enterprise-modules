@@ -16,6 +16,7 @@ package com.floragunn.searchguard.dlic.rest.api;
 
 
 import java.nio.file.Path;
+import java.util.Set;
 
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
@@ -73,12 +74,23 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 
 		}
 
-		final Settings config = loadAsSettings(configname);
+		final Settings.Builder configBuilder = load(configname);
+		filter(configBuilder, configname);
+		final Settings config = configBuilder.build();
 		
 		return new Tuple<String[], RestResponse>(new String[0],
 				new BytesRestResponse(RestStatus.OK, convertToJson(config)));
 	}
 
+	protected void filter(Settings.Builder builder, String resourceName) {
+	    // common filtering
+	    filter(builder);
+	    // filter sensitive resources for internal users
+        if (resourceName.equals("internalusers")) {
+            filterHashes(builder);
+        }	    
+	}
+        
 	@Override
 	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
 		return new NoOpValidator(method, ref);
@@ -101,4 +113,13 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 		request.param("configname");
 	}
 
+    private void filterHashes(Settings.Builder builder) {
+        // replace password hashes in addition. We must not remove them from the
+        // Builder since this would remove users completely if they
+        // do not have any addition properties like roles or attributes
+        Set<String> entries = builder.build().getAsGroups().keySet();
+        for (String key : entries) {
+            builder.put(key + ".hash", "");
+        }
+    }
 }
