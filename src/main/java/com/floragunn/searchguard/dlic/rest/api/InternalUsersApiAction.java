@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bouncycastle.crypto.generators.OpenBSDBCrypt;
@@ -136,7 +137,19 @@ public class InternalUsersApiAction extends AbstractApiAction {
 		}
 
 	}
-
+	
+	@Override
+	protected void filter(Settings.Builder builder) {
+	    super.filter(builder);
+	    // replace password hashes in addition. We must not remove them from the
+	    // Builder since this would remove users completely if they
+	    // do not have any addition properties like roles or attributes
+	    Set<String> entries = builder.build().getAsGroups().keySet();
+	    for (String key : entries) {
+            builder.put(key + ".hash", "");
+        }	    
+	}
+	
 	public static String hash(final char[] clearTextPassword) {
 	    final byte[] salt = new byte[16];
         new SecureRandom().nextBytes(salt);
