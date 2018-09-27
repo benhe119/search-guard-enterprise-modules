@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -297,6 +298,16 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             log.warn("Dont know what to do (2) with {}", request.getClass());
         }
     }
+    
+    private static boolean containsIndex(Set<IndexType> set, String index) {
+        for(IndexType t: set) {
+            if(t.getIndex().equals(index)) {
+                return true;
+            }
+        }
+    
+        return false;
+    }
 
     @Override
     public boolean replaceAllowedIndices(final ActionRequest request, final String action, final User user, final Settings config,
@@ -313,27 +324,27 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             return false;
         }
         
-        Entry<String, Set<IndexType>> min = null;
-        
-        //find role with smallest number of leftovers
-        //what when two ore more als equal in size??
-        
+        final Set<String> allLeftoverIndices = new HashSet<String>();
         for(Entry<String, Set<IndexType>> entry: leftOvers.entrySet()) {
-            if(min == null || entry.getValue().size() < min.getValue().size()) {
-                min = entry;
-            }
+            allLeftoverIndices.addAll(entry.getValue().stream().map(e->e.getIndex()).collect(Collectors.toSet()));
         }
-        
-        if(min == null) {
-            log.warn("No valid leftover found");
-            return false;
-        }
+
 
         final Set<String> leftOversIndex = new HashSet<String>();
 
-        for (IndexType indexType: min.getValue()) {
-            leftOversIndex.add(indexType.getIndex());
+        for(String leftover: allLeftoverIndices) {
+            
+            boolean noPerm=true;
+            
+            for(Entry<String, Set<IndexType>> entry: leftOvers.entrySet()) {
+                noPerm = containsIndex(entry.getValue(), leftover) && noPerm;
+            }
+            
+            if(noPerm) {
+                leftOversIndex.add(leftover);
+            }
         }
+
 
         if(log.isDebugEnabled()) {
             log.debug("handle {}/{} for leftovers {}", action, request.getClass(), leftOversIndex);
