@@ -113,6 +113,15 @@ sg_transport_client:
       #uncomment the following for sniffing
       #- cluster:monitor/state
 
+sg_internal:
+  hidden: true
+  cluster:
+    - CLUSTER_ALL
+  indices:
+    '*':
+      '*':
+        - ALL
+
 sg_kibana4:
   cluster: 
       - cluster:monitor/nodes/info

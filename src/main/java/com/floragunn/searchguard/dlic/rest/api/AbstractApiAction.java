@@ -142,8 +142,11 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
 		
-		// check if resource is read only
-        if (isReadOnly(existingAsSettings, name)) {
+		if (isHidden(existingAsSettings, name)) {
+            return notFound(getResourceName() + " " + name + " not found.");
+		}
+		
+		if (isReadOnly(existingAsSettings, name)) {
 			return forbidden("Resource '"+ name +"' is read-only.");
 		}
 		
@@ -169,8 +172,11 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		}
 
 		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
+
+		if (isHidden(existingAsSettings, name)) {
+            return forbidden("Resource '"+ name +"' is not available.");		    
+		}
 		
-		// check if resource is writeable
 		if (isReadOnly(existingAsSettings, name)) {
 			return forbidden("Resource '"+ name +"' is read-only.");
 		}
@@ -251,7 +257,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	protected void filter(Settings.Builder builder) {
 	    Settings settings = builder.build();
 	    
-        for (Map.Entry<String, Settings> entry : settings.getAsGroups().entrySet()) {
+        for (Map.Entry<String, Settings> entry : settings.getAsGroups(true).entrySet()) {
             if (entry.getValue().getAsBoolean("hidden", false)) {
                 for (String subKey : entry.getValue().keySet()) {
                     builder.remove(entry.getKey() + "." + subKey);
@@ -510,12 +516,13 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	}
 	
 	protected boolean isReadOnly(Settings settings, String resourceName) {
-	    boolean readOnly = settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
-        boolean hidden = settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_HIDDEN, Boolean.FALSE);
-        
-        return readOnly || hidden;
+	    return settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
 	}
 
+    protected boolean isHidden(Settings settings, String resourceName) {
+        return settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_HIDDEN, Boolean.FALSE);
+    }
+	
 	/**
 	 * Consume all defined parameters for the request. Before we handle the
 	 * request in subclasses where we actually need the parameter, some global

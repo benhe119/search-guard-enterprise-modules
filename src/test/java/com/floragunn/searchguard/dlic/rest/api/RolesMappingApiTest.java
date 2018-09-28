@@ -66,6 +66,10 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/rolesmapping", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
+	    // GET, rolesmapping is hidden
+        response = rh.executeGetRequest("/_searchguard/api/rolesmapping/sg_role_internal", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+		
 		// create index
 		setupStarfleetIndex();
 
@@ -89,6 +93,10 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeDeleteRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_library", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 
+        // hidden role
+        response = rh.executeDeleteRequest("/_searchguard/api/rolesmapping/sg_role_internal", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());		
+		
 		// remove complete role mapping for sg_role_starfleet_captains
 		response = rh.executeDeleteRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
@@ -170,6 +178,10 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 				FileHelper.loadFile("restapi/rolesmapping_all_access.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 
+        // hidden role
+        response = rh.executePutRequest("/_searchguard/api/rolesmapping/sg_role_internal", 
+                FileHelper.loadFile("restapi/rolesmapping_all_access.json"), new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode()); 		
 		
 		response = rh.executePutRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_captains",
 				FileHelper.loadFile("restapi/rolesmapping_all_access.json"), new Header[0]);
