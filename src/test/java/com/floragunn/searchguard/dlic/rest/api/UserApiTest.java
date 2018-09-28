@@ -132,6 +132,10 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeDeleteRequest("/_searchguard/api/user/sarek", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 
+        // try remove hidden user
+        response = rh.executeDeleteRequest("/_searchguard/api/user/q", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());		
+		
 		// now really remove user
 		deleteUser("nagilum");
 
