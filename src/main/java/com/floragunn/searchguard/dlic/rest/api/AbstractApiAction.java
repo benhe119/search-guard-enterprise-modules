@@ -238,7 +238,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 				new BytesRestResponse(RestStatus.OK, XContentHelper.convertToJson(Utils.convertStructuredMapToBytes(con), false, false, XContentType.JSON)));
 	}
 
-
 	protected final Settings.Builder load(final String config, boolean triggerComplianceWhenCached) {
 		return Settings.builder().put(loadAsSettings(config, triggerComplianceWhenCached));
 	}

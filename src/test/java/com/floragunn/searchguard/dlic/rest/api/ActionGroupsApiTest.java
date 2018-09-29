@@ -178,6 +178,47 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
         response = rh.executePutRequest("/_searchguard/api/actiongroup/INTERNAL", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
         Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
         
+        // -- PATCH
+        // PATCH on non-existing resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/actiongroups/imnothere", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
 
+        // PATCH read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/actiongroups/GET", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be not found
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/actiongroups/INTERNAL", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        
+        // PATCH value of hidden flag, must fail with validation error
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/actiongroups/CRUD", "[{ \"op\": \"add\", \"path\": \"/hidden\", \"value\": true }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+        
+        // PATCH with relative JSON pointer, must fail
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/actiongroups/CRUD", "[{ \"op\": \"add\", \"path\": \"1/INTERNAL/permissions/-\", \"value\": \"DELETE\" }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+                
+        // PATCH new format
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/actiongroups/CRUD", "[{ \"op\": \"add\", \"path\": \"/permissions/-\", \"value\": \"DELETE\" }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/actiongroups/CRUD", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+        permissions = settings.getAsList("CRUD.permissions");
+        Assert.assertNotNull(permissions);
+        Assert.assertEquals(3, permissions.size());
+        Assert.assertTrue(permissions.contains("READ"));
+        Assert.assertTrue(permissions.contains("WRITE"));        
+        Assert.assertTrue(permissions.contains("DELETE"));        
+
+        
 	}
 }
