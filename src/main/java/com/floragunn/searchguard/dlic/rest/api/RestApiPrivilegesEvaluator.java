@@ -409,7 +409,7 @@ public class RestApiPrivilegesEvaluator {
 			return "No client TLS certificate found in request";
 		}
 
-		if (!adminDNs.isAdmin(sslInfo.getPrincipal())) {
+		if (!adminDNs.isAdminDN(sslInfo.getPrincipal())) {
 			logger.warn("SG admin permissions required but {} is not an admin", sslInfo.getPrincipal());
 			return "SG admin permissions required but " + sslInfo.getPrincipal() + " is not an admin";
 		}
