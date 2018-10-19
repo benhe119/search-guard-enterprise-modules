@@ -225,6 +225,106 @@ public class MultitenancyTests extends SingleClusterTest {
 
     }
     
+    
+    @Test
+    public void testMtMulti() throws Exception {
+        final Settings settings = Settings.builder()
+                .build();
+        setup(settings);
+        
+        try (TransportClient tc = getInternalTransportClient()) {
+            String body = "{"+
+                    "\"type\" : \"index-pattern\","+
+                    "\"updated_at\" : \"2018-09-29T08:56:59.066Z\","+
+                    "\"index-pattern\" : {"+
+                      "\"title\" : \"humanresources\""+
+                     "}}";
+            Map indexSettings = new HashMap();
+            indexSettings.put("number_of_shards", 1);
+            indexSettings.put("number_of_replicas", 0);
+            tc.admin().indices().create(new CreateIndexRequest(".kibana_92668751_admin")
+                .settings(indexSettings))
+                .actionGet();
+
+            tc.index(new IndexRequest(".kibana_92668751_admin").type("doc")
+                    .id("index-pattern:9fbbd1a0-c3c5-11e8-a13f-71b8ea5a4f7b")
+                    .setRefreshPolicy(RefreshPolicy.IMMEDIATE)
+                    .source(body, XContentType.JSON)).actionGet();
+        }
+        
+        final RestHelper rh = nonSslRestHelper();
+
+        System.out.println("#### search");
+        HttpResponse res;
+        String body = "{\"query\" : {\"term\" : { \"_id\" : \"index-pattern:9fbbd1a0-c3c5-11e8-a13f-71b8ea5a4f7b\"}}}";
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest(".kibana/_search/?pretty",body, new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("admin", "admin"))).getStatusCode());
+        //System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("exception"));
+        Assert.assertTrue(res.getBody().contains("humanresources"));
+        Assert.assertTrue(res.getBody().contains("\"total\" : 1"));
+        Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
+        
+        System.out.println("#### msearch");
+        body = 
+                "{\"index\":\".kibana\", \"type\":\"doc\", \"ignore_unavailable\": false}"+System.lineSeparator()+
+                "{\"size\":10, \"query\":{\"bool\":{\"must\":{\"match_all\":{}}}}}"+System.lineSeparator();
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("_msearch/?pretty",body, new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("admin", "admin"))).getStatusCode());
+        //System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("exception"));
+        Assert.assertTrue(res.getBody().contains("humanresources"));
+        Assert.assertTrue(res.getBody().contains("\"total\" : 1"));
+        Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
+        
+        System.out.println("#### get");
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest(".kibana/doc/index-pattern:9fbbd1a0-c3c5-11e8-a13f-71b8ea5a4f7b?pretty", new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("admin", "admin"))).getStatusCode());
+        //System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("exception"));
+        Assert.assertTrue(res.getBody().contains("humanresources"));
+        Assert.assertTrue(res.getBody().contains("\"found\" : true"));
+        Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
+        
+        System.out.println("#### mget");
+        body = "{\"docs\" : [{\"_index\" : \".kibana\",\"_type\" : \"doc\",\"_id\" : \"index-pattern:9fbbd1a0-c3c5-11e8-a13f-71b8ea5a4f7b\"}]}";
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("_mget/?pretty",body, new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("admin", "admin"))).getStatusCode());
+        //System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("exception"));
+        Assert.assertTrue(res.getBody().contains("humanresources"));
+        Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
+        
+        System.out.println("#### index");
+        body = "{"+
+                "\"type\" : \"index-pattern\","+
+                "\"updated_at\" : \"2017-09-29T08:56:59.066Z\","+
+                "\"index-pattern\" : {"+
+                  "\"title\" : \"xyz\""+
+                 "}}";
+        Assert.assertEquals(HttpStatus.SC_CREATED, (res = rh.executePutRequest(".kibana/doc/abc?pretty",body, new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("admin", "admin"))).getStatusCode());
+        //System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("exception"));
+        Assert.assertTrue(res.getBody().contains("\"result\" : \"created\""));
+        Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
+        
+        System.out.println("#### bulk");
+        body = 
+                "{ \"index\" : { \"_index\" : \".kibana\", \"_type\" : \"doc\", \"_id\" : \"b1\" } }"+System.lineSeparator()+
+                "{ \"field1\" : \"value1\" }" +System.lineSeparator()+
+                "{ \"index\" : { \"_index\" : \".kibana\", \"_type\" : \"doc\", \"_id\" : \"b2\" } }"+System.lineSeparator()+
+                "{ \"field2\" : \"value2\" }"+System.lineSeparator();
+              
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePutRequest("_bulk?pretty",body, new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("admin", "admin"))).getStatusCode());
+        //System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("exception"));
+        Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
+        Assert.assertTrue(res.getBody().contains("\"errors\" : false"));
+        Assert.assertTrue(res.getBody().contains("\"result\" : \"created\""));
+                
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("_cat/indices", encodeBasicHeader("admin", "admin"))).getStatusCode());
+        Assert.assertEquals(2, res.getBody().split(".kibana").length);
+        Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
+        
+    }
+    
     @Test
     public void testKibanaAlias() throws Exception {
         final Settings settings = Settings.builder()
