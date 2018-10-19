@@ -17,11 +17,9 @@ package com.floragunn.searchguard.dlic.rest.api;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.bouncycastle.crypto.generators.OpenBSDBCrypt;
 import org.elasticsearch.client.Client;
@@ -33,9 +31,12 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
-import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.rest.RestResponse;
+import org.elasticsearch.threadpool.ThreadPool;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
@@ -46,7 +47,7 @@ import com.floragunn.searchguard.dlic.rest.validation.InternalUsersValidator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 import com.floragunn.searchguard.support.ConfigConstants;
 
-public class InternalUsersApiAction extends AbstractApiAction {
+public class InternalUsersApiAction extends PatchableResourceApiAction {
 
 	@Inject
 	public InternalUsersApiAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
@@ -66,6 +67,7 @@ public class InternalUsersApiAction extends AbstractApiAction {
 		controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/", this);
 		controller.registerHandler(Method.DELETE, "/_searchguard/api/internalusers/{name}", this);
 		controller.registerHandler(Method.PUT, "/_searchguard/api/internalusers/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/{name}", this);
 
 	}
 
@@ -148,6 +150,21 @@ public class InternalUsersApiAction extends AbstractApiAction {
 	    for (String key : entries) {
             builder.put(key + ".hash", "");
         }	    
+	}
+	
+	@Override
+    protected JsonNode applyPatch(JsonNode jsonPatch, JsonNode existingResourceAsJsonNode) {
+	    JsonNode result = super.applyPatch(jsonPatch, existingResourceAsJsonNode);
+	    JsonNode passwordNode = result.get("password");
+	    
+	    if (passwordNode != null) {
+	       String plainTextPassword = passwordNode.asText();
+	       
+	       ((ObjectNode) result).remove("password");
+	       ((ObjectNode) result).set("hash", new TextNode(hash(plainTextPassword.toCharArray())));
+	    }
+	    
+	    return result;
 	}
 	
 	public static String hash(final char[] clearTextPassword) {

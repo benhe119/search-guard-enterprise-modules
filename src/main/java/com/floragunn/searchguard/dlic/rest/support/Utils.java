@@ -27,6 +27,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.floragunn.searchguard.support.SearchGuardDeprecationHandler;
 
 public class Utils {
@@ -65,6 +67,16 @@ public class Utils {
         } catch (IOException e) {
             throw new ElasticsearchParseException("Failed to convert map", e);
         }
+    }
+    
+    public static JsonNode convertJsonToJackson(ToXContent jsonContent) {
+        try {
+            final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, false);
+            return new ObjectMapper().readTree(bytes.utf8ToString());
+        } catch (IOException e1) {
+            throw ExceptionsHelper.convertToElastic(e1);
+        }
+        
     }
     
 }
