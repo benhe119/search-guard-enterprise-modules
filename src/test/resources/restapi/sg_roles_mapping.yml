@@ -18,6 +18,12 @@ sg_role_starfleet_library:
     - 'starfleet*'
     - ambassador
 
+sg_role_internal:
+  hidden: true
+  backendroles:
+    - 'starfleet*'
+    - ambassador
+
 sg_role_vulcans:
   backendroles:
     - vulcangov

@@ -162,6 +162,22 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/actiongroup/GET", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 		Assert.assertTrue(response.getBody().contains("Resource 'GET' is read-only."));
+		
+		// -- GET hidden resource, must be 404
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executeGetRequest("/_searchguard/api/actiongroup/INTERNAL", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());		
+		
+		// -- DELETE hidden resource, must be 404
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executeDeleteRequest("/_searchguard/api/actiongroup/INTERNAL", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+
+        // -- PUT hidden resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePutRequest("/_searchguard/api/actiongroup/INTERNAL", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
 
 	}
 }

@@ -60,6 +60,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
+	    // hidden role
+        response = rh.executeGetRequest("/_searchguard/api/roles/sg_internal", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+		
 		// create index
 		setupStarfleetIndex();
 
@@ -72,6 +76,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		// TODO: only one doctype allowed for ES6
 		//checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
 
+		
 		// -- DELETE
 
 		rh.sendHTTPClientCertificate = true;
@@ -84,6 +89,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_transport_client", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 
+	    // hidden role
+        response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_internal", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+		
 		// remove complete role mapping for sg_role_starfleet_captains
 		response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
@@ -142,6 +151,11 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_transport_client",
 				FileHelper.loadFile("restapi/roles_captains.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+		
+        // put hidden role, must be forbidden
+        response = rh.executePutRequest("/_searchguard/api/roles/sg_internal",
+                FileHelper.loadFile("restapi/roles_captains.json"), new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());		
 		
 		// restore starfleet role
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet",
