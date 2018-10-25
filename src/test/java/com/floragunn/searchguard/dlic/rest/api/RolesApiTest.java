@@ -289,6 +289,60 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         Assert.assertNotNull(permissions);
         Assert.assertEquals(2, permissions.size());
         Assert.assertTrue(permissions.contains("READ"));
-        Assert.assertTrue(permissions.contains("SEARCH"));        
+        Assert.assertTrue(permissions.contains("SEARCH"));  
+        
+        // -- PATCH on whole config resource
+        // PATCH on non-existing resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/imnothere/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+
+        // PATCH read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/sg_transport_client/a\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be bad request
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/sg_internal/a\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        
+        // PATCH delete read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"remove\", \"path\": \"/sg_transport_client\" }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be bad request
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"remove\", \"path\": \"/sg_internal\"}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());        
+        
+        // PATCH value of hidden flag, must fail with validation error
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/newnewnew\", \"value\": {  \"hidden\": true, \"indices\": { \"sf\": { \"ships\": [\"READ\"]}}}}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+
+        // PATCH 
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {   \"indices\": { \"sf\": { \"ships\": [\"READ\"]}}}}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/roles/bulknew1", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+        permissions = settings.getAsList("bulknew1.indices.sf.ships");
+        Assert.assertNotNull(permissions);
+        Assert.assertEquals(1, permissions.size());
+        Assert.assertTrue(permissions.contains("READ"));
+        
+        // delete resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"remove\", \"path\": \"/bulknew1\"}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/roles/bulknew1", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        
+        
+        
 	}
 }

@@ -49,145 +49,149 @@ import com.floragunn.searchguard.support.ConfigConstants;
 
 public class InternalUsersApiAction extends PatchableResourceApiAction {
 
-	@Inject
-	public InternalUsersApiAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
-			final AdminDNs adminDNs, final IndexBaseConfigurationRepository cl, final ClusterService cs,
-            final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
-		super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool, auditLog);
+    @Inject
+    public InternalUsersApiAction(final Settings settings, final Path configPath, final RestController controller,
+            final Client client, final AdminDNs adminDNs, final IndexBaseConfigurationRepository cl,
+            final ClusterService cs, final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator,
+            ThreadPool threadPool, AuditLog auditLog) {
+        super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool,
+                auditLog);
 
-		// legacy mapping for backwards compatibility
-		// TODO: remove in SG7
-		controller.registerHandler(Method.GET, "/_searchguard/api/user/{name}", this);
-		controller.registerHandler(Method.GET, "/_searchguard/api/user/", this);
-		controller.registerHandler(Method.DELETE, "/_searchguard/api/user/{name}", this);
-		controller.registerHandler(Method.PUT, "/_searchguard/api/user/{name}", this);
+        // legacy mapping for backwards compatibility
+        // TODO: remove in SG7
+        controller.registerHandler(Method.GET, "/_searchguard/api/user/{name}", this);
+        controller.registerHandler(Method.GET, "/_searchguard/api/user/", this);
+        controller.registerHandler(Method.DELETE, "/_searchguard/api/user/{name}", this);
+        controller.registerHandler(Method.PUT, "/_searchguard/api/user/{name}", this);
 
-		// corrected mapping, introduced in SG6
-		controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/{name}", this);
-		controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/", this);
-		controller.registerHandler(Method.DELETE, "/_searchguard/api/internalusers/{name}", this);
-		controller.registerHandler(Method.PUT, "/_searchguard/api/internalusers/{name}", this);
+        // corrected mapping, introduced in SG6
+        controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/{name}", this);
+        controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/", this);
+        controller.registerHandler(Method.DELETE, "/_searchguard/api/internalusers/{name}", this);
+        controller.registerHandler(Method.PUT, "/_searchguard/api/internalusers/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/", this);
         controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/{name}", this);
 
-	}
+    }
 
-	@Override
-	protected Endpoint getEndpoint() {
-		return Endpoint.INTERNALUSERS;
-	}
-	
-	@Override
-	protected Tuple<String[], RestResponse> handlePut(final RestRequest request, final Client client,
-			final Settings.Builder additionalSettingsBuilder) throws Throwable {
-		
-		final String username = request.param("name");
-		
-		if (username == null || username.length() == 0) {
-			return badRequestResponse("No " + getResourceName() + " specified");
-		}
+    @Override
+    protected Endpoint getEndpoint() {
+        return Endpoint.INTERNALUSERS;
+    }
 
-		final Settings configurationSettings = loadAsSettings(getConfigName(), false);
-				
-		// check if resource is writeable
-		Boolean readOnly = configurationSettings.getAsBoolean(username+ "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
-		if (readOnly) {
-			return forbidden("Resource '"+ username +"' is read-only.");
-		}
+    @Override
+    protected Tuple<String[], RestResponse> handlePut(final RestRequest request, final Client client,
+            final Settings.Builder additionalSettingsBuilder) throws Throwable {
 
-		// if password is set, it takes precedence over hash
-		String plainTextPassword = additionalSettingsBuilder.get("password");
-		if (plainTextPassword != null && plainTextPassword.length() > 0) {
-			additionalSettingsBuilder.remove("password");
-			additionalSettingsBuilder.put("hash", hash(plainTextPassword.toCharArray()));
-		}
-				
-		// check if user exists
-		final Settings.Builder internaluser = load(ConfigConstants.CONFIGNAME_INTERNAL_USERS, false);		
-		final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(internaluser.build()); 
+        final String username = request.param("name");
 
-		boolean userExisted = config.containsKey(username);
+        if (username == null || username.length() == 0) {
+            return badRequestResponse("No " + getResourceName() + " specified");
+        }
 
-		// when updating an existing user password hash can be blank, which means no changes
-		
-		// sanity checks, hash is mandatory for newly created users
-		if(!userExisted && additionalSettingsBuilder.get("hash") == null) {
-			return badRequestResponse("Please specify either 'hash' or 'password' when creating a new internal user");		
-		}
+        final Settings configurationSettings = loadAsSettings(getConfigName(), false);
 
-		// for existing users, hash is optional
-		if(userExisted && additionalSettingsBuilder.get("hash") == null) {
-			// sanity check, this should usually not happen
-			@SuppressWarnings("unchecked")
-			Map<String, String> existingUserSettings = (Map<String, String>)config.get(username);
-			if (!existingUserSettings.containsKey("hash")) {
-				return internalErrorResponse("Existing user " + username+" has no password, and no new password or hash was specified");
-			}
-			additionalSettingsBuilder.put("hash", (String) existingUserSettings.get("hash"));
-		}
+        // check if resource is writeable
+        Boolean readOnly = configurationSettings.getAsBoolean(username + "." + ConfigConstants.CONFIGKEY_READONLY,
+                Boolean.FALSE);
+        if (readOnly) {
+            return forbidden("Resource '" + username + "' is read-only.");
+        }
 
-		config.remove(username);
+        // if password is set, it takes precedence over hash
+        String plainTextPassword = additionalSettingsBuilder.get("password");
+        if (plainTextPassword != null && plainTextPassword.length() > 0) {
+            additionalSettingsBuilder.remove("password");
+            additionalSettingsBuilder.put("hash", hash(plainTextPassword.toCharArray()));
+        }
 
-		// checks complete, create or update the user
-		config.put(username, Utils.convertJsonToxToStructuredMap(additionalSettingsBuilder.build()));
-		
-		save(client, request, ConfigConstants.CONFIGNAME_INTERNAL_USERS, Utils.convertStructuredMapToBytes(config));
+        // check if user exists
+        final Settings.Builder internaluser = load(ConfigConstants.CONFIGNAME_INTERNAL_USERS, false);
+        final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(internaluser.build());
 
-		if (userExisted) {
-			return successResponse("'" + username + "' updated", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
-		} else {
-			return createdResponse("'" + username + "' created", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
-		}
+        boolean userExisted = config.containsKey(username);
 
-	}
-	
-	@Override
-	protected void filter(Settings.Builder builder) {
-	    super.filter(builder);
-	    // replace password hashes in addition. We must not remove them from the
-	    // Builder since this would remove users completely if they
-	    // do not have any addition properties like roles or attributes
-	    Set<String> entries = builder.build().getAsGroups().keySet();
-	    for (String key : entries) {
+        // when updating an existing user password hash can be blank, which means no
+        // changes
+
+        // sanity checks, hash is mandatory for newly created users
+        if (!userExisted && additionalSettingsBuilder.get("hash") == null) {
+            return badRequestResponse("Please specify either 'hash' or 'password' when creating a new internal user");
+        }
+
+        // for existing users, hash is optional
+        if (userExisted && additionalSettingsBuilder.get("hash") == null) {
+            // sanity check, this should usually not happen
+            @SuppressWarnings("unchecked")
+            Map<String, String> existingUserSettings = (Map<String, String>) config.get(username);
+            if (!existingUserSettings.containsKey("hash")) {
+                return internalErrorResponse(
+                        "Existing user " + username + " has no password, and no new password or hash was specified");
+            }
+            additionalSettingsBuilder.put("hash", (String) existingUserSettings.get("hash"));
+        }
+
+        config.remove(username);
+
+        // checks complete, create or update the user
+        config.put(username, Utils.convertJsonToxToStructuredMap(additionalSettingsBuilder.build()));
+
+        save(client, request, ConfigConstants.CONFIGNAME_INTERNAL_USERS, Utils.convertStructuredMapToBytes(config));
+
+        if (userExisted) {
+            return successResponse("'" + username + "' updated", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+        } else {
+            return createdResponse("'" + username + "' created", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+        }
+
+    }
+
+    @Override
+    protected void filter(Settings.Builder builder) {
+        super.filter(builder);
+        // replace password hashes in addition. We must not remove them from the
+        // Builder since this would remove users completely if they
+        // do not have any addition properties like roles or attributes
+        Set<String> entries = builder.build().getAsGroups().keySet();
+        for (String key : entries) {
             builder.put(key + ".hash", "");
-        }	    
-	}
-	
-	@Override
-    protected JsonNode applyPatch(JsonNode jsonPatch, JsonNode existingResourceAsJsonNode) {
-	    JsonNode result = super.applyPatch(jsonPatch, existingResourceAsJsonNode);
-	    JsonNode passwordNode = result.get("password");
-	    
-	    if (passwordNode != null) {
-	       String plainTextPassword = passwordNode.asText();
-	       
-	       ((ObjectNode) result).remove("password");
-	       ((ObjectNode) result).set("hash", new TextNode(hash(plainTextPassword.toCharArray())));
-	    }
-	    
-	    return result;
-	}
-	
-	public static String hash(final char[] clearTextPassword) {
-	    final byte[] salt = new byte[16];
+        }
+    }
+
+    @Override
+    protected void postProcessApplyPatchResult(JsonNode existingResourceAsJsonNode,
+            JsonNode updatedResourceAsJsonNode) {
+        JsonNode passwordNode = updatedResourceAsJsonNode.get("password");
+
+        if (passwordNode != null) {
+            String plainTextPassword = passwordNode.asText();
+
+            ((ObjectNode) updatedResourceAsJsonNode).remove("password");
+            ((ObjectNode) updatedResourceAsJsonNode).set("hash", new TextNode(hash(plainTextPassword.toCharArray())));
+        }
+    }
+
+    public static String hash(final char[] clearTextPassword) {
+        final byte[] salt = new byte[16];
         new SecureRandom().nextBytes(salt);
         final String hash = OpenBSDBCrypt.generate((Objects.requireNonNull(clearTextPassword)), salt, 12);
-        Arrays.fill(salt, (byte)0);
+        Arrays.fill(salt, (byte) 0);
         Arrays.fill(clearTextPassword, '\0');
         return hash;
-	}
+    }
 
-	@Override
-	protected String getResourceName() {
-		return "user";
-	}
+    @Override
+    protected String getResourceName() {
+        return "user";
+    }
 
-	@Override
-	protected String getConfigName() {
-		return ConfigConstants.CONFIGNAME_INTERNAL_USERS;
-	}
+    @Override
+    protected String getConfigName() {
+        return ConfigConstants.CONFIGNAME_INTERNAL_USERS;
+    }
 
-	@Override
-	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new InternalUsersValidator(method, ref);
-	}
+    @Override
+    protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
+        return new InternalUsersValidator(method, ref);
+    }
 }
