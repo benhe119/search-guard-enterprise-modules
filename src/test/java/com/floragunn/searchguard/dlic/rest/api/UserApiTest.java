@@ -141,7 +141,11 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		addUserWithHash("sarek", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
 				HttpStatus.SC_FORBIDDEN);
 
-		
+        // add/update user, user is hidden, forbidden
+        rh.sendHTTPClientCertificate = true;
+        addUserWithHash("q", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_FORBIDDEN);
+
 		// add users
 		rh.sendHTTPClientCertificate = true;
 		addUserWithHash("nagilum", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
