@@ -69,6 +69,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/", this);
         controller.registerHandler(Method.DELETE, "/_searchguard/api/internalusers/{name}", this);
         controller.registerHandler(Method.PUT, "/_searchguard/api/internalusers/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/", this);
         controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/{name}", this);
 
     }
@@ -163,20 +164,18 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
             builder.put(key + ".hash", "");
         }
     }
-
+    
     @Override
-    protected JsonNode applyPatch(JsonNode jsonPatch, JsonNode existingResourceAsJsonNode) {
-        JsonNode result = super.applyPatch(jsonPatch, existingResourceAsJsonNode);
-        JsonNode passwordNode = result.get("password");
+    protected void postProcessApplyPatchResult(JsonNode existingResourceAsJsonNode,
+            JsonNode updatedResourceAsJsonNode) {
+        JsonNode passwordNode = updatedResourceAsJsonNode.get("password");
 
         if (passwordNode != null) {
             String plainTextPassword = passwordNode.asText();
 
-            ((ObjectNode) result).remove("password");
-            ((ObjectNode) result).set("hash", new TextNode(hash(plainTextPassword.toCharArray())));
+            ((ObjectNode) updatedResourceAsJsonNode).remove("password");
+            ((ObjectNode) updatedResourceAsJsonNode).set("hash", new TextNode(hash(plainTextPassword.toCharArray())));
         }
-
-        return result;
     }
 
     public static String hash(final char[] clearTextPassword) {

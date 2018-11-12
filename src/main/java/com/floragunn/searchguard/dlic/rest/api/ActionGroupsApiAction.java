@@ -55,6 +55,7 @@ public class ActionGroupsApiAction extends PatchableResourceApiAction {
 		controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/", this);
 		controller.registerHandler(Method.DELETE, "/_searchguard/api/actiongroups/{name}", this);
 		controller.registerHandler(Method.PUT, "/_searchguard/api/actiongroups/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/actiongroups/", this);		
         controller.registerHandler(Method.PATCH, "/_searchguard/api/actiongroups/{name}", this);
 
 	}
