@@ -48,8 +48,8 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("_searchguard/api/configuration/internalusers");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(settings.get("admin.hash"), "$2a$12$VcCDgh2NDk07JGN0rjGbM.Ad41qVR/YFJcgHp0UGns5JDymv..TOG");
-		Assert.assertEquals(settings.get("other.hash"), "someotherhash");
+		Assert.assertEquals("", settings.get("admin.hash"));
+		Assert.assertEquals("", settings.get("other.hash"));
 
 		// roles
 		response = rh.executeGetRequest("_searchguard/api/configuration/roles");
@@ -68,6 +68,7 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(settings.getAsList("ALL").get(0), "indices:*");
+		Assert.assertFalse(settings.hasValue("INTERNAL.permissions"));
 	}
 
 }

@@ -162,6 +162,7 @@ public class HttpClient implements Closeable {
         
         RestClientBuilder builder = RestClient.builder(hosts);
         //builder.setMaxRetryTimeoutMillis(10000);
+
         builder.setFailureListener(new RestClient.FailureListener() {
             @Override
             public void onFailure(Node node) {
@@ -169,13 +170,7 @@ public class HttpClient implements Closeable {
             }
             
         });
-        /*builder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
-            @Override
-            public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder requestConfigBuilder) {
-                requestConfigBuilder.setAuthenticationEnabled(true);
-                return requestConfigBuilder.setSocketTimeout(10000); 
-            }
-        });*/
+
         builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
             @Override
             public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {

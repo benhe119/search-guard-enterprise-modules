@@ -27,7 +27,6 @@ import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValid
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
-import com.google.common.base.Strings;
 
 public class UserApiTest extends AbstractRestApiUnitTest {
 
@@ -53,8 +52,8 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(1, settings.size());
-		Assert.assertEquals("$2a$12$VcCDgh2NDk07JGN0rjGbM.Ad41qVR/YFJcgHp0UGns5JDymv..TOG",
-				settings.get("admin.hash"));
+		// hash must be filtered
+		Assert.assertEquals("", settings.get("admin.hash"));
 
 		// GET, user does not exist
 		response = rh.executeGetRequest("/_searchguard/api/user/nothinghthere", new Header[0]);
@@ -100,6 +99,73 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertTrue(settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY + ".keys").contains("some"));
 		Assert.assertTrue(settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY + ".keys").contains("other"));
 		
+        // -- PATCH
+        // PATCH on non-existing resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers/imnothere", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+
+        // PATCH read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers/sarek", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be not found
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers/q", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        
+        // PATCH value of hidden flag, must fail with validation error
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers/test", "[{ \"op\": \"add\", \"path\": \"/hidden\", \"value\": true }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+        		
+        // PATCH password
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers/test", "[{ \"op\": \"add\", \"path\": \"/password\", \"value\": \"neu\" }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/internalusers/test", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+        Assert.assertFalse(settings.hasValue("test.password"));
+        Assert.assertTrue(settings.hasValue("test.hash"));
+        
+        // -- PATCH on whole config resource
+        // PATCH on non-existing resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/imnothere/a\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+
+        // PATCH read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/sarek/a\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be bad request
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/q/a\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        
+        // PATCH value of hidden flag, must fail with validation error
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/test/hidden\", \"value\": true }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+ 
+        // PATCH
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {\"password\": \"bla\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/internalusers/bulknew1", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+        Assert.assertFalse(settings.hasValue("bulknew1.password"));
+        Assert.assertTrue(settings.hasValue("bulknew1.hash"));        
+        List<String> roles = settings.getAsList("bulknew1.roles");
+        Assert.assertEquals(1, roles.size());
+        Assert.assertTrue(roles.contains("vulcan"));
+        
 		// add user with correct setting. User is in role "sg_all_access"
 
 		// check access not allowed
@@ -110,7 +176,11 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		addUserWithHash("sarek", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
 				HttpStatus.SC_FORBIDDEN);
 
-		
+        // add/update user, user is hidden, forbidden
+        rh.sendHTTPClientCertificate = true;
+        addUserWithHash("q", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_FORBIDDEN);
+
 		// add users
 		rh.sendHTTPClientCertificate = true;
 		addUserWithHash("nagilum", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
@@ -132,6 +202,10 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeDeleteRequest("/_searchguard/api/user/sarek", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 
+        // try remove hidden user
+        response = rh.executeDeleteRequest("/_searchguard/api/user/q", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());		
+		
 		// now really remove user
 		deleteUser("nagilum");
 
@@ -163,7 +237,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/user/nagilum", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertTrue(settings.get("nagilum.hash").equals("$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m"));
+		Assert.assertTrue(settings.get("nagilum.hash").equals(""));
 
 		
 		// ROLES
@@ -230,8 +304,8 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/user/picard", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertNotEquals(null, Strings.emptyToNull(settings.get("picard.hash")));
-		List<String> roles = settings.getAsList("picard.roles");
+		Assert.assertEquals("", settings.get("picard.hash"));
+		roles = settings.getAsList("picard.roles");
 		Assert.assertNotNull(roles);
 		Assert.assertEquals(2, roles.size());
 		Assert.assertTrue(roles.contains("starfleet"));

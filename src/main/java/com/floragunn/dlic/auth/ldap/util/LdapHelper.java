@@ -35,14 +35,15 @@ import org.ldaptive.referral.SearchReferralHandler;
 
 public class LdapHelper {
 
-    public static List<LdapEntry> search(final Connection conn, final String baseDn, final String filter, final SearchScope searchScope) throws LdapException {
+    public static List<LdapEntry> search(final Connection conn, final String baseDn, final String filter,
+            final SearchScope searchScope) throws LdapException {
 
         final SecurityManager sm = System.getSecurityManager();
 
         if (sm != null) {
             sm.checkPermission(new SpecialPermission());
         }
-        
+
         try {
             return AccessController.doPrivileged(new PrivilegedExceptionAction<List<LdapEntry>>() {
                 @Override

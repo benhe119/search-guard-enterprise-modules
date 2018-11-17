@@ -14,6 +14,8 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.util.List;
+
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
 import org.elasticsearch.common.settings.Settings;
@@ -60,6 +62,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
+	    // hidden role
+        response = rh.executeGetRequest("/_searchguard/api/roles/sg_internal", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+		
 		// create index
 		setupStarfleetIndex();
 
@@ -72,6 +78,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		// TODO: only one doctype allowed for ES6
 		//checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
 
+		
 		// -- DELETE
 
 		rh.sendHTTPClientCertificate = true;
@@ -84,6 +91,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_transport_client", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 
+	    // hidden role
+        response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_internal", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+		
 		// remove complete role mapping for sg_role_starfleet_captains
 		response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
@@ -142,6 +153,11 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_transport_client",
 				FileHelper.loadFile("restapi/roles_captains.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+		
+        // put hidden role, must be forbidden
+        response = rh.executePutRequest("/_searchguard/api/roles/sg_internal",
+                FileHelper.loadFile("restapi/roles_captains.json"), new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());		
 		
 		// restore starfleet role
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet",
@@ -239,5 +255,94 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(settings.get("status"), "error");
 		Assert.assertEquals(settings.get("reason"), ErrorType.INVALID_CONFIGURATION.getMessage());
+		
+        // -- PATCH
+        // PATCH on non-existing resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles/imnothere", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+
+        // PATCH read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles/sg_transport_client", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be not found
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles/sg_internal", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        
+        // PATCH value of hidden flag, must fail with validation error
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles/sg_role_starfleet", "[{ \"op\": \"add\", \"path\": \"/hidden\", \"value\": true }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+                
+        // PATCH 
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles/sg_role_starfleet", "[{ \"op\": \"add\", \"path\": \"/indices/sf/ships/-\", \"value\": \"SEARCH\" }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+        List<String> permissions = settings.getAsList("sg_role_starfleet.indices.sf.ships");
+        Assert.assertNotNull(permissions);
+        Assert.assertEquals(2, permissions.size());
+        Assert.assertTrue(permissions.contains("READ"));
+        Assert.assertTrue(permissions.contains("SEARCH"));  
+        
+        // -- PATCH on whole config resource
+        // PATCH on non-existing resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/imnothere/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+
+        // PATCH read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/sg_transport_client/a\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be bad request
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/sg_internal/a\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        
+        // PATCH delete read only resource, must be forbidden
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"remove\", \"path\": \"/sg_transport_client\" }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+        
+        // PATCH hidden resource, must be bad request
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"remove\", \"path\": \"/sg_internal\"}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());        
+        
+        // PATCH value of hidden flag, must fail with validation error
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/newnewnew\", \"value\": {  \"hidden\": true, \"indices\": { \"sf\": { \"ships\": [\"READ\"]}}}}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+
+        // PATCH 
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {   \"indices\": { \"sf\": { \"ships\": [\"READ\"]}}}}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/roles/bulknew1", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
+        permissions = settings.getAsList("bulknew1.indices.sf.ships");
+        Assert.assertNotNull(permissions);
+        Assert.assertEquals(1, permissions.size());
+        Assert.assertTrue(permissions.contains("READ"));
+        
+        // delete resource
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/roles", "[{ \"op\": \"remove\", \"path\": \"/bulknew1\"}]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        response = rh.executeGetRequest("/_searchguard/api/roles/bulknew1", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        
+        
+        
 	}
 }
