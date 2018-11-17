@@ -26,7 +26,7 @@
 
   <properties>
     <sg2.version>7.x-HEAD-SNAPSHOT</sg2.version>
-    <elasticsearch.version>7.0.0-alpha1-SNAPSHOT</elasticsearch.version>
+    <elasticsearch.version>7.0.0-alpha1</elasticsearch.version>
 
     <!-- deps -->
     <log4j.version>2.11.1</log4j.version>
@@ -38,9 +38,19 @@
     <guava.version>25.1-jre</guava.version>
 
     <!-- Test only -->
-    <mockito.version>>2.23.0</mockito.version>
+    <mockito.version>2.23.0</mockito.version>
     <apache.ds.version>2.0.0-M21</apache.ds.version>
   </properties>
+  
+  <repositories>
+    <repository>
+      <id>elastic-lucene-snapshots</id>
+      <name>Elastic Lucene Snapshots</name>
+      <url>http://s3.amazonaws.com/download.elasticsearch.org/lucenesnapshots/6d9c714052</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+  </repositories>
 
   <scm>
     <url>https://github.com/floragunncom/search-guard-enterprise-modules</url>
@@ -59,7 +69,7 @@
   <dependencies>
     <dependency>
       <groupId>com.floragunn</groupId>
-      <artifactId>search-guard-6</artifactId>
+      <artifactId>search-guard-7</artifactId>
       <version>${sg2.version}</version>
       <scope>provided</scope>
     </dependency>
