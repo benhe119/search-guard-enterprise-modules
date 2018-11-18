@@ -28,13 +28,13 @@ import org.elasticsearch.threadpool.ThreadPool;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
-import com.floragunn.searchguard.configuration.PrivilegesEvaluator;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.RolesValidator;
+import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 import com.floragunn.searchguard.support.ConfigConstants;
 
-public class RolesApiAction extends AbstractApiAction {
+public class RolesApiAction extends PatchableResourceApiAction {
 
 	@Inject
 	public RolesApiAction(Settings settings, final Path configPath, RestController controller, Client client, AdminDNs adminDNs, IndexBaseConfigurationRepository cl,
@@ -44,6 +44,9 @@ public class RolesApiAction extends AbstractApiAction {
 		controller.registerHandler(Method.GET, "/_searchguard/api/roles/{name}", this);
 		controller.registerHandler(Method.DELETE, "/_searchguard/api/roles/{name}", this);
 		controller.registerHandler(Method.PUT, "/_searchguard/api/roles/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/roles/", this);		
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/roles/{name}", this);
+		
 	}
 
 	@Override

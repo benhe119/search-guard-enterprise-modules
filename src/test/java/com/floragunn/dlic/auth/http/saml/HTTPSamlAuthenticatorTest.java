@@ -114,13 +114,14 @@ public class HTTPSamlAuthenticatorTest {
 
     @Test
     public void basicTest() throws Exception {
-        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
-                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
-
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setEndpointQueryString(null);
+        
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
 
         HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
 
@@ -149,13 +150,14 @@ public class HTTPSamlAuthenticatorTest {
 
     @Test
     public void wrongCertTest() throws Exception {
-        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
-                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
-
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setEndpointQueryString(null);
+        
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
 
         HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
 
@@ -175,12 +177,13 @@ public class HTTPSamlAuthenticatorTest {
 
     @Test
     public void noSignatureTest() throws Exception {
+        mockSamlIdpServer.setSignResponses(false);
+        mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setEndpointQueryString(null);
+        
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
-
-        mockSamlIdpServer.setSignResponses(false);
-        mockSamlIdpServer.setAuthenticateUser("horst");
 
         HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
 
@@ -199,14 +202,15 @@ public class HTTPSamlAuthenticatorTest {
     @SuppressWarnings("unchecked")
     @Test
     public void rolesTest() throws Exception {
-        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
-                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
-
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setAuthenticateUserRoles(Arrays.asList("a", "b"));
+        mockSamlIdpServer.setEndpointQueryString(null);
+        
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
 
         HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
 
@@ -234,19 +238,56 @@ public class HTTPSamlAuthenticatorTest {
         Assert.assertArrayEquals(new String[] { "a", "b" },
                 ((List<String>) jwt.getClaim("roles")).toArray(new String[0]));
     }
+    
+    @Test
+    public void idpEndpointWithQueryStringTest() throws Exception {
+        mockSamlIdpServer.setSignResponses(true);
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setEndpointQueryString("extra=query");
+        
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
+
+        HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
+
+        AuthenticateHeaders authenticateHeaders = getAutenticateHeaders(samlAuthenticator);
+
+        String encodedSamlResponse = mockSamlIdpServer.handleSsoGetRequestURI(authenticateHeaders.location);
+
+        RestRequest tokenRestRequest = buildTokenExchangeRestRequest(encodedSamlResponse, authenticateHeaders);
+        TestRestChannel tokenRestChannel = new TestRestChannel(tokenRestRequest);
+
+        samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
+
+        String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
+        HashMap<String, Object> response = new ObjectMapper().readValue(responseJson,
+                new TypeReference<HashMap<String, Object>>() {
+                });
+        String authorization = (String) response.get("authorization");
+
+        Assert.assertNotNull("Expected authorization attribute in JSON: " + responseJson, authorization);
+
+        JwsJwtCompactConsumer jwtConsumer = new JwsJwtCompactConsumer(authorization.replaceAll("\\s*bearer\\s*", ""));
+        JwtToken jwt = jwtConsumer.getJwtToken();
+
+        Assert.assertEquals("horst", jwt.getClaim("sub"));
+    }
 
     @SuppressWarnings("unchecked")
     @Test
     public void commaSeparatedRolesTest() throws Exception {
-        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
-                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").put("roles_seperator", ",").put("path.home", ".")
-                .build();
-
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUserRoles(Arrays.asList("a,b"));
+        mockSamlIdpServer.setEndpointQueryString(null);
+        
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("roles_seperator", ",").put("path.home", ".")
+                .build();
 
         HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
 
@@ -277,17 +318,18 @@ public class HTTPSamlAuthenticatorTest {
 
     @Test
     public void basicLogoutTest() throws Exception {
+        mockSamlIdpServer.setSignResponses(true);
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
+        mockSamlIdpServer.setEndpointQueryString(null);
+        
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles")
                 .put("sp.signature_private_key", "-BEGIN PRIVATE KEY-\n"
                         + Base64.getEncoder().encodeToString(spSigningPrivateKey.getEncoded()) + "-END PRIVATE KEY-")
                 .put("path.home", ".").build();
-
-        mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
-        mockSamlIdpServer.setAuthenticateUser("horst");
-        mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
 
         HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
 
@@ -304,15 +346,16 @@ public class HTTPSamlAuthenticatorTest {
 
     @Test
     public void basicLogoutTestEncryptedKey() throws Exception {
-        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
-                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
-                .put("exchange_key", "abc").put("roles_key", "roles").put("sp.signature_private_key", SPOCK_KEY)
-                .put("sp.signature_private_key_password", "changeit").put("path.home", ".").build();
-
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
+        mockSamlIdpServer.setEndpointQueryString(null);
+        
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("sp.signature_private_key", SPOCK_KEY)
+                .put("sp.signature_private_key_password", "changeit").put("path.home", ".").build();
 
         HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
 
