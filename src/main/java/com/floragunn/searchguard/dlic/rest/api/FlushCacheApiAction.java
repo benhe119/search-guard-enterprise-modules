@@ -30,8 +30,8 @@ import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
-import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.rest.RestResponse;
+import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
@@ -39,9 +39,9 @@ import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
-import com.floragunn.searchguard.configuration.PrivilegesEvaluator;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.NoOpValidator;
+import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 
 public class FlushCacheApiAction extends AbstractApiAction {
