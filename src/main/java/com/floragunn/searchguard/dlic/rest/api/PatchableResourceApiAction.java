@@ -213,11 +213,12 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
     protected Tuple<String[], RestResponse> handleApiRequest(final RestRequest request, final Client client)
             throws Throwable {
 
-        if (request.method() == Method.PATCH) {
-            return handlePatch(request, client);
-        } else {
-            return super.handleApiRequest(request, client);
-        }
+    	//PATCH is not supported by ES <= 6.3
+    	//if (request.method() == Method.PATCH) {
+    	//    return handlePatch(request, client);
+    	//} else {
+        return super.handleApiRequest(request, client);
+        //}
     }
 
     protected AbstractConfigurationValidator getValidator(RestRequest.Method method, JsonNode patchedResource)

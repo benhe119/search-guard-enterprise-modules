@@ -44,8 +44,10 @@ public class RolesApiAction extends PatchableResourceApiAction {
 		controller.registerHandler(Method.GET, "/_searchguard/api/roles/{name}", this);
 		controller.registerHandler(Method.DELETE, "/_searchguard/api/roles/{name}", this);
 		controller.registerHandler(Method.PUT, "/_searchguard/api/roles/{name}", this);
-        controller.registerHandler(Method.PATCH, "/_searchguard/api/roles/", this);		
-        controller.registerHandler(Method.PATCH, "/_searchguard/api/roles/{name}", this);
+        
+		//PATCH is not supported by ES <= 6.3
+		//controller.registerHandler(Method.PATCH, "/_searchguard/api/roles/", this);		
+        //controller.registerHandler(Method.PATCH, "/_searchguard/api/roles/{name}", this);
 		
 	}
 
