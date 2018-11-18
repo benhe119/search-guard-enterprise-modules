@@ -68,6 +68,7 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(settings.getAsList("ALL").get(0), "indices:*");
+		Assert.assertFalse(settings.hasValue("INTERNAL.permissions"));
 	}
 
 }
