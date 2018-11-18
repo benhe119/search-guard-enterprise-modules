@@ -12,4 +12,7 @@ worf:
   roles:
     - klingon
 test:
-  hash: $2a$12$1HqHxm3QTfzwkse7vwzhFOV4gDv787cZ8BwmCwNEyJhn0CZoo8VVu        
+  hash: $2a$12$1HqHxm3QTfzwkse7vwzhFOV4gDv787cZ8BwmCwNEyJhn0CZoo8VVu
+q:
+  hidden: true
+  hash: $2a$12$Ioo1uXmH.Nq/lS5dUVBEsePSmZ5pSIpVO/xKHaquU/Jvq97I7nAgG

@@ -30,26 +30,28 @@ public class LdapUser extends User {
     private final transient LdapEntry userEntry;
     private final String originalUsername;
 
-    public LdapUser(final String name, String originalUsername, final LdapEntry userEntry, final AuthCredentials credentials, int customAttrMaxValueLen, List<String> whiteListedAttributes) {
+    public LdapUser(final String name, String originalUsername, final LdapEntry userEntry,
+            final AuthCredentials credentials, int customAttrMaxValueLen, List<String> whiteListedAttributes) {
         super(name, null, credentials);
         this.originalUsername = originalUsername;
         this.userEntry = userEntry;
         Map<String, String> attributes = getCustomAttributesMap();
         attributes.put("ldap.original.username", originalUsername);
         attributes.put("ldap.dn", userEntry.getDn());
-        
-        if(customAttrMaxValueLen > 0) {
-            for(LdapAttribute attr: userEntry.getAttributes()) {
-                if(attr != null && !attr.isBinary() && !attr.getName().toLowerCase().contains("password")) {
+
+        if (customAttrMaxValueLen > 0) {
+            for (LdapAttribute attr : userEntry.getAttributes()) {
+                if (attr != null && !attr.isBinary() && !attr.getName().toLowerCase().contains("password")) {
                     final String val = attr.getStringValue();
-                    //only consider attributes which are not binary and where its value is not longer than customAttrMaxValueLen characters
-                    if(val != null && val.length() > 0 && val.length() <= customAttrMaxValueLen) {
-                        if(whiteListedAttributes != null && !whiteListedAttributes.isEmpty()) {
-                            if(WildcardMatcher.matchAny(whiteListedAttributes, attr.getName())) {
-                                attributes.put("attr.ldap."+attr.getName(), val);
+                    // only consider attributes which are not binary and where its value is not
+                    // longer than customAttrMaxValueLen characters
+                    if (val != null && val.length() > 0 && val.length() <= customAttrMaxValueLen) {
+                        if (whiteListedAttributes != null && !whiteListedAttributes.isEmpty()) {
+                            if (WildcardMatcher.matchAny(whiteListedAttributes, attr.getName())) {
+                                attributes.put("attr.ldap." + attr.getName(), val);
                             }
                         } else {
-                            attributes.put("attr.ldap."+attr.getName(), val);
+                            attributes.put("attr.ldap." + attr.getName(), val);
                         }
                     }
                 }
@@ -59,12 +61,13 @@ public class LdapUser extends User {
 
     /**
      * May return null because ldapEntry is transient
+     * 
      * @return ldapEntry or null if object was deserialized
      */
     public LdapEntry getUserEntry() {
         return userEntry;
     }
-    
+
     public String getDn() {
         return userEntry.getDn();
     }

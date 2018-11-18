@@ -28,13 +28,13 @@ import org.elasticsearch.threadpool.ThreadPool;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
-import com.floragunn.searchguard.configuration.PrivilegesEvaluator;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.RolesMappingValidator;
+import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 import com.floragunn.searchguard.support.ConfigConstants;
 
-public class RolesMappingApiAction extends AbstractApiAction {
+public class RolesMappingApiAction extends PatchableResourceApiAction {
 
 	@Inject
 	public RolesMappingApiAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
@@ -46,6 +46,8 @@ public class RolesMappingApiAction extends AbstractApiAction {
 		controller.registerHandler(Method.GET, "/_searchguard/api/rolesmapping/{name}", this);
 		controller.registerHandler(Method.DELETE, "/_searchguard/api/rolesmapping/{name}", this);
 		controller.registerHandler(Method.PUT, "/_searchguard/api/rolesmapping/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/rolesmapping/", this);		
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/rolesmapping/{name}", this);
 
 	}
 

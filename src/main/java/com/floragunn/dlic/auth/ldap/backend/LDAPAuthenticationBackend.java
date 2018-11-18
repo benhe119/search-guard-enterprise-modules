@@ -58,12 +58,11 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
 
     private final Settings settings;
     private final Path configPath;
-    
+
     public LDAPAuthenticationBackend(final Settings settings, final Path configPath) {
         this.settings = settings;
         this.configPath = configPath;
     }
-    
 
     @Override
     public User authenticate(final AuthCredentials credentials) throws ElasticsearchSecurityException {
@@ -78,19 +77,22 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
 
             LdapEntry entry = exists(user, ldapConnection, settings);
 
-            //fake a user that no exists
-            //makes guessing if a user exists or not harder when looking on the authentication delay time
-            if(entry == null && settings.getAsBoolean(ConfigConstants.LDAP_FAKE_LOGIN_ENABLED, false)) {                
-                String fakeLognDn = settings.get(ConfigConstants.LDAP_FAKE_LOGIN_DN, "CN=faketomakebindfail,DC="+UUID.randomUUID().toString());
+            // fake a user that no exists
+            // makes guessing if a user exists or not harder when looking on the
+            // authentication delay time
+            if (entry == null && settings.getAsBoolean(ConfigConstants.LDAP_FAKE_LOGIN_ENABLED, false)) {
+                String fakeLognDn = settings.get(ConfigConstants.LDAP_FAKE_LOGIN_DN,
+                        "CN=faketomakebindfail,DC=" + UUID.randomUUID().toString());
                 entry = new LdapEntry(fakeLognDn);
-                password = settings.get(ConfigConstants.LDAP_FAKE_LOGIN_PASSWORD, "fakeLoginPwd123").getBytes(StandardCharsets.UTF_8);
-            } else if(entry == null) {
+                password = settings.get(ConfigConstants.LDAP_FAKE_LOGIN_PASSWORD, "fakeLoginPwd123")
+                        .getBytes(StandardCharsets.UTF_8);
+            } else if (entry == null) {
                 throw new ElasticsearchSecurityException("No user " + user + " found");
             }
-            
+
             final String dn = entry.getDn();
 
-            if(log.isTraceEnabled()) {
+            if (log.isTraceEnabled()) {
                 log.trace("Try to authenticate dn {}", dn);
             }
 
@@ -100,9 +102,9 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
             if (sm != null) {
                 sm.checkPermission(new SpecialPermission());
             }
-            
+
             final Connection _con = ldapConnection;
-            
+
             try {
                 AccessController.doPrivileged(new PrivilegedExceptionAction<Response<Void>>() {
                     @Override
@@ -121,19 +123,22 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
                 username = entry.getAttribute(usernameAttribute).getStringValue();
             }
 
-            if(log.isDebugEnabled()) {
+            if (log.isDebugEnabled()) {
                 log.debug("Authenticated username {}", username);
             }
-            
-            final int customAttrMaxValueLen = settings.getAsInt(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 36);
-            final List<String> whitelistedAttributes = settings.getAsList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST, null);
 
-            //by default all ldap attributes which are not binary and with a max value length of 36 are included in the user object
-            //if the whitelist contains at least one value then all attributes will be additional check if whitelisted (whitelist can contain wildcard and regex)
+            final int customAttrMaxValueLen = settings.getAsInt(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 36);
+            final List<String> whitelistedAttributes = settings.getAsList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST,
+                    null);
+
+            // by default all ldap attributes which are not binary and with a max value
+            // length of 36 are included in the user object
+            // if the whitelist contains at least one value then all attributes will be
+            // additional check if whitelisted (whitelist can contain wildcard and regex)
             return new LdapUser(username, user, entry, credentials, customAttrMaxValueLen, whitelistedAttributes);
 
         } catch (final Exception e) {
-            if(log.isDebugEnabled()) {
+            if (log.isDebugEnabled()) {
                 log.debug("Unable to authenticate user due to ", e);
             }
             throw new ElasticsearchSecurityException(e.toString(), e);
@@ -154,17 +159,17 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
     public boolean exists(final User user) {
         Connection ldapConnection = null;
         String userName = user.getName();
-        
-        if(user instanceof LdapUser) {
-            userName = ((LdapUser) user).getUserEntry().getDn(); 
+
+        if (user instanceof LdapUser) {
+            userName = ((LdapUser) user).getUserEntry().getDn();
         }
 
         try {
             ldapConnection = LDAPAuthorizationBackend.getConnection(settings, configPath);
-            return exists(userName, ldapConnection, settings) != null; 
+            return exists(userName, ldapConnection, settings) != null;
         } catch (final Exception e) {
-            log.warn("User {} does not exist due to "+e, userName);
-            if(log.isDebugEnabled()) {
+            log.warn("User {} does not exist due to " + e, userName);
+            if (log.isDebugEnabled()) {
                 log.debug("User does not exist due to ", e);
             }
             return false;
@@ -172,13 +177,14 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
             Utils.unbindAndCloseSilently(ldapConnection);
         }
     }
-    
+
     static LdapEntry exists(final String user, Connection ldapConnection, Settings settings) throws Exception {
         final String username = Utils.escapeStringRfc2254(user);
 
         final List<LdapEntry> result = LdapHelper.search(ldapConnection,
                 settings.get(ConfigConstants.LDAP_AUTHC_USERBASE, DEFAULT_USERBASE),
-                settings.get(ConfigConstants.LDAP_AUTHC_USERSEARCH, DEFAULT_USERSEARCH_PATTERN).replace(ZERO_PLACEHOLDER, username),
+                settings.get(ConfigConstants.LDAP_AUTHC_USERSEARCH, DEFAULT_USERSEARCH_PATTERN)
+                        .replace(ZERO_PLACEHOLDER, username),
                 SearchScope.SUBTREE);
 
         if (result == null || result.isEmpty()) {

@@ -37,8 +37,8 @@ import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.configuration.AdminDNs;
-import com.floragunn.searchguard.configuration.PrivilegesEvaluator;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
+import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 import com.floragunn.searchguard.ssl.util.SSLRequestHelper;
 import com.floragunn.searchguard.ssl.util.SSLRequestHelper.SSLInfo;
@@ -409,7 +409,7 @@ public class RestApiPrivilegesEvaluator {
 			return "No client TLS certificate found in request";
 		}
 
-		if (!adminDNs.isAdmin(sslInfo.getPrincipal())) {
+		if (!adminDNs.isAdminDN(sslInfo.getPrincipal())) {
 			logger.warn("SG admin permissions required but {} is not an admin", sslInfo.getPrincipal());
 			return "SG admin permissions required but " + sslInfo.getPrincipal() + " is not an admin";
 		}
