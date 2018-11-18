@@ -47,6 +47,7 @@ import com.floragunn.searchguard.auth.HTTPAuthenticator;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.support.PemKeyReader;
 import com.floragunn.searchguard.user.AuthCredentials;
+import com.google.common.base.Strings;
 import com.onelogin.saml2.authn.AuthnRequest;
 import com.onelogin.saml2.logout.LogoutRequest;
 import com.onelogin.saml2.settings.Saml2Settings;
@@ -357,8 +358,15 @@ public class HTTPSamlAuthenticator implements HTTPAuthenticator, Destroyable {
 
     private String getSamlRequestRedirectBindingLocation(IdpEndpointType idpEndpointType, Saml2Settings saml2Settings,
             String samlRequest) throws Exception {
+        
+        URL idpUrl = getIdpUrl(idpEndpointType, saml2Settings);
+        
+        if (Strings.isNullOrEmpty(idpUrl.getQuery())) {
+            return getIdpUrl(idpEndpointType, saml2Settings) + "?" + this.getSamlRequestQueryString(samlRequest);
+        } else {
+            return getIdpUrl(idpEndpointType, saml2Settings) + "&" + this.getSamlRequestQueryString(samlRequest);
+        }
 
-        return getIdpUrl(idpEndpointType, saml2Settings) + "?" + this.getSamlRequestQueryString(samlRequest);
     }
 
     private String getSamlRequestQueryString(String samlRequest) throws Exception {

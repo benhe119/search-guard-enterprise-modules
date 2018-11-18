@@ -176,16 +176,18 @@ class MockSamlIdpServer implements Closeable {
     private int baseId = 1;
     private boolean signResponses = true;
     private X509Certificate spSignatureCertificate;
+    private String endpointQueryString;
 
     MockSamlIdpServer() throws IOException {
-        this(SocketUtils.findAvailableTcpPort(), false, ENTITY_ID);
+        this(SocketUtils.findAvailableTcpPort(), false, ENTITY_ID, null);
     }
 
-    MockSamlIdpServer(int port, boolean ssl, String idpEntityId) throws IOException {
+    MockSamlIdpServer(int port, boolean ssl, String idpEntityId, String endpointQueryString) throws IOException {
         this.port = port;
         this.uri = (ssl ? "https" : "http") + "://localhost:" + port;
         this.ssl = ssl;
         this.idpEntityId = idpEntityId;
+        this.endpointQueryString = endpointQueryString;
 
         this.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
 
@@ -259,19 +261,35 @@ class MockSamlIdpServer implements Closeable {
     }
 
     public String getUri() {
-        return uri;
+        if (endpointQueryString != null) {
+            return uri + "?" + endpointQueryString;
+        } else {
+            return uri;
+        }
     }
 
     public String getMetadataUri() {
-        return uri + CTX_METADATA;
+        if (endpointQueryString != null) {
+            return uri + CTX_METADATA + "?" + endpointQueryString;
+        } else {
+            return uri + CTX_METADATA;
+        }
     }
 
     public String getSamlSsoUri() {
-        return uri + CTX_SAML_SSO;
+        if (endpointQueryString != null) {
+            return uri + CTX_SAML_SSO + "?" + endpointQueryString;
+        } else {
+            return uri + CTX_SAML_SSO;
+        }
     }
 
     public String getSamlSloUri() {
-        return uri + CTX_SAML_SLO;
+        if (endpointQueryString != null) {
+            return uri + CTX_SAML_SLO + "?" + endpointQueryString;
+        } else {
+            return uri + CTX_SAML_SLO;
+        }
     }
 
     public int getPort() {
@@ -1068,5 +1086,13 @@ class MockSamlIdpServer implements Closeable {
 
     public void setSpSignatureCertificate(X509Certificate spSignatureCertificate) {
         this.spSignatureCertificate = spSignatureCertificate;
+    }
+
+    public String getEndpointQueryString() {
+        return endpointQueryString;
+    }
+
+    public void setEndpointQueryString(String endpointQueryString) {
+        this.endpointQueryString = endpointQueryString;
     }
 }
