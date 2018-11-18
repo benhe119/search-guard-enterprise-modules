@@ -69,8 +69,10 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/", this);
         controller.registerHandler(Method.DELETE, "/_searchguard/api/internalusers/{name}", this);
         controller.registerHandler(Method.PUT, "/_searchguard/api/internalusers/{name}", this);
-        controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/", this);
-        controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/{name}", this);
+        
+        //PATCH is not supported by ES <= 6.3
+        //controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/", this);
+        //controller.registerHandler(Method.PATCH, "/_searchguard/api/internalusers/{name}", this);
 
     }
 

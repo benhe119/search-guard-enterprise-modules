@@ -256,6 +256,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(settings.get("status"), "error");
 		Assert.assertEquals(settings.get("reason"), ErrorType.INVALID_CONFIGURATION.getMessage());
 		
+		/*
         // -- PATCH
         // PATCH on non-existing resource
         rh.sendHTTPClientCertificate = true;
@@ -334,6 +335,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         Assert.assertNotNull(permissions);
         Assert.assertEquals(1, permissions.size());
         Assert.assertTrue(permissions.contains("READ"));
+        */
         
         // delete resource
         rh.sendHTTPClientCertificate = true;

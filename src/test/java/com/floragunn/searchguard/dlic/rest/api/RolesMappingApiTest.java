@@ -189,7 +189,8 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 				FileHelper.loadFile("restapi/rolesmapping_all_access.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
 		
-	    // -- PATCH
+	    /*
+		// -- PATCH
         // PATCH on non-existing resource
         rh.sendHTTPClientCertificate = true;
         response = rh.executePatchRequest("/_searchguard/api/rolesmapping/imnothere", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
@@ -261,7 +262,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rh.executeGetRequest("/_searchguard/api/rolesmapping/bulknew1", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
-        
+        */
 
 		// mapping with several backend roles, one of the is captain
 		deleteAndputNewMapping("rolesmapping_backendroles_captains_list.json");
