@@ -99,7 +99,9 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertTrue(settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY + ".keys").contains("some"));
 		Assert.assertTrue(settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY + ".keys").contains("other"));
 		
-        // -- PATCH
+        
+		/*
+		// -- PATCH
         // PATCH on non-existing resource
         rh.sendHTTPClientCertificate = true;
         response = rh.executePatchRequest("/_searchguard/api/internalusers/imnothere", "[{ \"op\": \"add\", \"path\": \"/a/b/c\", \"value\": [ \"foo\", \"bar\" ] }]", new Header[0]);
@@ -165,6 +167,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         List<String> roles = settings.getAsList("bulknew1.roles");
         Assert.assertEquals(1, roles.size());
         Assert.assertTrue(roles.contains("vulcan"));
+        */
         
 		// add user with correct setting. User is in role "sg_all_access"
 
@@ -305,7 +308,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("", settings.get("picard.hash"));
-		roles = settings.getAsList("picard.roles");
+		List<String> roles = settings.getAsList("picard.roles");
 		Assert.assertNotNull(roles);
 		Assert.assertEquals(2, roles.size());
 		Assert.assertTrue(roles.contains("starfleet"));
