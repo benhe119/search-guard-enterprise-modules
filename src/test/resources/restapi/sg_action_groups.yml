@@ -41,6 +41,11 @@ GET:
   permissions:
     - "indices:data/read/get*"
     - "indices:data/read/mget*"
+INTERNAL:
+  hidden: true
+  permissions:
+    - "indices:data/read/get*"
+    - "indices:data/read/mget*"  
 
 # CLUSTER
 CLUSTER_ALL:
