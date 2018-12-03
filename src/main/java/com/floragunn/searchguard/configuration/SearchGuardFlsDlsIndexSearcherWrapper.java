@@ -62,7 +62,7 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
 
     @SuppressWarnings("unchecked")
     @Override
-    protected DirectoryReader dlsFlsWrap(final DirectoryReader reader, boolean isAdmin) throws IOException {
+    protected DirectoryReader dlsFlsWrap(final DirectoryReader reader, RequestType requestType) throws IOException {
 
         final ShardId shardId = ShardUtils.extractShardId(reader); 
         
@@ -70,7 +70,7 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
         Set<String> maskedFields = null;
         BitSetProducer bsp = null;
 
-        if(!isAdmin) {
+        if(requestType == RequestType.NORMAL) {
 
             final Map<String, Set<String>> allowedFlsFields = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                     ConfigConstants.SG_FLS_FIELDS_HEADER);
@@ -107,13 +107,22 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
             }
         }
         
+        assert complianceConfig != null;
+        
+        final boolean stripLicense = complianceConfig.isOem();
+        
+        if(isSearchGuardIndexRequest() && requestType == RequestType.ADMIN && stripLicense) {
+            flsFields = new HashSet<>(1);
+        	flsFields.add("~searchguard.dynamic.license");
+        }
+        
         return new DlsFlsFilterLeafReader.DlsFlsDirectoryReader(reader, flsFields, bsp,
                 indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
     }
 
 
     @Override
-    protected IndexSearcher dlsFlsWrap(final IndexSearcher searcher, boolean isAdmin) throws EngineException {
+    protected IndexSearcher dlsFlsWrap(final IndexSearcher searcher, RequestType requestType) throws EngineException {
 
         if(searcher.getIndexReader().getClass() != DlsFlsFilterLeafReader.DlsFlsDirectoryReader.class
                 && searcher.getIndexReader().getClass() != EmptyFilterLeafReader.EmptyDirectoryReader.class) {

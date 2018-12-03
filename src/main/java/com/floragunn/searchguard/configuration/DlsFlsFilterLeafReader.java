@@ -21,7 +21,8 @@ package com.floragunn.searchguard.configuration;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -61,6 +62,7 @@ import org.elasticsearch.common.util.concurrent.ThreadContext;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.index.IndexService;
 import org.elasticsearch.index.shard.ShardId;
@@ -412,9 +414,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 final BytesReference bytesRef = new BytesArray(value);
                 final Tuple<XContentType, Map<String, Object>> bytesRefTuple = XContentHelper.convertToMap(bytesRef, false, XContentType.JSON);
                 Map<String, Object> filteredSource = bytesRefTuple.v2();
-
+                
+                boolean needBase64Encode = false;
+                
+                if(filteredSource.size() == 1 && filteredSource.containsKey("config") && indexService.index().getName().equals("searchguard")) {
+                	filteredSource = XContentHelper.convertToMap(new BytesArray(Base64.getDecoder().decode((String)filteredSource.get("config"))), false, XContentType.JSON).v2();                    	
+                	needBase64Encode = true;
+                }
+                
                 if (!canOptimize) {
-                    filteredSource = filterFunction.apply(bytesRefTuple.v2());
+                    filteredSource = filterFunction.apply(filteredSource);
                 } else {
                     if (!excludesSet.isEmpty()) {
                         filteredSource.keySet().removeAll(excludesSet);
@@ -422,9 +431,18 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                         filteredSource.keySet().retainAll(includesSet);
                     }
                 }
-
-                final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
-                delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
+                
+                if(needBase64Encode) {
+                	Map<String, Object> modified = new HashMap<>(1);
+                	modified.put("config", Base64.getEncoder().encodeToString(BytesReference.toBytes(BytesReference.bytes(XContentBuilder.builder(JsonXContent.jsonXContent).map(filteredSource)))));
+                	final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(modified);
+                    delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
+                } else {
+                	final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
+                	delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
+                }
+                
+                
             } else {
                 delegate.binaryField(fieldInfo, value);
             }
