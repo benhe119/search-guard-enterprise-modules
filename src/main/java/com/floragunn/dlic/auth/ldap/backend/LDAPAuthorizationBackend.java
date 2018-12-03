@@ -488,9 +488,10 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
         final List<String> skipUsers = settings.getAsList(ConfigConstants.LDAP_AUTHZ_SKIP_USERS,
                 Collections.emptyList());
-        if (!skipUsers.isEmpty() && WildcardMatcher.matchAny(skipUsers, authenticatedUser)) {
+        if (!skipUsers.isEmpty() && (WildcardMatcher.matchAny(skipUsers, originalUserName)
+                || WildcardMatcher.matchAny(skipUsers, authenticatedUser))) {
             if (log.isDebugEnabled()) {
-                log.debug("Skipped search roles of user {}", authenticatedUser);
+                log.debug("Skipped search roles of user {}/{}", authenticatedUser, originalUserName);
             }
             return;
         }

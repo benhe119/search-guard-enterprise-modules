@@ -607,6 +607,30 @@ public class LdapBackendTest {
     }
     
     @Test
+    public void testLdapAuthorizationSkipUsersNoDn() throws Exception {
+
+        final Settings settings = Settings.builder()
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
+                .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLENAME, "cn")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLESEARCH, "(uniqueMember={0})")
+                .putList(ConfigConstants.LDAP_AUTHZ_SKIP_USERS, "jacksonm")
+                .build();
+
+        final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
+                .getBytes(StandardCharsets.UTF_8)));
+
+        new LDAPAuthorizationBackend(settings, null).fillRoles(user, null);
+
+        Assert.assertNotNull(user);
+        Assert.assertEquals("cn=Michael Jackson,ou=people,o=TEST", user.getName());
+        Assert.assertEquals(0, user.getRoles().size());
+        Assert.assertEquals(user.getName(), user.getUserEntry().getDn());
+    }
+    
+    @Test
     public void testLdapAuthorizationNestedAttr() throws Exception {
 
 
