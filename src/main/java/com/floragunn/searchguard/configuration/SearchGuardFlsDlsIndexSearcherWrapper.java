@@ -109,11 +109,12 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
         
         assert complianceConfig != null;
         
-        final boolean stripLicense = complianceConfig.isOem();
+        final boolean isOem = complianceConfig.isOem();
         
-        if(isSearchGuardIndexRequest() && requestType == RequestType.ADMIN && stripLicense) {
-            flsFields = new HashSet<>(1);
-        	flsFields.add("~searchguard.dynamic.license");
+        if(requestType == RequestType.ADMIN && isOem) {
+            flsFields = new HashSet<>(2);
+            flsFields.add("~searchguard.dynamic.license");
+            flsFields.add("~*.hidden");
         }
         
         return new DlsFlsFilterLeafReader.DlsFlsDirectoryReader(reader, flsFields, bsp,

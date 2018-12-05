@@ -414,14 +414,28 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 final BytesReference bytesRef = new BytesArray(value);
                 final Tuple<XContentType, Map<String, Object>> bytesRefTuple = XContentHelper.convertToMap(bytesRef, false, XContentType.JSON);
                 Map<String, Object> filteredSource = bytesRefTuple.v2();
-                
-                boolean needBase64Encode = false;
-                
-                if(filteredSource.size() == 1 && filteredSource.containsKey("config") && indexService.index().getName().equals("searchguard")) {
-                	filteredSource = XContentHelper.convertToMap(new BytesArray(Base64.getDecoder().decode((String)filteredSource.get("config"))), false, XContentType.JSON).v2();                    	
-                	needBase64Encode = true;
+
+                String sgconfigItem = null;
+
+                if(filteredSource.size() == 1 && 
+                        ( 
+                            filteredSource.containsKey("config")
+                            || filteredSource.containsKey("roles")
+                            || filteredSource.containsKey("rolesmapping")
+                            || filteredSource.containsKey("internalusers")
+                            || filteredSource.containsKey("actiongroups")
+                        )) {
+
+                    try {
+                        sgconfigItem = filteredSource.keySet().iterator().next();
+                        final Map<String, Object> configSource = XContentHelper.convertToMap(new BytesArray(Base64.getDecoder().decode((String)filteredSource.get(sgconfigItem))), false, XContentType.JSON).v2();
+                        filteredSource = configSource;
+                    } catch (Exception e) {
+                        //ignore
+                        sgconfigItem = null;
+                    }
                 }
-                
+
                 if (!canOptimize) {
                     filteredSource = filterFunction.apply(filteredSource);
                 } else {
@@ -431,18 +445,17 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                         filteredSource.keySet().retainAll(includesSet);
                     }
                 }
-                
-                if(needBase64Encode) {
-                	Map<String, Object> modified = new HashMap<>(1);
-                	modified.put("config", Base64.getEncoder().encodeToString(BytesReference.toBytes(BytesReference.bytes(XContentBuilder.builder(JsonXContent.jsonXContent).map(filteredSource)))));
-                	final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(modified);
+
+                if(sgconfigItem != null) {
+                    Map<String, Object> modified = new HashMap<>(1);
+                    modified.put(sgconfigItem, Base64.getEncoder().encodeToString(BytesReference.toBytes(BytesReference.bytes(XContentBuilder.builder(JsonXContent.jsonXContent).map(filteredSource)))));
+                    final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(modified);
                     delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
                 } else {
-                	final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
-                	delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
+                    final XContentBuilder xBuilder = XContentBuilder.builder(bytesRefTuple.v1().xContent()).map(filteredSource);
+                    delegate.binaryField(fieldInfo, BytesReference.toBytes(BytesReference.bytes(xBuilder)));
                 }
-                
-                
+
             } else {
                 delegate.binaryField(fieldInfo, value);
             }
@@ -995,5 +1008,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         return false;
     }
+    
+    
     
 }
