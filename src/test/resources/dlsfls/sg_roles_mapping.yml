@@ -15,6 +15,10 @@ sg_deals_without_amount:
   users:
     - dept_manager_fls
     
+sg_deals_without_amount_reversed_fields:
+  users:
+    - dept_manager_fls_reversed_fields
+    
 sg_dls_without_field_perm:
   users:
     - dept_manager_fls_dls
