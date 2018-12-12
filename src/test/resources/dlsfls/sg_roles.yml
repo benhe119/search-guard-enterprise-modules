@@ -16,6 +16,60 @@ sg_masked:
       _masked_fields_:
         - '*ip*'
 
+sg_masked_custom:
+  cluster:
+    - '*'
+  indices:
+    '*':
+      '*':
+        - indices:data/read/*
+      _masked_fields_:
+        - '*ip_dest::/[0-9]{1,3}$/::XXX'
+        - '*ip_source::/[0-9]{1,3}$/::XXX::/^[0-9]{1,3}/::***'
+        - 'customer.name::SHA-512'
+        - 'mynum::/[0-9]{1,}$/::XXX'
+        
+
+sg_masked_nowc:
+  cluster:
+    - CLUSTER_COMPOSITE_OPS
+  indices:
+    'logs':
+      '*':
+        - '*'
+      _masked_fields_:
+        - 'clientip::/[0-9]{1,3}/::*' # clientip: "157.4.76.38"
+        - 'ip::/[0-9]{1,3}/::XXX' # ip: "157.4.76.38"
+        - 'phpmemory::/[0-9]{1,}/::XXX' # phpmemory: 350640
+        - 'agent::/Mozilla|AppleWebKit|Chrome|MSIE|FIREFOX/::ANONYMIZED_BROWSER' # agent: "Mozilla/5.0 (X11; Linux i686) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/11.0.696.50 Safari/534.24"
+        - 'url::/elastic/::static'
+        - 'machine.os::SHA-512'
+        #- 'machine.os.keyword::SHA-512'
+        - 'message::SHA-512'
+        - 'referer::MD5'
+        - 'request::SHA-1'
+        - 'tags'
+        - 'timestamp'
+
+sg_masked_nowc1:
+  cluster:
+    - CLUSTER_COMPOSITE_OPS
+  indices:
+    'logs':
+      '*':
+        - '*'
+      _masked_fields_:
+        - 'clientip::/.*/::a'
+        - 'ip::/.*/::a'
+        - 'phpmemory::/.*/::a'
+        - 'agent::/.*/::a'
+        - 'url::/.*/::a'
+        - 'machine.os::/./::a'
+        - 'message::/.*/::a'
+        - 'referer::/.*/::a'
+        - 'request::/.*/::a'
+        - 'tags::/./::a'
+        - 'timestamp::/.*/::a'
 
 sg_midsized_deals:
   cluster:

@@ -54,3 +54,12 @@ user_combined:
 user_masked:
   #password
   hash: $2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe
+user_masked_custom:
+  #password
+  hash: $2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe
+user_masked_nowc:
+  #password
+  hash: $2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe
+user_masked_nowc1:
+  #password
+  hash: $2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe

@@ -81,3 +81,15 @@ sg_combined:
 sg_masked:
   users:
     - user_masked
+    
+sg_masked_custom:
+  users:
+    - user_masked_custom
+    
+sg_masked_nowc:
+  users:
+    - user_masked_nowc
+    
+sg_masked_nowc1:
+  users:
+    - user_masked_nowc1
