@@ -46,13 +46,17 @@ public class MaskedField {
             algo = tokens.get(1);
         } else if (tokenCount >= 3 && tokenCount%2==1) {
             name = tokens.get(0);
-            regexReplacements = new ArrayList<>();
+            regexReplacements = new ArrayList<>((tokenCount-1)/2);
             for(int i=1; i<tokenCount-1; i=i+2) {
                 regexReplacements.add(new RegexReplacement(tokens.get(i), tokens.get(i+1)));
             }
         } else {
             throw new IllegalArgumentException("Expected 1 or 2 or >=3 (but then odd count) tokens, got " + tokenCount);
         }
+    }
+
+    public final void isValid() throws Exception {
+        mask(new byte[] {1,2,3,4,5});
     }
 
     public byte[] mask(byte[] value) {

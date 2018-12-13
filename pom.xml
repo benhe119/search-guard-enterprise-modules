@@ -253,6 +253,12 @@
       <version>${guava.version}</version>
     </dependency>
 
+	<dependency>
+		<groupId>com.jayway.jsonpath</groupId>
+		<artifactId>json-path</artifactId>
+		<version>2.4.0</version>
+	</dependency>
+
     <!-- Only test scoped dependencies hereafter -->
 
     <dependency>
