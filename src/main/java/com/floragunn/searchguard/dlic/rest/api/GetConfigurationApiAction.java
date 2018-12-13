@@ -92,7 +92,7 @@ public class GetConfigurationApiAction extends AbstractApiAction {
         
 	@Override
 	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new NoOpValidator(method, ref);
+		return new NoOpValidator(method, ref, this.settings);
 	}
 
 	@Override

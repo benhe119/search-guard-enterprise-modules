@@ -65,7 +65,7 @@ public class ActionGroupsApiAction extends AbstractApiAction {
 
 	@Override
 	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new ActionGroupValidator(method, ref);
+		return new ActionGroupValidator(method, ref, this.settings);
 	}
 
 	@Override

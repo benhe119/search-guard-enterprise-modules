@@ -53,7 +53,7 @@ public class RolesApiAction extends AbstractApiAction {
 
 	@Override
 	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new RolesValidator(method, ref);
+		return new RolesValidator(method, ref, this.settings);
 	}
 
 	@Override

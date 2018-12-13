@@ -15,12 +15,13 @@
 package com.floragunn.searchguard.dlic.rest.validation;
 
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestRequest.Method;
 
 public class ActionGroupValidator extends AbstractConfigurationValidator {
 
-	public ActionGroupValidator(Method method, BytesReference ref) {
-		super(method, ref);
+	public ActionGroupValidator(Method method, BytesReference ref, final Settings esSettings) {
+		super(method, ref, esSettings);
 		this.payloadMandatory = true;
 		allowedKeys.put("permissions", DataType.ARRAY);
 		mandatoryKeys.add("permissions");

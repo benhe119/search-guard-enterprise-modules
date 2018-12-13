@@ -242,5 +242,42 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertTrue(roles.contains("captains"));
 
 	}
+	
+	@Test
+	public void testPasswordRules() throws Exception {
+
+		Settings nodeSettings = 
+				Settings.builder()
+				.put(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_ERROR_MESSAGE,"xxx")
+				.put(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_REGEX, 
+						"(?=.*[A-Z])(?=.*[^a-zA-Z\\\\d])(?=.*[0-9])(?=.*[a-z]).{8,}")
+				.build();
+		
+		setup(nodeSettings);
+
+		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.sendHTTPClientCertificate = true;
+
+		// initial configuration, 5 users
+		HttpResponse response = rh
+				.executeGetRequest("_searchguard/api/configuration/" + ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		Assert.assertEquals(8, settings.size());
+
+		addUserWithPassword("tooshoort", "123", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("tooshoort", "1234567", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("tooshoort", "1Aa%", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("no-nonnumeric", "123456789", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("no-uppercase", "a123456789", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("no-lowercase", "A123456789", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("ok1", "a%A123456789", HttpStatus.SC_CREATED);
+		addUserWithPassword("ok2", "$aA123456789", HttpStatus.SC_CREATED);
+		addUserWithPassword("ok3", "$Aa123456789", HttpStatus.SC_CREATED);
+		addUserWithPassword("ok4", "$1aAAAAAAAAA", HttpStatus.SC_CREATED);
+        addUserWithPassword("ok4", "$1aAAAAAAAAC", HttpStatus.SC_OK);
+		
+		
+	}
 
 }

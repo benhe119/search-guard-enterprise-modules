@@ -188,7 +188,7 @@ public class LicenseApiAction extends AbstractApiAction {
 
 	@Override
 	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new LicenseValidator(method, ref);
+		return new LicenseValidator(method, ref, this.settings);
 	}
 
 	@Override

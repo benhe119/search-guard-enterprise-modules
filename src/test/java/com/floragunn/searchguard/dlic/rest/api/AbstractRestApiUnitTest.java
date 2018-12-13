@@ -47,6 +47,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
         return "restapi";
     }
 
+    @Override
 	protected final void setup() throws Exception {
 		Settings.Builder builder = Settings.builder();
 
@@ -55,6 +56,22 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
 				.put("searchguard.ssl.http.truststore_filepath",
 						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"));
+		
+		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
+		rh = restHelper();
+		rh.keystore = "restapi/kirk-keystore.jks";
+	}
+	
+    @Override
+	protected final void setup(Settings nodeOverride) throws Exception {
+		Settings.Builder builder = Settings.builder();
+
+		builder.put("searchguard.ssl.http.enabled", true)
+				.put("searchguard.ssl.http.keystore_filepath",
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
+				.put("searchguard.ssl.http.truststore_filepath",
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"))
+				.put(nodeOverride);		
 		
 		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
 		rh = restHelper();

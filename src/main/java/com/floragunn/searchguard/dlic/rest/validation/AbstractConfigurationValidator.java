@@ -37,6 +37,7 @@ import org.elasticsearch.rest.RestRequest.Method;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.floragunn.searchguard.support.ConfigConstants;
 import com.google.common.base.Joiner;
 
 public abstract class AbstractConfigurationValidator {
@@ -83,12 +84,19 @@ public abstract class AbstractConfigurationValidator {
 	protected final Method method;
 
 	protected final BytesReference content;
+	
+	protected final Settings esSettings;
 
-	public AbstractConfigurationValidator(final Method method, final BytesReference ref) {
+	public AbstractConfigurationValidator(final Method method, final BytesReference ref, final Settings esSettings) {
 		this.content = ref;
 		this.method = method;
+		this.esSettings = esSettings;
 	}
 
+	/**
+	 * 
+	 * @return false if validation fails
+	 */
 	public boolean validateSettings() {
 		// no payload for DELETE and GET requests
 		if (method.equals(Method.DELETE) || method.equals(Method.GET)) {
@@ -197,6 +205,10 @@ public abstract class AbstractConfigurationValidator {
 				addErrorMessage(builder, MISSING_MANDATORY_KEYS_KEY, missingMandatoryKeys);
 				addErrorMessage(builder, MISSING_MANDATORY_OR_KEYS_KEY, missingMandatoryKeys);
 				break;
+			case INVALID_PASSWORD:
+				builder.field("status", "error");
+				builder.field("reason", esSettings.get(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_ERROR_MESSAGE,"Password does not match minimum criterias"));
+				break;
 			case WRONG_DATATYPE:
 				builder.field("status", "error");
 				builder.field("reason", ErrorType.WRONG_DATATYPE.getMessage());
@@ -250,6 +262,7 @@ public abstract class AbstractConfigurationValidator {
 	public static enum ErrorType {
 		NONE("ok"),		
 		INVALID_CONFIGURATION("Invalid configuration"),
+		INVALID_PASSWORD("Invalid password"),
 		WRONG_DATATYPE("Wrong datatype"),
 		BODY_NOT_PARSEABLE("Could not parse content of request."),
 		PAYLOAD_NOT_ALLOWED("Request body not allowed for this action."),

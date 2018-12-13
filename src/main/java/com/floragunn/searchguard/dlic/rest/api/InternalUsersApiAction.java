@@ -145,30 +145,30 @@ public class InternalUsersApiAction extends AbstractApiAction {
 	    Set<String> entries = builder.build().getAsGroups().keySet();
 	    for (String key : entries) {
             builder.put(key + ".hash", "");
-        }	    
-	}
-	
-	public static String hash(final char[] clearTextPassword) {
-	    final byte[] salt = new byte[16];
+        }
+    }
+    
+    public static String hash(final char[] clearTextPassword) {
+        final byte[] salt = new byte[16];
         new SecureRandom().nextBytes(salt);
         final String hash = OpenBSDBCrypt.generate((Objects.requireNonNull(clearTextPassword)), salt, 12);
         Arrays.fill(salt, (byte)0);
         Arrays.fill(clearTextPassword, '\0');
         return hash;
-	}
+    }
 
-	@Override
-	protected String getResourceName() {
-		return "user";
-	}
+    @Override
+    protected String getResourceName() {
+        return "user";
+    }
 
-	@Override
-	protected String getConfigName() {
-		return ConfigConstants.CONFIGNAME_INTERNAL_USERS;
-	}
+    @Override
+    protected String getConfigName() {
+        return ConfigConstants.CONFIGNAME_INTERNAL_USERS;
+    }
 
-	@Override
-	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new InternalUsersValidator(method, ref);
-	}
+    @Override
+    protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
+        return new InternalUsersValidator(method, ref, this.settings);
+    }
 }

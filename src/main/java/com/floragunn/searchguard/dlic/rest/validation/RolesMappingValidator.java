@@ -15,12 +15,13 @@
 package com.floragunn.searchguard.dlic.rest.validation;
 
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestRequest.Method;
 
 public class RolesMappingValidator extends AbstractConfigurationValidator {
 
-	public RolesMappingValidator(final Method method, final BytesReference ref) {
-		super(method, ref);
+	public RolesMappingValidator(final Method method, final BytesReference ref, final Settings esSettings) {
+		super(method, ref, esSettings);
 		this.payloadMandatory = true;
 		allowedKeys.put("backendroles", DataType.ARRAY);
 		allowedKeys.put("hosts", DataType.ARRAY);
