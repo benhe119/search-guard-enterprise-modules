@@ -26,6 +26,7 @@ public class InternalUsersValidator extends AbstractConfigurationValidator {
 		allowedKeys.put("password", DataType.STRING);
 		allowedKeys.put("roles", DataType.ARRAY);
 		allowedKeys.put("attributes", DataType.OBJECT);
+		allowedKeys.put("username", DataType.STRING);
 	}
 
 }

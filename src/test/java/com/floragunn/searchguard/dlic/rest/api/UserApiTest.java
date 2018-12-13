@@ -312,5 +312,34 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertTrue(roles.contains("captains"));
 
 	}
+	
+	@Test
+    public void testUserApiWithDots() throws Exception {
+
+        setup();
+
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+
+        // initial configuration, 5 users
+        HttpResponse response = rh
+                .executeGetRequest("_searchguard/api/configuration/" + ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+        Assert.assertEquals(8, settings.size());
+        
+        addDotUserUserWithHash("my.dotuser0", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_BAD_REQUEST, false);
+        
+        addDotUserWithPassword("my.dot.user0", "12345678",
+                HttpStatus.SC_BAD_REQUEST, false);
+        
+        addDotUserUserWithHash("my.dotuser1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_CREATED, true);
+        
+        addDotUserWithPassword("my.dot.user2", "12345678",
+                HttpStatus.SC_CREATED, true);
+
+	}
 
 }

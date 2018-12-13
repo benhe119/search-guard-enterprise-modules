@@ -120,6 +120,16 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
+	
+    protected void addDotUserWithPassword(String usernameWithDots, String password, int status, boolean replace) throws Exception {
+        Assert.assertTrue(usernameWithDots.contains("."));
+        boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + usernameWithDots.replace('.', replace?'_':'.'),
+                "{\"password\": \"" + password + "\",\"username\":\""+usernameWithDots+"\"}", new Header[0]);
+        Assert.assertEquals(status, response.getStatusCode());
+        rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
+    }
 
 	protected void addUserWithPassword(String username, String password, String[] roles, int status) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
@@ -165,6 +175,16 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
+	
+    protected void addDotUserUserWithHash(String usernameWithDots, String hash, int status, boolean replace) throws Exception {
+        Assert.assertTrue(usernameWithDots.contains("."));
+        boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + usernameWithDots.replace('.', replace?'_':'.'),
+                "{\"hash\": \"" + hash + "\",\"username\":\""+usernameWithDots+"\"}", new Header[0]);
+        Assert.assertEquals(status, response.getStatusCode());
+        rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
+    }
 
 	protected void checkGeneralAccess(int status, String username, String password) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;

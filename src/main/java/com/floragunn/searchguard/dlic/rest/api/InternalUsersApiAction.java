@@ -89,6 +89,10 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
             return badRequestResponse("No " + getResourceName() + " specified");
         }
 
+        if(username.contains(".")) {
+            return badRequestResponse("No dots are allowed in the name. User the username attribute: https://docs.search-guard.com/latest/internal-users-database");
+        }
+
         // TODO it might be sensible to consolidate this with the overridden method in
         // order to minimize duplicated logic
 
@@ -116,7 +120,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         final Settings.Builder internaluser = load(ConfigConstants.CONFIGNAME_INTERNAL_USERS, false);
         final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(internaluser.build());
 
-        boolean userExisted = config.containsKey(username);
+        final boolean userExisted = config.containsKey(username);
 
         // when updating an existing user password hash can be blank, which means no
         // changes
