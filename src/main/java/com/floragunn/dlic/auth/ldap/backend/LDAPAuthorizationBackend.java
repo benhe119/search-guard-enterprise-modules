@@ -14,8 +14,6 @@
 
 package com.floragunn.dlic.auth.ldap.backend;
 
-import io.netty.util.internal.PlatformDependent;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -64,9 +62,9 @@ import org.ldaptive.control.RequestControl;
 import org.ldaptive.provider.ProviderConnection;
 import org.ldaptive.sasl.ExternalConfig;
 import org.ldaptive.ssl.AllowAnyHostnameVerifier;
+import org.ldaptive.ssl.AllowAnyTrustManager;
 import org.ldaptive.ssl.CredentialConfig;
 import org.ldaptive.ssl.CredentialConfigFactory;
-import org.ldaptive.ssl.HostnameVerifyingTrustManager;
 import org.ldaptive.ssl.SslConfig;
 import org.ldaptive.ssl.ThreadLocalTLSSocketFactory;
 
@@ -81,8 +79,11 @@ import com.floragunn.searchguard.support.WildcardMatcher;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.user.User;
 
+import io.netty.util.internal.PlatformDependent;
+
 public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
+    private static final String COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION = "com.sun.jndi.ldap.object.disableEndpointIdentification";
     private static final List<String> DEFAULT_TLS_PROTOCOLS = Arrays.asList("TLSv1.2", "TLSv1.1");
     static final String ONE_PLACEHOLDER = "{1}";
     static final String TWO_PLACEHOLDER = "{2}";
@@ -321,8 +322,16 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
             final boolean enableClientAuth = settings.getAsBoolean(ConfigConstants.LDAPS_ENABLE_SSL_CLIENT_AUTH,
                     ConfigConstants.LDAPS_ENABLE_SSL_CLIENT_AUTH_DEFAULT);
-            final boolean verifyHostnames = settings.getAsBoolean(ConfigConstants.LDAPS_VERIFY_HOSTNAMES,
+
+            final boolean trustAll = settings.getAsBoolean(ConfigConstants.LDAPS_TRUST_ALL, false);
+
+            final boolean verifyHostnames = !trustAll && settings.getAsBoolean(ConfigConstants.LDAPS_VERIFY_HOSTNAMES,
                     ConfigConstants.LDAPS_VERIFY_HOSTNAMES_DEFAULT);
+
+            if (log.isDebugEnabled()) {
+                log.debug("verifyHostname {}:", verifyHostnames);
+                log.debug("trustall {}:", trustAll);
+            }
 
             if (enableStartTLS && !verifyHostnames) {
                 props.put("jndi.starttls.allowAnyHostname", "true");
@@ -340,7 +349,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
                 if (trustCertificates == null) {
                     trustCertificates = PemKeyReader.loadCertificatesFromFile(PemKeyReader
-                            .resolve(ConfigConstants.LDAPS_PEMTRUSTEDCAS_FILEPATH, settings, configPath, true));
+                            .resolve(ConfigConstants.LDAPS_PEMTRUSTEDCAS_FILEPATH, settings, configPath, !trustAll));
                 }
                 // for client authentication
                 X509Certificate authenticationCertificate = PemKeyReader.loadCertificateFromStream(
@@ -372,7 +381,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             } else {
                 final KeyStore trustStore = PemKeyReader.loadKeyStore(
                         PemKeyReader.resolve(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_FILEPATH, settings,
-                                configPath, true),
+                                configPath, !trustAll),
                         settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_PASSWORD,
                                 SSLConfigConstants.DEFAULT_STORE_PASSWORD),
                         settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_TYPE));
@@ -411,8 +420,26 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
             sslConfig.setCredentialConfig(cc);
 
+            if (trustAll) {
+                sslConfig.setTrustManagers(new AllowAnyTrustManager());
+            }
+
             if (!verifyHostnames) {
-                sslConfig.setTrustManagers(new HostnameVerifyingTrustManager(new AllowAnyHostnameVerifier(), "dummy"));
+                sslConfig.setHostnameVerifier(new AllowAnyHostnameVerifier());
+                final String deiProp = System.getProperty(COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION);
+                
+                if (deiProp == null || !Boolean.parseBoolean(deiProp)) {
+                    log.warn("In order to disable host name verification for LDAP connections (verify_hostnames: true), "
+                            + "you also need to set set the system property "+COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION+" to true when starting the JVM running ES. "
+                            + "This applies for all Java versions released since July 2018.");
+                    // See:
+                    // https://www.oracle.com/technetwork/java/javase/8u181-relnotes-4479407.html
+                    // https://www.oracle.com/technetwork/java/javase/10-0-2-relnotes-4477557.html
+                    // https://www.oracle.com/technetwork/java/javase/11-0-1-relnotes-5032023.html
+                }
+                
+                System.setProperty(COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION, "true");
+
             }
 
             // https://github.com/floragunncom/search-guard/issues/227

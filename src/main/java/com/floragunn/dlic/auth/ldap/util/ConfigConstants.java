@@ -44,6 +44,7 @@ public final class ConfigConstants {
 
     // ssl
     public static final String LDAPS_VERIFY_HOSTNAMES = "verify_hostnames";
+    public static final String LDAPS_TRUST_ALL = "trust_all";
     public static final boolean LDAPS_VERIFY_HOSTNAMES_DEFAULT = true;
     public static final String LDAPS_ENABLE_SSL = "enable_ssl";
     public static final String LDAPS_ENABLE_START_TLS = "enable_start_tls";
