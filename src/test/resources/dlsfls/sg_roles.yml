@@ -5,6 +5,20 @@ sg_all_access:
     '*':
       '*':  
         - '*'
+        
+sg_prop_replace:
+  cluster:
+    - '*'
+  indices:
+    'prop1':
+      '*':  
+        - READ
+      _dls_: '{"term" : {"${user.name}" : "yes"}}'
+    'prop2':
+      '*':  
+        - READ
+      _dls_: '{"terms" : { "role" : [${user.roles}]}}'
+      #_dls_: '{"terms" : { "user" : ["x","x"]}'# in query
 
 sg_masked:
   cluster:

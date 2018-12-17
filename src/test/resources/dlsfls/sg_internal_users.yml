@@ -63,3 +63,9 @@ user_masked_nowc:
 user_masked_nowc1:
   #password
   hash: $2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe
+prop_replace:
+  #password
+  hash: $2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe
+  roles:
+    - prole1
+    - prole2

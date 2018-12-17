@@ -93,3 +93,7 @@ sg_masked_nowc:
 sg_masked_nowc1:
   users:
     - user_masked_nowc1
+    
+sg_prop_replace:
+  users:
+    - prop_replace
