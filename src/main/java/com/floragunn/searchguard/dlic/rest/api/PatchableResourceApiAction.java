@@ -38,10 +38,10 @@ import org.elasticsearch.threadpool.ThreadPool;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.JsonPatch;
 import com.flipkart.zjsonpatch.JsonPatchApplicationException;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
@@ -52,7 +52,6 @@ import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 
 public abstract class PatchableResourceApiAction extends AbstractApiAction {
 
-    private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     protected final Logger log = LogManager.getLogger(this.getClass());
 
     public PatchableResourceApiAction(Settings settings, Path configPath, RestController controller, Client client,
@@ -75,7 +74,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         JsonNode jsonPatch;
 
         try {
-            jsonPatch = OBJECT_MAPPER.readTree(request.content().utf8ToString());
+            jsonPatch = DefaultObjectMapper.objectMapper.readTree(request.content().utf8ToString());
         } catch (JsonParseException e) {
             log.debug("Error while parsing JSON patch", e);
             return badRequestResponse("Error in JSON patch: " + e.getMessage());
@@ -144,7 +143,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         JsonNode updatedAsJsonNode = existingAsObjectNode.deepCopy().set(name, patchedResourceAsJsonNode);
 
         BytesReference updatedAsBytesReference = new BytesArray(
-                OBJECT_MAPPER.writeValueAsString(updatedAsJsonNode).getBytes());
+                DefaultObjectMapper.objectMapper.writeValueAsString(updatedAsJsonNode).getBytes());
 
         save(client, request, getConfigName(), updatedAsBytesReference);
 
@@ -207,7 +206,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         }
 
         BytesReference updatedAsBytesReference = new BytesArray(
-                OBJECT_MAPPER.writeValueAsString(patchedAsJsonNode).getBytes());
+                DefaultObjectMapper.objectMapper.writeValueAsString(patchedAsJsonNode).getBytes());
 
         save(client, request, getConfigName(), updatedAsBytesReference);
 
@@ -237,8 +236,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
     private AbstractConfigurationValidator getValidator(RestRequest request, JsonNode patchedResource)
             throws JsonProcessingException {
         BytesReference patchedResourceAsByteReference = new BytesArray(
-                OBJECT_MAPPER.writeValueAsString(patchedResource).getBytes());
-
+                DefaultObjectMapper.objectMapper.writeValueAsString(patchedResource).getBytes());
         return getValidator(request, patchedResourceAsByteReference);
     }
 }

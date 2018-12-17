@@ -52,7 +52,7 @@ import org.junit.Test;
 import org.opensaml.saml.saml2.core.NameIDType;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.util.FakeRestRequest;
@@ -135,7 +135,7 @@ public class HTTPSamlAuthenticatorTest {
         samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
 
         String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
-        HashMap<String, Object> response = new ObjectMapper().readValue(responseJson,
+        HashMap<String, Object> response = DefaultObjectMapper.objectMapper.readValue(responseJson,
                 new TypeReference<HashMap<String, Object>>() {
                 });
         String authorization = (String) response.get("authorization");
@@ -224,7 +224,7 @@ public class HTTPSamlAuthenticatorTest {
         samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
 
         String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
-        HashMap<String, Object> response = new ObjectMapper().readValue(responseJson,
+        HashMap<String, Object> response = DefaultObjectMapper.objectMapper.readValue(responseJson,
                 new TypeReference<HashMap<String, Object>>() {
                 });
         String authorization = (String) response.get("authorization");
@@ -262,7 +262,7 @@ public class HTTPSamlAuthenticatorTest {
         samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
 
         String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
-        HashMap<String, Object> response = new ObjectMapper().readValue(responseJson,
+        HashMap<String, Object> response = DefaultObjectMapper.objectMapper.readValue(responseJson,
                 new TypeReference<HashMap<String, Object>>() {
                 });
         String authorization = (String) response.get("authorization");
@@ -301,7 +301,7 @@ public class HTTPSamlAuthenticatorTest {
         samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
 
         String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
-        HashMap<String, Object> response = new ObjectMapper().readValue(responseJson,
+        HashMap<String, Object> response = DefaultObjectMapper.objectMapper.readValue(responseJson,
                 new TypeReference<HashMap<String, Object>>() {
                 });
         String authorization = (String) response.get("authorization");

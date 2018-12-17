@@ -30,7 +30,7 @@ import org.junit.Assert;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.test.DynamicSgConfig;
 import com.floragunn.searchguard.test.SingleClusterTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
@@ -265,9 +265,8 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 	}
 	
 	protected Map<String, String> jsonStringToMap(String json) throws JsonParseException, JsonMappingException, IOException {
-		ObjectMapper mapper = new ObjectMapper();		
 		TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String, String>>() {};
-		return mapper.readValue(json, typeRef);
+		return DefaultObjectMapper.objectMapper.readValue(json, typeRef);
 	}
 	
 	protected static class TransportClientImpl extends TransportClient {

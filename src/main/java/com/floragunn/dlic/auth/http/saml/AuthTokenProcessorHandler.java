@@ -54,8 +54,8 @@ import org.xml.sax.SAXException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.dlic.rest.api.AuthTokenProcessorAction;
 import com.google.common.base.Strings;
 import com.onelogin.saml2.authn.SamlResponse;
@@ -182,7 +182,6 @@ class AuthTokenProcessorHandler {
     private boolean handleLowLevel(RestRequest restRequest, RestChannel restChannel) throws SamlConfigException,
             IOException, XPathExpressionException, ParserConfigurationException, SAXException, SettingsException {
         try {
-            ObjectMapper mapper = new ObjectMapper();
 
             if (restRequest.getXContentType() != XContentType.JSON) {
                 throw new ElasticsearchSecurityException(
@@ -200,7 +199,7 @@ class AuthTokenProcessorHandler {
 
             BytesReference bytesReference = restRequest.requiredContent();
 
-            JsonNode jsonRoot = new ObjectMapper().readTree(BytesReference.toBytes(bytesReference));
+            JsonNode jsonRoot = DefaultObjectMapper.objectMapper.readTree(BytesReference.toBytes(bytesReference));
 
             if (!(jsonRoot instanceof ObjectNode)) {
                 throw new JsonParseException(null, "Unexpected json format: " + jsonRoot);
@@ -231,7 +230,7 @@ class AuthTokenProcessorHandler {
                 return false;
             }
 
-            String responseBodyString = mapper.writeValueAsString(responseBody);
+            String responseBodyString = DefaultObjectMapper.objectMapper.writeValueAsString(responseBody);
 
             BytesRestResponse authenticateResponse = new BytesRestResponse(RestStatus.OK, "application/json",
                     responseBodyString);
