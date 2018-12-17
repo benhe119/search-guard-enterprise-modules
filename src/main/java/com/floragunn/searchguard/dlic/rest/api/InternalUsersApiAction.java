@@ -14,6 +14,7 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -28,6 +29,8 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
@@ -170,16 +173,29 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
     }
     
     @Override
-    protected void postProcessApplyPatchResult(JsonNode existingResourceAsJsonNode,
-            JsonNode updatedResourceAsJsonNode) {
+    protected AbstractConfigurationValidator postProcessApplyPatchResult(RestRequest request, JsonNode existingResourceAsJsonNode,
+            JsonNode updatedResourceAsJsonNode, String resourceName) {
+    	AbstractConfigurationValidator retVal = null;
         JsonNode passwordNode = updatedResourceAsJsonNode.get("password");
 
         if (passwordNode != null) {
             String plainTextPassword = passwordNode.asText();
+            try {
+				XContentBuilder builder = XContentBuilder.builder(JsonXContent.jsonXContent);
+				builder.startObject();
+				builder.field("password", plainTextPassword);
+				builder.endObject();
+				retVal = getValidator(request, BytesReference.bytes(builder), resourceName);
+			} catch (IOException e) {
+				log.error(e);
+			}
 
             ((ObjectNode) updatedResourceAsJsonNode).remove("password");
             ((ObjectNode) updatedResourceAsJsonNode).set("hash", new TextNode(hash(plainTextPassword.toCharArray())));
+            return retVal;
         }
+        
+        return null;
     }
 
     public static String hash(final char[] clearTextPassword) {
@@ -202,7 +218,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
     }
 
     @Override
-    protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-        return new InternalUsersValidator(method, ref);
+    protected AbstractConfigurationValidator getValidator(RestRequest request, BytesReference ref, Object... params) {
+        return new InternalUsersValidator(request, ref, this.settings, params);
     }
 }

@@ -14,19 +14,73 @@
 
 package com.floragunn.searchguard.dlic.rest.validation;
 
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.rest.RestRequest.Method;
+import org.elasticsearch.common.compress.NotXContentException;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.rest.RestRequest;
+
+import com.floragunn.searchguard.ssl.util.Utils;
+import com.floragunn.searchguard.support.ConfigConstants;
 
 public class InternalUsersValidator extends AbstractConfigurationValidator {
 
-	public InternalUsersValidator(final Method method, BytesReference ref) {
-		super(method, ref);
-		this.payloadMandatory = true;
-		allowedKeys.put("hash", DataType.STRING);
-		allowedKeys.put("password", DataType.STRING);
-		allowedKeys.put("roles", DataType.ARRAY);
-		allowedKeys.put("attributes", DataType.OBJECT);
-		allowedKeys.put("username", DataType.STRING);
-	}
+    public InternalUsersValidator(final RestRequest request, BytesReference ref, final Settings esSettings,
+            Object... param) {
+        super(request, ref, esSettings, param);
+        this.payloadMandatory = true;
+        allowedKeys.put("hash", DataType.STRING);
+        allowedKeys.put("password", DataType.STRING);
+        allowedKeys.put("roles", DataType.ARRAY);
+        allowedKeys.put("attributes", DataType.OBJECT);
+        allowedKeys.put("username", DataType.STRING);
+    }
 
+    @Override
+    public boolean validateSettings() {
+        if(!super.validateSettings()) {
+            return false;
+        }
+
+        final String regex = this.esSettings.get(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_REGEX, null);
+
+        if(regex != null && !regex.isEmpty() && this.content != null) {
+            try {
+                final Map<String, Object> contentAsMap = XContentHelper.convertToMap(this.content, false, XContentType.JSON).v2();
+                if(contentAsMap != null && contentAsMap.containsKey("password")) {
+                    final String password = (String) contentAsMap.get("password");
+
+                    if(password == null || password.isEmpty()) {
+                        log.error("Unable to validate password because no password is given");
+                        return false;
+                    }
+                    
+                    if(!regex.isEmpty() && !Pattern.compile("^"+regex+"$").matcher(password).matches()) {
+                        this.errorType = ErrorType.INVALID_PASSWORD;
+                        return false;
+                    }
+
+                    final String username = Utils.coalesce(request.param("name"), hasParams()?(String)param[0]:null);
+                    
+                    if(username == null || username.isEmpty()) {
+                        log.error("Unable to validate username because no user is given");
+                        return false;
+                    }
+
+                    if(username.toLowerCase().equals(password.toLowerCase())) {
+                        this.errorType = ErrorType.INVALID_PASSWORD;
+                        return false;
+                    }
+                }
+            } catch (NotXContentException e) {
+                //this.content is not valid json/yaml
+                return false;
+            }
+        }
+        return true;
+    }
 }

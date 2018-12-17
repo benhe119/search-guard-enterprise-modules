@@ -15,12 +15,14 @@
 package com.floragunn.searchguard.dlic.rest.validation;
 
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 
 public class RolesValidator extends AbstractConfigurationValidator {
 
-	public RolesValidator(final Method method, final BytesReference ref) {
-		super(method, ref);
+	public RolesValidator(final RestRequest request, final BytesReference ref, final Settings esSettings, Object... param) {
+		super(request, ref, esSettings, param);
 		this.payloadMandatory = true;
 		allowedKeys.put("indices", DataType.OBJECT);
 		allowedKeys.put("cluster", DataType.ARRAY);
