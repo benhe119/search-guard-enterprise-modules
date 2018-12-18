@@ -15,6 +15,8 @@
 package com.floragunn.dlic.auth.http.saml;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -76,6 +78,7 @@ class AuthTokenProcessorHandler {
     private String samlSubjectKey;
     private String samlRolesKey;
     private String samlRolesSeparator;
+    private String kibanaRootUrl;
 
     private long expiryOffset = 0;
     private ExpiryBaseValue expiryBaseValue = ExpiryBaseValue.AUTO;
@@ -92,6 +95,7 @@ class AuthTokenProcessorHandler {
         this.samlRolesKey = settings.get("roles_key");
         this.samlSubjectKey = settings.get("subject_key");
         this.samlRolesSeparator = settings.get("roles_seperator");
+        this.kibanaRootUrl = settings.get("kibana_url");
 
         if (samlRolesKey == null || samlRolesKey.length() == 0) {
             log.warn("roles_key is not configured, will only extract subject from SAML");
@@ -141,7 +145,7 @@ class AuthTokenProcessorHandler {
     }
 
     private AuthTokenProcessorAction.Response handleImpl(RestRequest restRequest, RestChannel restChannel,
-            String samlResponseBase64, String samlRequestId, Saml2Settings saml2Settings)
+            String samlResponseBase64, String samlRequestId, String acsEndpoint, Saml2Settings saml2Settings)
             throws XPathExpressionException, ParserConfigurationException, SAXException, IOException,
             SettingsException {
         if (token_log.isDebugEnabled()) {
@@ -158,7 +162,7 @@ class AuthTokenProcessorHandler {
         try {
 
             SamlResponse samlResponse = new SamlResponse(saml2Settings, null);
-            samlResponse.setDestinationUrl(saml2Settings.getSpAssertionConsumerServiceUrl().toString());
+            samlResponse.setDestinationUrl(acsEndpoint);
             samlResponse.loadXmlFromBase64(samlResponseBase64);
 
             if (!samlResponse.isValid(samlRequestId)) {
@@ -213,18 +217,19 @@ class AuthTokenProcessorHandler {
 
             }
 
-            if (((ObjectNode) jsonRoot).get("RequestId") == null) {
-                log.warn("RequestId is missing from request ");
+            String samlResponseBase64 = ((ObjectNode) jsonRoot).get("SAMLResponse").asText();
+            String samlRequestId = ((ObjectNode) jsonRoot).get("RequestId") != null
+                    ? ((ObjectNode) jsonRoot).get("RequestId").textValue()
+                    : null;
+            String acsEndpoint = saml2Settings.getSpAssertionConsumerServiceUrl().toString();
 
-                throw new ElasticsearchSecurityException("RequestId is missing from request", RestStatus.BAD_REQUEST);
-
+            if (((ObjectNode) jsonRoot).get("acsEndpoint") != null
+                    && ((ObjectNode) jsonRoot).get("acsEndpoint").textValue() != null) {
+                acsEndpoint = getAbsoluteAcsEndpoint(((ObjectNode) jsonRoot).get("acsEndpoint").textValue());
             }
 
-            String samlResponseBase64 = ((ObjectNode) jsonRoot).get("SAMLResponse").asText();
-            String samlRequestId = ((ObjectNode) jsonRoot).get("RequestId").asText();
-
             AuthTokenProcessorAction.Response responseBody = this.handleImpl(restRequest, restChannel,
-                    samlResponseBase64, samlRequestId, saml2Settings);
+                    samlResponseBase64, samlRequestId, acsEndpoint, saml2Settings);
 
             if (responseBody == null) {
                 return false;
@@ -438,6 +443,21 @@ class AuthTokenProcessorHandler {
         return result;
     }
 
+    private String getAbsoluteAcsEndpoint(String acsEndpoint) {
+        try {
+            URI acsEndpointUri = new URI(acsEndpoint);
+            
+            if (acsEndpointUri.isAbsolute()) {
+                return acsEndpoint;
+            } else {
+                return new URI(this.kibanaRootUrl).resolve(acsEndpointUri).toString();
+            }
+        } catch (URISyntaxException e) {
+            log.error("Could not parse URI for acsEndpoint: " + acsEndpoint);
+            return acsEndpoint;
+        }
+    }
+    
     private enum ExpiryBaseValue {
         AUTO, NOW, SESSION
     }

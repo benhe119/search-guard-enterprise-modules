@@ -45,6 +45,7 @@ import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestResponse;
+import org.elasticsearch.rest.RestStatus;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -118,7 +119,7 @@ public class HTTPSamlAuthenticatorTest {
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString(null);
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
@@ -149,12 +150,76 @@ public class HTTPSamlAuthenticatorTest {
     }
 
     @Test
+    public void unsolicitedSsoTest() throws Exception {
+        mockSamlIdpServer.setSignResponses(true);
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setEndpointQueryString(null);
+        mockSamlIdpServer.setDefaultAssertionConsumerService("http://wherever/searchguard/saml/acs/idpinitiated");
+
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
+
+        HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
+
+        String encodedSamlResponse = mockSamlIdpServer.createUnsolicitedSamlResponse();
+
+        RestRequest tokenRestRequest = buildTokenExchangeRestRequest(encodedSamlResponse, null,
+                "/searchguard/saml/acs/idpinitiated");
+        TestRestChannel tokenRestChannel = new TestRestChannel(tokenRestRequest);
+
+        samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
+
+        String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
+        HashMap<String, Object> response = new ObjectMapper().readValue(responseJson,
+                new TypeReference<HashMap<String, Object>>() {
+                });
+        String authorization = (String) response.get("authorization");
+
+        Assert.assertNotNull("Expected authorization attribute in JSON: " + responseJson, authorization);
+
+        JwsJwtCompactConsumer jwtConsumer = new JwsJwtCompactConsumer(authorization.replaceAll("\\s*bearer\\s*", ""));
+        JwtToken jwt = jwtConsumer.getJwtToken();
+
+        Assert.assertEquals("horst", jwt.getClaim("sub"));
+    }
+
+    @Test
+    public void badUnsolicitedSsoTest() throws Exception {
+        mockSamlIdpServer.setSignResponses(true);
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.setAuthenticateUser("horst");
+        mockSamlIdpServer.setEndpointQueryString(null);
+        mockSamlIdpServer.setDefaultAssertionConsumerService("http://wherever/searchguard/saml/acs/idpinitiated");
+
+        Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
+
+        HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
+
+        String encodedSamlResponse = mockSamlIdpServer.createUnsolicitedSamlResponse();
+
+        AuthenticateHeaders authenticateHeaders = new AuthenticateHeaders("http://wherever/searchguard/saml/acs/",
+                "wrong_request_id");
+
+        RestRequest tokenRestRequest = buildTokenExchangeRestRequest(encodedSamlResponse, authenticateHeaders,
+                "/searchguard/saml/acs/idpinitiated");
+        TestRestChannel tokenRestChannel = new TestRestChannel(tokenRestRequest);
+
+        samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
+
+        Assert.assertEquals(RestStatus.UNAUTHORIZED, tokenRestChannel.response.status());
+    }
+
+    @Test
     public void wrongCertTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString(null);
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
@@ -180,7 +245,7 @@ public class HTTPSamlAuthenticatorTest {
         mockSamlIdpServer.setSignResponses(false);
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString(null);
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
@@ -207,7 +272,7 @@ public class HTTPSamlAuthenticatorTest {
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setAuthenticateUserRoles(Arrays.asList("a", "b"));
         mockSamlIdpServer.setEndpointQueryString(null);
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
@@ -238,14 +303,14 @@ public class HTTPSamlAuthenticatorTest {
         Assert.assertArrayEquals(new String[] { "a", "b" },
                 ((List<String>) jwt.getClaim("roles")).toArray(new String[0]));
     }
-    
+
     @Test
     public void idpEndpointWithQueryStringTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString("extra=query");
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
@@ -283,7 +348,7 @@ public class HTTPSamlAuthenticatorTest {
         mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
         mockSamlIdpServer.setAuthenticateUserRoles(Arrays.asList("a,b"));
         mockSamlIdpServer.setEndpointQueryString(null);
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("roles_seperator", ",").put("path.home", ".")
@@ -323,7 +388,7 @@ public class HTTPSamlAuthenticatorTest {
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
         mockSamlIdpServer.setEndpointQueryString(null);
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles")
@@ -351,7 +416,7 @@ public class HTTPSamlAuthenticatorTest {
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
         mockSamlIdpServer.setEndpointQueryString(null);
-        
+
         Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
                 .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
                 .put("exchange_key", "abc").put("roles_key", "roles").put("sp.signature_private_key", SPOCK_KEY)
@@ -402,8 +467,20 @@ public class HTTPSamlAuthenticatorTest {
 
     private RestRequest buildTokenExchangeRestRequest(String encodedSamlResponse,
             AuthenticateHeaders authenticateHeaders) {
-        String authtokenPostJson = "{\"SAMLResponse\": \"" + encodedSamlResponse + "\", \"RequestId\": \""
-                + authenticateHeaders.requestId + "\"}";
+        return buildTokenExchangeRestRequest(encodedSamlResponse, authenticateHeaders, "/searchguard/saml/acs");
+    }
+
+    private RestRequest buildTokenExchangeRestRequest(String encodedSamlResponse,
+            AuthenticateHeaders authenticateHeaders, String acsEndpoint) {
+        String authtokenPostJson;
+
+        if (authenticateHeaders != null) {
+            authtokenPostJson = "{\"SAMLResponse\": \"" + encodedSamlResponse + "\", \"RequestId\": \""
+                    + authenticateHeaders.requestId + "\"}";
+        } else {
+            authtokenPostJson = "{\"SAMLResponse\": \"" + encodedSamlResponse
+                    + "\", \"RequestId\": null, \"acsEndpoint\": \"" + acsEndpoint + "\" }";
+        }
 
         return new FakeRestRequest.Builder().withPath("/_searchguard/api/authtoken").withMethod(Method.POST)
                 .withContent(new BytesArray(authtokenPostJson))
