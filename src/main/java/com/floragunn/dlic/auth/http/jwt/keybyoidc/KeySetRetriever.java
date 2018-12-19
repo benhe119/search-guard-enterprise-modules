@@ -34,9 +34,10 @@ import org.apache.http.impl.client.cache.CachingHttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.floragunn.dlic.auth.http.jwt.keybyoidc.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.dlic.auth.http.jwt.oidc.json.OpenIdProviderConfiguration;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.searchguard.DefaultObjectMapper;
+
 
 public class KeySetRetriever implements KeySetProvider {
 	private final static Logger log = LogManager.getLogger(KeySetRetriever.class);

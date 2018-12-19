@@ -12,7 +12,7 @@
  * 
  */
 
-package com.floragunn.dlic.auth.ldap;
+package com.floragunn.dlic.auth.ldap2;
 
 import org.apache.http.HttpStatus;
 import org.elasticsearch.common.settings.Settings;
@@ -27,7 +27,7 @@ import com.floragunn.searchguard.test.SingleClusterTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper;
 
-public class LdapBackendIntegTest extends SingleClusterTest {
+public class LdapBackendIntegTest2 extends SingleClusterTest {
 
     private static EmbeddedLDAPServer ldapServer = null;
     
@@ -50,7 +50,7 @@ public class LdapBackendIntegTest extends SingleClusterTest {
 
     @Test
     public void testIntegLdapAuthenticationSSL() throws Exception {
-        String sgConfigAsYamlString = FileHelper.loadFile("ldap/sg_config.yml");
+        String sgConfigAsYamlString = FileHelper.loadFile("ldap/sg_config_ldap2.yml");
         sgConfigAsYamlString = sgConfigAsYamlString.replace("${ldapsPort}", String.valueOf(ldapsPort));
         System.out.println(sgConfigAsYamlString);
         setup(Settings.EMPTY, new DynamicSgConfig().setSgConfigAsYamlString(sgConfigAsYamlString), Settings.EMPTY);
