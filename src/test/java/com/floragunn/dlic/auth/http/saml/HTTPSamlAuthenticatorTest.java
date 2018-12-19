@@ -172,7 +172,7 @@ public class HTTPSamlAuthenticatorTest {
         samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
 
         String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
-        HashMap<String, Object> response = new ObjectMapper().readValue(responseJson,
+        HashMap<String, Object> response = DefaultObjectMapper.objectMapper.readValue(responseJson,
                 new TypeReference<HashMap<String, Object>>() {
                 });
         String authorization = (String) response.get("authorization");
