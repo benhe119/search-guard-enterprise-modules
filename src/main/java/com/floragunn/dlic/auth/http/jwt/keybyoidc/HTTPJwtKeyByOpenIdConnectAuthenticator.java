@@ -21,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.settings.Settings;
 
 import com.floragunn.dlic.auth.http.jwt.AbstractHTTPJwtAuthenticator;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 
 public class HTTPJwtKeyByOpenIdConnectAuthenticator extends AbstractHTTPJwtAuthenticator {
 

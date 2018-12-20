@@ -69,7 +69,7 @@ public class WebhookAuditLogTest {
 		        .put("searchguard.ssl.transport.truststore_filepath",
                         FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
 		        .build();
-		LoggingSink fallback = new LoggingSink("test", null, null, null);
+		LoggingSink fallback = new LoggingSink("test", Settings.EMPTY, null, null);
 		MockWebhookAuditLog auditlog = new MockWebhookAuditLog(settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, fallback);
 		auditlog.store(msg);
 		// Webhook sink has failed ...
@@ -180,7 +180,7 @@ public class WebhookAuditLogTest {
                         FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
 				.put("path.home", ".")
 				.build();
-		LoggingSink fallback =  new LoggingSink("test", null, null, null);;
+		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);;
 		MockWebhookAuditLog auditlog = new MockWebhookAuditLog(settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, fallback);
 		AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
 		auditlog.store(msg);
@@ -204,7 +204,7 @@ public class WebhookAuditLogTest {
 				.put("path.home", ".")
 				.build();
 
-		LoggingSink fallback =  new LoggingSink("test", null, null, null);;
+		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);;
 		WebhookSink auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
 		AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
 		auditlog.store(msg);
@@ -239,7 +239,7 @@ public class WebhookAuditLogTest {
                         FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
 				.build();
 
-		LoggingSink fallback =  new LoggingSink("test", null, null, null);;
+		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);;
 		WebhookSink auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
 		AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
 		auditlog.store(msg);
@@ -343,7 +343,7 @@ public class WebhookAuditLogTest {
                         FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
 				.build();
 
-		LoggingSink fallback =  new LoggingSink("test", null, null, null);;
+		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);;
 		WebhookSink auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
 		AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
 		auditlog.store(msg);
@@ -382,7 +382,7 @@ public class WebhookAuditLogTest {
                 .put("searchguard.audit.config.webhook.ssl.verify", true)                
                 .build();
 
-		LoggingSink fallback =  new LoggingSink("test", null, null, null);
+		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);
 		WebhookSink auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
         auditlog.store(msg);
         Assert.assertNull(handler.method);
@@ -455,7 +455,7 @@ public class WebhookAuditLogTest {
 
         server.start();
         AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
-        LoggingSink fallback =  new LoggingSink("test", null, null, null);
+        LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);
         
         String url = "https://localhost:8084/endpoint";
         
@@ -569,7 +569,7 @@ public class WebhookAuditLogTest {
 
         server.start();
         AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
-        LoggingSink fallback =  new LoggingSink("test", null, null, null);
+        LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);
         
         String url = "https://localhost:8091/endpoint";
         
@@ -666,7 +666,7 @@ public class WebhookAuditLogTest {
 
         server.start();
         AuditMessage msg = MockAuditMessageFactory.validAuditMessage();
-        LoggingSink fallback =  new LoggingSink("test", null, null, null);
+        LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);
         
         String url = "https://localhost:8086/endpoint";
         

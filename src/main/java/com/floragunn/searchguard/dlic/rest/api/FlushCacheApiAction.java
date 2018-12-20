@@ -124,8 +124,8 @@ public class FlushCacheApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {		
-		return new NoOpValidator(method, ref);
+	protected AbstractConfigurationValidator getValidator(RestRequest request, BytesReference ref, Object... param) {		
+		return new NoOpValidator(request, ref, this.settings, param);
 	}
 
 	@Override
