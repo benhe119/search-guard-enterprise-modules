@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
+import org.apache.http.message.BasicHeader;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
@@ -371,6 +372,19 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         addUserWithPassword(URLEncoder.encode("$1aAAAAAAAac%!=\"/\\;: test&~@^", "UTF-8"), "$1aAAAAAAAac%!=\\\"/\\\\;: test&~@^", HttpStatus.SC_BAD_REQUEST);
         addUserWithPassword(URLEncoder.encode("$1aAAAAAAAac%!=\"/\\;: test&", "UTF-8"), "$1aAAAAAAAac%!=\\\"/\\\\;: test&123", HttpStatus.SC_CREATED);
 
+        response = rh.executeGetRequest("/_searchguard/api/internalusers/nothinghthere?pretty", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        Assert.assertTrue(response.getBody().contains("NOT_FOUND"));
+        
+        String patchPayload="[ "+
+            "{ \"op\": \"add\", \"path\": \"/testuser1\",  \"value\": { \"password\": \"$aA123456789\", \"roles\": [\"testrole1\"] } },"+
+            "{ \"op\": \"add\", \"path\": \"/testuser2\",  \"value\": { \"password\": \"testpassword2\", \"roles\": [\"testrole2\"] } }"+
+         "]";
+        
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", patchPayload, new BasicHeader("Content-Type", "application/json"));
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().contains("error"));
+        Assert.assertTrue(response.getBody().contains("xxx"));
 	}
 	
 	@Test

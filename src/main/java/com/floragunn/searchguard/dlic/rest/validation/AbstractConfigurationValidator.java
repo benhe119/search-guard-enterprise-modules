@@ -32,7 +32,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 
@@ -205,7 +204,9 @@ public abstract class AbstractConfigurationValidator {
 			builder.startObject();
 			switch (this.errorType) {
 			case NONE:
-				return XContentBuilder.builder(JsonXContent.jsonXContent);
+			    builder.field("status", "error");
+                builder.field("reason", errorType.getMessage());
+                break;
 			case INVALID_CONFIGURATION:
 				builder.field("status", "error");
 				builder.field("reason", ErrorType.INVALID_CONFIGURATION.getMessage());
