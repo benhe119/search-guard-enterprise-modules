@@ -30,7 +30,7 @@ import org.junit.Assert;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.test.DynamicSgConfig;
 import com.floragunn.searchguard.test.SingleClusterTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
@@ -47,6 +47,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
         return "restapi";
     }
 
+    @Override
 	protected final void setup() throws Exception {
 		Settings.Builder builder = Settings.builder();
 
@@ -55,6 +56,22 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
 				.put("searchguard.ssl.http.truststore_filepath",
 						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"));
+		
+		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
+		rh = restHelper();
+		rh.keystore = "restapi/kirk-keystore.jks";
+	}
+	
+    @Override
+	protected final void setup(Settings nodeOverride) throws Exception {
+		Settings.Builder builder = Settings.builder();
+
+		builder.put("searchguard.ssl.http.enabled", true)
+				.put("searchguard.ssl.http.keystore_filepath",
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
+				.put("searchguard.ssl.http.truststore_filepath",
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"))
+				.put(nodeOverride);		
 		
 		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
 		rh = restHelper();
@@ -120,6 +137,16 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
+	
+    protected void addDotUserWithPassword(String usernameWithDots, String password, int status, boolean replace) throws Exception {
+        Assert.assertTrue(usernameWithDots.contains("."));
+        boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + usernameWithDots.replace('.', replace?'_':'.'),
+                "{\"password\": \"" + password + "\",\"username\":\""+usernameWithDots+"\"}", new Header[0]);
+        Assert.assertEquals(status, response.getStatusCode());
+        rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
+    }
 
 	protected void addUserWithPassword(String username, String password, String[] roles, int status) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
@@ -165,6 +192,16 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
+	
+    protected void addDotUserUserWithHash(String usernameWithDots, String hash, int status, boolean replace) throws Exception {
+        Assert.assertTrue(usernameWithDots.contains("."));
+        boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + usernameWithDots.replace('.', replace?'_':'.'),
+                "{\"hash\": \"" + hash + "\",\"username\":\""+usernameWithDots+"\"}", new Header[0]);
+        Assert.assertEquals(status, response.getStatusCode());
+        rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
+    }
 
 	protected void checkGeneralAccess(int status, String username, String password) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
@@ -228,9 +265,8 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 	}
 	
 	protected Map<String, String> jsonStringToMap(String json) throws JsonParseException, JsonMappingException, IOException {
-		ObjectMapper mapper = new ObjectMapper();		
 		TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String, String>>() {};
-		return mapper.readValue(json, typeRef);
+		return DefaultObjectMapper.objectMapper.readValue(json, typeRef);
 	}
 	
 	protected static class TransportClientImpl extends TransportClient {
