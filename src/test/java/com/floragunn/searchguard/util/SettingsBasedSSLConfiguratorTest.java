@@ -70,8 +70,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.floragunn.dlic.auth.http.jwt.keybyoidc.SettingsBasedSSLConfigurator;
-import com.floragunn.dlic.auth.http.jwt.keybyoidc.SettingsBasedSSLConfigurator.SSLConfig;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
@@ -192,10 +192,9 @@ public class SettingsBasedSSLConfiguratorTest {
                 // Due to some race condition in Java's internal network stack, this can be one
                 // of the following exceptions
 
-                thrown.expect(either(instanceOf(SocketException.class))
-                        .or(instanceOf(SSLHandshakeException.class))
-                        .or(instanceOf(SSLException.class)) //Java 11: javax.net.ssl.SSLException: readHandshakeRecord
-                        );
+                thrown.expect(either(instanceOf(SocketException.class)).or(instanceOf(SSLHandshakeException.class))
+                        .or(instanceOf(SSLException.class)) // Java 11: javax.net.ssl.SSLException: readHandshakeRecord
+                );
 
                 try (CloseableHttpResponse response = httpClient.execute(new HttpGet(testServer.getUri()))) {
                     Assert.fail("Connection should have failed due to wrong client cert");
@@ -312,6 +311,30 @@ public class SettingsBasedSSLConfiguratorTest {
 
                 try (CloseableHttpResponse response = httpClient.execute(new HttpGet(testServer.getUri()))) {
                     Assert.fail("Connection should have failed due to wrong trust");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testTrustAll() throws Exception {
+        try (TestServer testServer = new TestServer("sslConfigurator/jks/truststore.jks",
+                "sslConfigurator/jks/node1-keystore.jks", "secret", false)) {
+            Path rootCaJksPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/jks/other-root-ca.jks");
+
+            Settings settings = Settings.builder().put("prefix.enable_ssl", "true").put("prefix.trust_all", "true")
+                    .put("path.home", rootCaJksPath.getParent().toString()).build();
+            Path configPath = rootCaJksPath.getParent();
+
+            SettingsBasedSSLConfigurator sbsc = new SettingsBasedSSLConfigurator(settings, configPath, "prefix");
+
+            SSLConfig sslConfig = sbsc.buildSSLConfig();
+
+            try (CloseableHttpClient httpClient = HttpClients.custom()
+                    .setSSLSocketFactory(sslConfig.toSSLConnectionSocketFactory()).build()) {
+
+                try (CloseableHttpResponse response = httpClient.execute(new HttpGet(testServer.getUri()))) {
+                    // Success
                 }
             }
         }

@@ -20,7 +20,7 @@ import com.floragunn.searchguard.auditlog.sink.AuditLogSink;
 public class SlowSink extends AuditLogSink{
 
     public SlowSink(String name, Settings settings, Settings sinkSetting, AuditLogSink fallbackSink) {
-        super(name, null, null, fallbackSink);
+        super(name, settings, null, fallbackSink);
     }
 
     

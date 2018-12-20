@@ -34,13 +34,13 @@ import org.apache.http.impl.client.cache.CachingHttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.floragunn.dlic.auth.http.jwt.keybyoidc.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.dlic.auth.http.jwt.oidc.json.OpenIdProviderConfiguration;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
+import com.floragunn.searchguard.DefaultObjectMapper;
+
 
 public class KeySetRetriever implements KeySetProvider {
 	private final static Logger log = LogManager.getLogger(KeySetRetriever.class);
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 	private static final long CACHE_STATUS_LOG_INTERVAL_MS = 60L * 60L * 1000L;
 
 	private String openIdConnectEndpoint;
@@ -137,7 +137,7 @@ public class KeySetRetriever implements KeySetProvider {
 							"Error while getting " + openIdConnectEndpoint + ": Empty response entity");
 				}
 
-				OpenIdProviderConfiguration parsedEntity = objectMapper.readValue(httpEntity.getContent(),
+				OpenIdProviderConfiguration parsedEntity = DefaultObjectMapper.objectMapper.readValue(httpEntity.getContent(),
 						OpenIdProviderConfiguration.class);
 
 				return parsedEntity.getJwksUri();

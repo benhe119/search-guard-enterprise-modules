@@ -131,7 +131,7 @@ public class Saml2SettingsProvider {
 
     private void initMisc(HashMap<String, Object> configProperties) {
         configProperties.put(SettingsBuilder.STRICT_PROPERTY_KEY, true);
-
+        configProperties.put(SettingsBuilder.SECURITY_REJECT_UNSOLICITED_RESPONSES_WITH_INRESPONSETO, true);
     }
 
     private void initSpEndpoints(HashMap<String, Object> configProperties) {

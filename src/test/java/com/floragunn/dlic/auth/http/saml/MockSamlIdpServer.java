@@ -177,6 +177,7 @@ class MockSamlIdpServer implements Closeable {
     private boolean signResponses = true;
     private X509Certificate spSignatureCertificate;
     private String endpointQueryString;
+    private String defaultAssertionConsumerService;
 
     MockSamlIdpServer() throws IOException {
         this(SocketUtils.findAvailableTcpPort(), false, ENTITY_ID, null);
@@ -354,6 +355,10 @@ class MockSamlIdpServer implements Closeable {
         }
     }
 
+    public String createUnsolicitedSamlResponse() {
+        return createSamlAuthResponse(null);
+    }
+    
     public void handleSloGetRequestURI(String samlRequestURI) {
         handleSloGetRequestBase(new BasicHttpRequest("GET", samlRequestURI));
     }
@@ -410,7 +415,11 @@ class MockSamlIdpServer implements Closeable {
         try {
             Response response = createSamlElement(Response.class);
             response.setID(nextId());
-            response.setInResponseTo(authnRequest.getID());
+
+            if (authnRequest != null) {
+                response.setInResponseTo(authnRequest.getID());
+            }
+
             response.setVersion(SAMLVersion.VERSION_20);
             response.setStatus(createStatus(StatusCode.SUCCESS));
             response.setIssueInstant(new DateTime());
@@ -433,10 +442,16 @@ class MockSamlIdpServer implements Closeable {
             assertion.setSubject(subject);
 
             subject.setNameID(createNameID(NameIDType.UNSPECIFIED, authenticateUser));
-            subject.getSubjectConfirmations()
-                    .add(createSubjectConfirmation("urn:oasis:names:tc:SAML:2.0:cm:bearer",
-                            new DateTime().plusMinutes(1), authnRequest.getID(),
-                            authnRequest.getAssertionConsumerServiceURL()));
+
+            if (authnRequest != null) {
+                subject.getSubjectConfirmations()
+                        .add(createSubjectConfirmation("urn:oasis:names:tc:SAML:2.0:cm:bearer",
+                                new DateTime().plusMinutes(1), authnRequest.getID(),
+                                authnRequest.getAssertionConsumerServiceURL()));
+            } else {
+                subject.getSubjectConfirmations().add(createSubjectConfirmation("urn:oasis:names:tc:SAML:2.0:cm:bearer",
+                        new DateTime().plusMinutes(1), null, defaultAssertionConsumerService));
+            }
 
             Conditions conditions = createSamlElement(Conditions.class);
             assertion.setConditions(conditions);
@@ -1094,5 +1109,13 @@ class MockSamlIdpServer implements Closeable {
 
     public void setEndpointQueryString(String endpointQueryString) {
         this.endpointQueryString = endpointQueryString;
+    }
+
+    public String getDefaultAssertionConsumerService() {
+        return defaultAssertionConsumerService;
+    }
+
+    public void setDefaultAssertionConsumerService(String defaultAssertionConsumerService) {
+        this.defaultAssertionConsumerService = defaultAssertionConsumerService;
     }
 }
