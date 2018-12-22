@@ -48,6 +48,75 @@ public class FlsTest extends AbstractDlsFlsTest{
     }
     
     @Test
+    public void testFieldCapabilities() throws Exception {
+        
+        setup();
+
+        HttpResponse res;
+        
+
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_field_caps?fields=*&pretty", encodeBasicHeader("admin", "admin"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("customer"));
+        Assert.assertTrue(res.getBody().contains("customer.name"));
+        Assert.assertTrue(res.getBody().contains("zip"));
+        Assert.assertTrue(res.getBody().contains("ctype"));
+        Assert.assertTrue(res.getBody().contains("amount"));
+        Assert.assertTrue(res.getBody().contains("secret"));
+
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_field_caps?fields=*&pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("customer"));
+        Assert.assertTrue(res.getBody().contains("customer.name"));
+        Assert.assertTrue(res.getBody().contains("zip"));
+        Assert.assertTrue(res.getBody().contains("ctype"));
+        Assert.assertFalse(res.getBody().contains("amount"));
+        Assert.assertFalse(res.getBody().contains("secret"));
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_field_caps?fields=*&pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("customer"));
+        Assert.assertFalse(res.getBody().contains("customer.name"));
+        Assert.assertFalse(res.getBody().contains("zip"));
+        Assert.assertFalse(res.getBody().contains("ctype"));
+        Assert.assertTrue(res.getBody().contains("amount"));
+        Assert.assertTrue(res.getBody().contains("secret"));
+    }
+    
+    @Test
+    public void testMapping() throws Exception {
+        
+        setup();
+
+        HttpResponse res;
+        
+
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_mapping?pretty", encodeBasicHeader("admin", "admin"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("customer"));
+        Assert.assertTrue(res.getBody().contains("name"));
+        Assert.assertTrue(res.getBody().contains("zip"));
+        Assert.assertTrue(res.getBody().contains("ctype"));
+        Assert.assertTrue(res.getBody().contains("amount"));
+        Assert.assertTrue(res.getBody().contains("secret"));
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_mapping?pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("customer"));
+        Assert.assertTrue(res.getBody().contains("name"));
+        Assert.assertTrue(res.getBody().contains("zip"));
+        Assert.assertTrue(res.getBody().contains("ctype"));
+        Assert.assertFalse(res.getBody().contains("amount"));
+        Assert.assertFalse(res.getBody().contains("secret"));
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_mapping?pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        System.out.println(res.getBody());
+        Assert.assertTrue(res.getBody().contains("customer"));
+        Assert.assertFalse(res.getBody().contains("name"));
+        Assert.assertFalse(res.getBody().contains("zip"));
+        Assert.assertFalse(res.getBody().contains("ctype"));
+        Assert.assertTrue(res.getBody().contains("amount"));
+        Assert.assertTrue(res.getBody().contains("secret"));
+    }
+    
+    
+    @Test
     public void testFlsSearch() throws Exception {
         
         setup();
@@ -73,6 +142,16 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("ctype"));
         Assert.assertFalse(res.getBody().contains("amount"));
         Assert.assertFalse(res.getBody().contains("secret"));
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("\"total\" : 2,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
+        Assert.assertFalse(res.getBody().contains("cust1"));
+        Assert.assertFalse(res.getBody().contains("cust2"));
+        Assert.assertFalse(res.getBody().contains("zip"));
+        Assert.assertFalse(res.getBody().contains("ctype"));
+        Assert.assertTrue(res.getBody().contains("amount"));
+        Assert.assertTrue(res.getBody().contains("secret"));
     }
     
     @Test
@@ -106,6 +185,14 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("ctype"));
         Assert.assertFalse(res.getBody().contains("amount"));
         
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?realtime=true&pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("\"found\" : true"));
+        Assert.assertFalse(res.getBody().contains("cust1"));
+        Assert.assertFalse(res.getBody().contains("cust2"));
+        Assert.assertFalse(res.getBody().contains("zip"));
+        Assert.assertFalse(res.getBody().contains("ctype"));
+        Assert.assertTrue(res.getBody().contains("amount"));
+        Assert.assertTrue(res.getBody().contains("secret"));
     }
     
     @Test

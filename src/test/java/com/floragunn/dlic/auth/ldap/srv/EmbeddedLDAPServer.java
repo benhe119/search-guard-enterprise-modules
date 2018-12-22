@@ -14,43 +14,12 @@
 
 package com.floragunn.dlic.auth.ldap.srv;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.directory.api.ldap.model.constants.SupportedSaslMechanisms;
-import org.apache.directory.api.ldap.model.entry.DefaultEntry;
-import org.apache.directory.api.ldap.model.ldif.LdifEntry;
-import org.apache.directory.api.ldap.model.ldif.LdifReader;
-import org.apache.directory.api.ldap.model.schema.SchemaManager;
-import org.apache.directory.server.annotations.CreateLdapServer;
-import org.apache.directory.server.annotations.CreateTransport;
-import org.apache.directory.server.annotations.SaslMechanism;
-import org.apache.directory.server.core.annotations.AnnotationUtils;
-import org.apache.directory.server.core.annotations.ContextEntry;
-import org.apache.directory.server.core.annotations.CreateDS;
-import org.apache.directory.server.core.annotations.CreateIndex;
-import org.apache.directory.server.core.annotations.CreatePartition;
-import org.apache.directory.server.core.api.DirectoryService;
-import org.apache.directory.server.core.factory.DSAnnotationProcessor;
-import org.apache.directory.server.core.kerberos.KeyDerivationInterceptor;
-import org.apache.directory.server.factory.ServerAnnotationProcessor;
-import org.apache.directory.server.ldap.LdapServer;
-import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
-import org.apache.directory.server.ldap.handlers.sasl.cramMD5.CramMd5MechanismHandler;
-import org.apache.directory.server.ldap.handlers.sasl.digestMD5.DigestMd5MechanismHandler;
-import org.apache.directory.server.ldap.handlers.sasl.gssapi.GssapiMechanismHandler;
-import org.apache.directory.server.ldap.handlers.sasl.ntlm.NtlmMechanismHandler;
-import org.apache.directory.server.ldap.handlers.sasl.plain.PlainMechanismHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.floragunn.searchguard.test.helper.file.FileHelper;
 
 public class EmbeddedLDAPServer {
+    
+    LdapServer s = new LdapServer();
 
-    private final Logger log = LoggerFactory.getLogger(EmbeddedLDAPServer.class);
+    /*private final Logger log = LoggerFactory.getLogger(EmbeddedLDAPServer.class);
 
     private DirectoryService directoryService;
     private LdapServer ldapServer;
@@ -133,5 +102,25 @@ public class EmbeddedLDAPServer {
         }
 
         return i;
+    }*/
+    
+    public int applyLdif(final String... ldifFile) throws Exception {
+        return s.start(ldifFile);
+    }
+    
+    public void start() throws Exception {
+        
+    }
+    
+    public void stop() throws Exception {
+        s.stop();
+    }
+    
+    public int getLdapPort() {
+        return s.getLdapPort();
+    }
+
+    public int getLdapsPort() {
+        return s.getLdapsPort();
     }
 }

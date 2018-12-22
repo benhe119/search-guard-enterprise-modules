@@ -37,99 +37,102 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.hash.Hashing;
 
 public class KeySetRetrieverTest {
-	protected static MockIpdServer mockIdpServer;
+    protected static MockIpdServer mockIdpServer;
 
-	@BeforeClass
-	public static void setUp() throws Exception {
-		mockIdpServer = new MockIpdServer(TestJwk.Jwks.ALL);
-	}
+    @BeforeClass
+    public static void setUp() throws Exception {
+        mockIdpServer = new MockIpdServer(TestJwk.Jwks.ALL);
+    }
 
-	@AfterClass
-	public static void tearDown() {
-		if (mockIdpServer != null) {
-			try {
-				mockIdpServer.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
+    @AfterClass
+    public static void tearDown() {
+        if (mockIdpServer != null) {
+            try {
+                mockIdpServer.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
-	@Test
-	public void cacheTest() {
-		KeySetRetriever keySetRetriever = new KeySetRetriever(mockIdpServer.getDiscoverUri(), null, true);
+    @Test
+    public void cacheTest() {
+        KeySetRetriever keySetRetriever = new KeySetRetriever(mockIdpServer.getDiscoverUri(), null, true);
 
-		keySetRetriever.get();
+        keySetRetriever.get();
 
-		Assert.assertEquals(1, keySetRetriever.getOidcCacheMisses());
-		Assert.assertEquals(0, keySetRetriever.getOidcCacheHits());
+        Assert.assertEquals(1, keySetRetriever.getOidcCacheMisses());
+        Assert.assertEquals(0, keySetRetriever.getOidcCacheHits());
 
-		keySetRetriever.get();
-		Assert.assertEquals(1, keySetRetriever.getOidcCacheMisses());
-		Assert.assertEquals(1, keySetRetriever.getOidcCacheHits());
-	}
+        keySetRetriever.get();
+        Assert.assertEquals(1, keySetRetriever.getOidcCacheMisses());
+        Assert.assertEquals(1, keySetRetriever.getOidcCacheHits());
+    }
 
-	@Test
-	public void clientCertTest() throws Exception {
+    @Test
+    public void clientCertTest() throws Exception {
 
-		try (MockIpdServer sslMockIdpServer = new MockIpdServer(TestJwk.Jwks.ALL, SocketUtils.findAvailableTcpPort(), true) {
-			@Override
-			protected void handleDiscoverRequest(HttpRequest request, HttpResponse response, HttpContext context)
-					throws HttpException, IOException {
+        try (MockIpdServer sslMockIdpServer = new MockIpdServer(TestJwk.Jwks.ALL, SocketUtils.findAvailableTcpPort(),
+                true) {
+            @Override
+            protected void handleDiscoverRequest(HttpRequest request, HttpResponse response, HttpContext context)
+                    throws HttpException, IOException {
 
-				MockIpdServer.SSLTestHttpServerConnection connection = (MockIpdServer.SSLTestHttpServerConnection) ((HttpCoreContext) context)
-						.getConnection();
+                MockIpdServer.SSLTestHttpServerConnection connection = (MockIpdServer.SSLTestHttpServerConnection) ((HttpCoreContext) context)
+                        .getConnection();
 
-				X509Certificate peerCert = (X509Certificate) connection.getPeerCertificates()[0];
+                X509Certificate peerCert = (X509Certificate) connection.getPeerCertificates()[0];
 
-				try {
-					String sha256Fingerprint = Hashing.sha256().hashBytes(peerCert.getEncoded()).toString();
+                try {
+                    String sha256Fingerprint = Hashing.sha256().hashBytes(peerCert.getEncoded()).toString();
 
-					Assert.assertEquals("04b2b8baea7a0a893f0223d95b72081e9a1e154a0f9b1b4e75998085972b1b68",
-							sha256Fingerprint);
+                    Assert.assertEquals("04b2b8baea7a0a893f0223d95b72081e9a1e154a0f9b1b4e75998085972b1b68",
+                            sha256Fingerprint);
 
-				} catch (CertificateEncodingException e) {
-					throw new RuntimeException(e);
-				}
+                } catch (CertificateEncodingException e) {
+                    throw new RuntimeException(e);
+                }
 
-				super.handleDiscoverRequest(request, response, context);
-			}
-		}) {
-			SSLContextBuilder sslContextBuilder = SSLContexts.custom();
+                super.handleDiscoverRequest(request, response, context);
+            }
+        }) {
+            SSLContextBuilder sslContextBuilder = SSLContexts.custom();
 
-			KeyStore trustStore = KeyStore.getInstance("JKS");
-			InputStream trustStream = new FileInputStream(
-					FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore.jks").toFile());
-			trustStore.load(trustStream, "changeit".toCharArray());
+            KeyStore trustStore = KeyStore.getInstance("JKS");
+            InputStream trustStream = new FileInputStream(
+                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore.jks").toFile());
+            trustStore.load(trustStream, "changeit".toCharArray());
 
-			KeyStore keyStore = KeyStore.getInstance("JKS");
-			InputStream keyStream = new FileInputStream(
-					FileHelper.getAbsoluteFilePathFromClassPath("jwt/spock-keystore.jks").toFile());
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            InputStream keyStream = new FileInputStream(
+                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/spock-keystore.jks").toFile());
 
-			keyStore.load(keyStream, "changeit".toCharArray());
+            keyStore.load(keyStream, "changeit".toCharArray());
 
-			sslContextBuilder.loadTrustMaterial(trustStore, null);
+            sslContextBuilder.loadTrustMaterial(trustStore, null);
 
-			sslContextBuilder.loadKeyMaterial(keyStore, "changeit".toCharArray(), new PrivateKeyStrategy() {
+            sslContextBuilder.loadKeyMaterial(keyStore, "changeit".toCharArray(), new PrivateKeyStrategy() {
 
-				@Override
-				public String chooseAlias(Map<String, PrivateKeyDetails> aliases, Socket socket) {
-					return "spock";
-				}
-			});
+                @Override
+                public String chooseAlias(Map<String, PrivateKeyDetails> aliases, Socket socket) {
+                    return "spock";
+                }
+            });
 
-			SettingsBasedSSLConfigurator.SSLConfig sslConfig = new SettingsBasedSSLConfigurator.SSLConfig(
-					sslContextBuilder.build(), new String[] { "TLSv1.2", "TLSv1.1" }, null, null);
+            SettingsBasedSSLConfigurator.SSLConfig sslConfig = new SettingsBasedSSLConfigurator.SSLConfig(
+                    sslContextBuilder.build(), new String[] { "TLSv1.2", "TLSv1.1" }, null, null, false, false, false,
+                    trustStore, null, keyStore, null, null);
 
-			KeySetRetriever keySetRetriever = new KeySetRetriever(sslMockIdpServer.getDiscoverUri(), sslConfig, false);
+            KeySetRetriever keySetRetriever = new KeySetRetriever(sslMockIdpServer.getDiscoverUri(), sslConfig, false);
 
-			keySetRetriever.get();
+            keySetRetriever.get();
 
-		}
-	}
+        }
+    }
 }

@@ -2,8 +2,8 @@
 enable_ssl: true
 enable_ssl_client_auth: false
 enable_start_tls: false
-hosts: 
-  - "localhost:40623"
+#hosts: 
+#  - "localhost:${ldapport}"
 path.home: "."
 pemcert_content: |
     -----BEGIN CERTIFICATE-----

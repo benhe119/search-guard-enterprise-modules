@@ -15,12 +15,14 @@
 package com.floragunn.searchguard.dlic.rest.validation;
 
 import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 
 public class NoOpValidator extends AbstractConfigurationValidator {
 
-	public NoOpValidator(Method method, BytesReference ref) {
-		super(method, ref);
+	public NoOpValidator(final RestRequest request, BytesReference ref, final Settings esSettings, Object... param) {
+		super(request, ref, esSettings, param);
 	}
 
 }

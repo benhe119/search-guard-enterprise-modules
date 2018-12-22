@@ -14,12 +14,14 @@
 
 package com.floragunn.searchguard.auditlog.sink;
 
+import org.elasticsearch.common.settings.Settings;
+
 import com.floragunn.searchguard.auditlog.impl.AuditMessage;
 
 public final class NoopSink extends AuditLogSink {
 
-    public NoopSink(String name, AuditLogSink fallbackSink) {
-        super(name, null, null, fallbackSink);
+    public NoopSink(String name, Settings settings, AuditLogSink fallbackSink) {
+        super(name, settings, null, fallbackSink);
     }
 
     @Override
