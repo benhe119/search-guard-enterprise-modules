@@ -14,13 +14,16 @@
 
 package com.floragunn.searchguard.auditlog;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Collection;
 
 import org.apache.http.Header;
 import org.elasticsearch.common.settings.Settings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage;
 import com.floragunn.searchguard.auditlog.routing.AuditMessageRouter;
 import com.floragunn.searchguard.compliance.ComplianceConfig;
@@ -28,11 +31,9 @@ import com.floragunn.searchguard.test.DynamicSgConfig;
 import com.floragunn.searchguard.test.SingleClusterTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper;
-import static org.mockito.Mockito.*;
 
 public abstract class AbstractAuditlogiUnitTest extends SingleClusterTest {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     protected RestHelper rh = null;
     protected boolean init = true;
     
@@ -91,11 +92,11 @@ public abstract class AbstractAuditlogiUnitTest extends SingleClusterTest {
         }
         
         try {
-            JsonNode node = objectMapper.readTree(json);
+            JsonNode node = DefaultObjectMapper.objectMapper.readTree(json);
             
             if(node.get("audit_request_body") != null) {
                 System.out.println("    Check audit_request_body for validity: "+node.get("audit_request_body").asText());
-                objectMapper.readTree(node.get("audit_request_body").asText());
+                DefaultObjectMapper.objectMapper.readTree(node.get("audit_request_body").asText());
             }
             
             return true;

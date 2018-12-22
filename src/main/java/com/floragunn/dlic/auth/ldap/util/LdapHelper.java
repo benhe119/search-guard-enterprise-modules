@@ -63,7 +63,13 @@ public class LdapHelper {
                 }
             });
         } catch (PrivilegedActionException e) {
-            throw new LdapException(e);
+            if (e.getException() instanceof LdapException) {
+                throw (LdapException) e.getException();
+            } else if (e.getException() instanceof RuntimeException) {
+                throw (RuntimeException) e.getException();
+            } else {
+                throw new RuntimeException(e);
+            }
         }
     }
 
