@@ -102,7 +102,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		this.auditLog = auditLog;
 	}
 
-	protected abstract AbstractConfigurationValidator getValidator(final Method method, BytesReference ref);
+	protected abstract AbstractConfigurationValidator getValidator(RestRequest request, BytesReference ref, Object... params);
 
 	protected abstract String getResourceName();
 
@@ -112,7 +112,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			throws Throwable {
 
 		// validate additional settings, if any
-		AbstractConfigurationValidator validator = getValidator(request.method(), request.content());
+		AbstractConfigurationValidator validator = getValidator(request, request.content());
 		if (!validator.validateSettings()) {
 			request.params().clear();
 			return new Tuple<String[], RestResponse>(new String[0],

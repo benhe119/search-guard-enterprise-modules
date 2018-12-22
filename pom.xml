@@ -38,7 +38,7 @@
 
     <!-- Test only -->
     <mockito.version>2.21.0</mockito.version>
-    <apache.ds.version>2.0.0-M21</apache.ds.version>
+    <unboundid-ldapsdk.version>4.0.9</unboundid-ldapsdk.version>
   </properties>
 
   <scm>
@@ -252,6 +252,12 @@
       <version>${guava.version}</version>
     </dependency>
 
+	<dependency>
+		<groupId>com.jayway.jsonpath</groupId>
+		<artifactId>json-path</artifactId>
+		<version>2.4.0</version>
+	</dependency>
+
     <!-- Only test scoped dependencies hereafter -->
 
     <dependency>
@@ -260,19 +266,6 @@
       <version>${sg2.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.directory.server</groupId>
-      <artifactId>apacheds-all</artifactId>
-      <version>${apache.ds.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>slf4j-api</artifactId>
-          <groupId>org.slf4j</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -350,6 +343,19 @@
       <scope>test</scope>
     </dependency>
 
+	<!-- https://mvnrepository.com/artifact/com.unboundid/unboundid-ldapsdk -->
+	<dependency>
+	    <groupId>com.unboundid</groupId>
+	    <artifactId>unboundid-ldapsdk</artifactId>
+	    <version>${unboundid-ldapsdk.version}</version>
+	    <scope>test</scope>
+	</dependency>
+	
+	<dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
@@ -366,7 +372,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.0.0-M2</version>
         <configuration>
+          <rerunFailingTestsCount>3</rerunFailingTestsCount>
           <forkCount>3</forkCount>
           <reuseForks>true</reuseForks>
           <!-- <parallel>methods</parallel> <threadCount>1</threadCount> -->
