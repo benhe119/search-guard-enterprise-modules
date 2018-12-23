@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.TreeSet;
 
 import org.elasticsearch.ElasticsearchSecurityException;
+import org.elasticsearch.common.settings.SecureSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -44,12 +45,16 @@ public class LdapBackendTest {
     }
 
     private static EmbeddedLDAPServer ldapServer = null;
+    private static int ldapPort;
+    private static int ldapsPort;
     
     @BeforeClass
     public static void startLdapServer() throws Exception {
         ldapServer = new EmbeddedLDAPServer();
         ldapServer.start();
         ldapServer.applyLdif("base.ldif");
+        ldapPort = ldapServer.getLdapPort();
+        ldapsPort = ldapServer.getLdapsPort();
     }
 
     @Test
@@ -57,7 +62,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
@@ -71,7 +76,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_FAKE_LOGIN_ENABLED, true)
                 .build();
@@ -85,7 +90,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         String injectString = "*jack*";
@@ -100,7 +105,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_BIND_DN, "cn=Captain Spock,ou=people,o=TEST")
@@ -118,7 +123,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_BIND_DN, "cn=Captain Spock,ou=people,o=TEST")
@@ -134,7 +139,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "wrong".getBytes(StandardCharsets.UTF_8)));
@@ -145,7 +150,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS,  "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("UNKNOWN", "UNKNOWN".getBytes(StandardCharsets.UTF_8)));
@@ -156,7 +161,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "xxxxx".getBytes(StandardCharsets.UTF_8)));
@@ -167,7 +172,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapsPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
@@ -186,7 +191,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapsPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put(ConfigConstants.LDAPS_PEMTRUSTEDCAS_FILEPATH, FileHelper.getAbsoluteFilePathFromClassPath("ldap/root-ca.pem").toFile().getName())
@@ -202,9 +207,16 @@ public class LdapBackendTest {
     
     @Test
     public void testLdapAuthenticationSSLPEMText() throws Exception {
-
-
-        final Settings settings = Settings.builder().loadFromPath(Paths.get(FileHelper.getAbsoluteFilePathFromClassPath("ldap/test1.yml").toFile().getAbsolutePath())).build();
+        final Settings settingsFromFile = Settings
+                .builder()
+                .loadFromPath(
+                        Paths
+                        .get(FileHelper
+                                .getAbsoluteFilePathFromClassPath("ldap/test1.yml")
+                                .toFile()
+                                .getAbsolutePath()))
+                .build();
+        Settings settings = Settings.builder().put(settingsFromFile).putList("hosts", "localhost:"+ldapsPort).build();
         final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
                 .getBytes(StandardCharsets.UTF_8)));
         Assert.assertNotNull(user);
@@ -216,7 +228,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapsPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
@@ -240,7 +252,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapsPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
@@ -264,7 +276,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapsPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
@@ -286,7 +298,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapsPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
@@ -305,7 +317,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true).build();
 
@@ -322,7 +334,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         final LDAPAuthenticationBackend lbe = new LDAPAuthenticationBackend(settings, null);
@@ -335,7 +347,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -362,7 +374,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         final Connection con = LDAPAuthorizationBackend.getConnection(settings, null);
@@ -381,7 +393,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -406,7 +418,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(cn={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -432,7 +444,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -455,7 +467,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -479,7 +491,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -505,7 +517,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -529,7 +541,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -553,7 +565,7 @@ public class LdapBackendTest {
     public void testLdapAuthenticationUserNameAttribute() throws Exception {
 
 
-        final Settings settings = Settings.builder().putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+        final Settings settings = Settings.builder().putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST").put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERNAME_ATTRIBUTE, "uid").build();
 
@@ -568,7 +580,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_START_TLS, true)
                 .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
@@ -586,7 +598,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -607,11 +619,35 @@ public class LdapBackendTest {
     }
     
     @Test
+    public void testLdapAuthorizationSkipUsersNoDn() throws Exception {
+
+        final Settings settings = Settings.builder()
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
+                .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLENAME, "cn")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLESEARCH, "(uniqueMember={0})")
+                .putList(ConfigConstants.LDAP_AUTHZ_SKIP_USERS, "jacksonm")
+                .build();
+
+        final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
+                .getBytes(StandardCharsets.UTF_8)));
+
+        new LDAPAuthorizationBackend(settings, null).fillRoles(user, null);
+
+        Assert.assertNotNull(user);
+        Assert.assertEquals("cn=Michael Jackson,ou=people,o=TEST", user.getName());
+        Assert.assertEquals(0, user.getRoles().size());
+        Assert.assertEquals(user.getName(), user.getUserEntry().getDn());
+    }
+    
+    @Test
     public void testLdapAuthorizationNestedAttr() throws Exception {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -638,7 +674,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -667,7 +703,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -694,7 +730,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
@@ -720,7 +756,7 @@ public class LdapBackendTest {
 
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "unused")
@@ -746,18 +782,18 @@ public class LdapBackendTest {
     public void testCustomAttributes() throws Exception {
 
         Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").build();
 
         LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
                 .getBytes(StandardCharsets.UTF_8)));
         Assert.assertNotNull(user);
         Assert.assertEquals("cn=Michael Jackson,ou=people,o=TEST", user.getName());
-        Assert.assertEquals(user.getCustomAttributesMap().toString(), 13, user.getCustomAttributesMap().size());
+        Assert.assertEquals(user.getCustomAttributesMap().toString(), 16, user.getCustomAttributesMap().size());
         Assert.assertFalse(user.getCustomAttributesMap().toString(), user.getCustomAttributesMap().keySet().contains("attr.ldap.userpassword"));
     
         settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 0)
                 .build();
@@ -768,7 +804,7 @@ public class LdapBackendTest {
         Assert.assertEquals(user.getCustomAttributesMap().toString(), 2, user.getCustomAttributesMap().size());
         
         settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .putList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST, "*objectclass*","entryParentId")
                 .build();
@@ -776,7 +812,7 @@ public class LdapBackendTest {
         user = (LdapUser) new LDAPAuthenticationBackend(settings, null).authenticate(new AuthCredentials("jacksonm", "secret"
                 .getBytes(StandardCharsets.UTF_8)));
     
-        Assert.assertEquals(user.getCustomAttributesMap().toString(), 4, user.getCustomAttributesMap().size());
+        Assert.assertEquals(user.getCustomAttributesMap().toString(), 2, user.getCustomAttributesMap().size());
     
     }
     
@@ -784,7 +820,7 @@ public class LdapBackendTest {
     public void testLdapAuthorizationNonDNRoles() throws Exception {
 
         final Settings settings = Settings.builder()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + EmbeddedLDAPServer.ldapPort)
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")

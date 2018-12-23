@@ -27,6 +27,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.floragunn.searchguard.auditlog.helper.RetrySink;
 import com.floragunn.searchguard.auditlog.integration.TestAuditlogImpl;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.AbstractSGUnitTest;
@@ -92,5 +93,44 @@ public class AuditlogTest {
         al.logSSLException(null, new Exception("test rest"), null, null);
         System.out.println(TestAuditlogImpl.sb.toString());
         Assert.assertEquals(2, TestAuditlogImpl.messages.size());
+    }
+    
+    @Test
+    public void testRetry() {
+        
+        RetrySink.init();
+
+        Settings settings = Settings.builder()
+                .put("searchguard.audit.type", RetrySink.class.getName())
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_REST, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RESOLVE_BULK_REQUESTS, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RETRY_COUNT, 10)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RETRY_DELAY_MS, 500)
+                .put("searchguard.audit.threadpool.size", 0)
+                .build();
+        AbstractAuditLog al = new AuditLogImpl(settings, null,  null, AbstractSGUnitTest.MOCK_POOL, null, cs);
+        al.logSSLException(null, new Exception("test retry"));
+        Assert.assertNotNull(RetrySink.getMsg());
+        Assert.assertTrue(RetrySink.getMsg().toJson().contains("test retry"));
+    }
+    
+    @Test
+    public void testNoRetry() {
+        
+        RetrySink.init();
+
+        Settings settings = Settings.builder()
+                .put("searchguard.audit.type", RetrySink.class.getName())
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_TRANSPORT, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_ENABLE_REST, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RESOLVE_BULK_REQUESTS, true)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RETRY_COUNT, 0)
+                .put(ConfigConstants.SEARCHGUARD_AUDIT_RETRY_DELAY_MS, 500)
+                .put("searchguard.audit.threadpool.size", 0)
+                .build();
+        AbstractAuditLog al = new AuditLogImpl(settings, null,  null, AbstractSGUnitTest.MOCK_POOL, null, cs);
+        al.logSSLException(null, new Exception("test retry"));
+        Assert.assertNull(RetrySink.getMsg());
     }
 }

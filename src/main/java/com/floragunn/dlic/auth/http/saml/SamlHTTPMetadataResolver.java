@@ -26,7 +26,7 @@ import org.elasticsearch.SpecialPermission;
 import org.elasticsearch.common.settings.Settings;
 import org.opensaml.saml.metadata.resolver.impl.HTTPMetadataResolver;
 
-import com.floragunn.dlic.auth.http.jwt.keybyoidc.SettingsBasedSSLConfigurator;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 
 import net.shibboleth.utilities.java.support.resolver.ResolverException;
 import net.shibboleth.utilities.java.support.xml.BasicParserPool;

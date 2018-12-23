@@ -54,7 +54,7 @@ public class SinkProvider {
 
 		// make sure we always have a fallback to write to
 		if (this.fallbackSink == null) {
-			this.fallbackSink = new DebugSink(FALLBACKSINK_NAME, null);
+			this.fallbackSink = new DebugSink(FALLBACKSINK_NAME, settings, null);
 		}
 
 		allSinks.put(FALLBACKSINK_NAME, this.fallbackSink);
@@ -139,10 +139,10 @@ public class SinkProvider {
 				}
 				break;
 			case "debug":
-				sink = new DebugSink(name, fallbackSink);
+				sink = new DebugSink(name, settings, fallbackSink);
 				break;
             case "noop":
-                sink = new NoopSink(name, fallbackSink);
+                sink = new NoopSink(name, settings, fallbackSink);
                 break;
 			case "log4j":
 				sink = new Log4JSink(name, settings, settingsPrefix, fallbackSink);
@@ -164,7 +164,7 @@ public class SinkProvider {
 						log.error("Audit logging unavailable: '{}' is not a subclass of {}", type, AuditLogSink.class.getSimpleName());
 					}
 				} catch (Throwable e) { // we need really catch a Throwable here!
-					log.error("Audit logging unavailable: Cannot instantiate object of class {} due to " + e, type);
+					log.error("Audit logging unavailable: Cannot instantiate object of class {} due to ", type, e);
 				}
 			}
 		}

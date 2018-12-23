@@ -14,10 +14,12 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.net.URLEncoder;
 import java.util.List;
 
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
+import org.apache.http.message.BasicHeader;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
@@ -313,6 +315,107 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(2, roles.size());
 		Assert.assertTrue(roles.contains("starfleet"));
 		Assert.assertTrue(roles.contains("captains"));
+		
+		addUserWithPassword("$1aAAAAAAAAC", "$1aAAAAAAAAC", HttpStatus.SC_CREATED);
+		addUserWithPassword("abc", "abc", HttpStatus.SC_CREATED);
+	}
+	
+	@Test
+	public void testPasswordRules() throws Exception {
+
+		Settings nodeSettings = 
+				Settings.builder()
+				.put(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_ERROR_MESSAGE,"xxx")
+				.put(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_REGEX, 
+						"(?=.*[A-Z])(?=.*[^a-zA-Z\\\\d])(?=.*[0-9])(?=.*[a-z]).{8,}")
+				.build();
+		
+		setup(nodeSettings);
+
+		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.sendHTTPClientCertificate = true;
+
+		// initial configuration, 5 users
+		HttpResponse response = rh
+				.executeGetRequest("_searchguard/api/configuration/" + ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		Assert.assertEquals(8, settings.size());
+
+		addUserWithPassword("tooshoort", "123", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("tooshoort", "1234567", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("tooshoort", "1Aa%", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("no-nonnumeric", "123456789", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("no-uppercase", "a123456789", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("no-lowercase", "A123456789", HttpStatus.SC_BAD_REQUEST);
+		addUserWithPassword("ok1", "a%A123456789", HttpStatus.SC_CREATED);
+		addUserWithPassword("ok2", "$aA123456789", HttpStatus.SC_CREATED);
+		addUserWithPassword("ok3", "$Aa123456789", HttpStatus.SC_CREATED);
+		addUserWithPassword("ok4", "$1aAAAAAAAAA", HttpStatus.SC_CREATED);
+		
+        //response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/ok4\", \"value\": {\"password\": \"bla\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+		//Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        
+		//response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"replace\", \"path\": \"/ok4\", \"value\": {\"password\": \"bla\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+		//Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        
+        addUserWithPassword("ok4", "123", HttpStatus.SC_BAD_REQUEST);
+        
+        //response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/ok4\", \"value\": {\"password\": \"$1aAAAAAAAAB\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        //Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        
+        addUserWithPassword("ok4", "$1aAAAAAAAAC", HttpStatus.SC_OK);
+		
+        //its not allowed to use the username as password (case insensitive)
+        //response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/$1aAAAAAAAAB\", \"value\": {\"password\": \"$1aAAAAAAAAB\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        //Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        //addUserWithPassword("$1aAAAAAAAAC", "$1aAAAAAAAAC", HttpStatus.SC_BAD_REQUEST);
+        //addUserWithPassword("$1aAAAAAAAac", "$1aAAAAAAAAC", HttpStatus.SC_BAD_REQUEST);
+        //addUserWithPassword(URLEncoder.encode("$1aAAAAAAAac%", "UTF-8"), "$1aAAAAAAAAC%", HttpStatus.SC_BAD_REQUEST);
+        //addUserWithPassword(URLEncoder.encode("$1aAAAAAAAac%!=\"/\\;: test&~@^", "UTF-8"), "$1aAAAAAAAac%!=\\\"/\\\\;: test&~@^", HttpStatus.SC_BAD_REQUEST);
+        //addUserWithPassword(URLEncoder.encode("$1aAAAAAAAac%!=\"/\\;: test&", "UTF-8"), "$1aAAAAAAAac%!=\\\"/\\\\;: test&123", HttpStatus.SC_CREATED);
+
+        response = rh.executeGetRequest("/_searchguard/api/internalusers/nothinghthere?pretty", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        Assert.assertTrue(response.getBody().contains("NOT_FOUND"));
+        
+        //String patchPayload="[ "+
+        //    "{ \"op\": \"add\", \"path\": \"/testuser1\",  \"value\": { \"password\": \"$aA123456789\", \"roles\": [\"testrole1\"] } },"+
+        //    "{ \"op\": \"add\", \"path\": \"/testuser2\",  \"value\": { \"password\": \"testpassword2\", \"roles\": [\"testrole2\"] } }"+
+        // "]";
+        
+        //response = rh.executePatchRequest("/_searchguard/api/internalusers", patchPayload, new BasicHeader("Content-Type", "application/json"));
+        //Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        //Assert.assertTrue(response.getBody().contains("error"));
+        //Assert.assertTrue(response.getBody().contains("xxx"));
+	}
+	
+	@Test
+    public void testUserApiWithDots() throws Exception {
+
+        setup();
+
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+
+        // initial configuration, 5 users
+        HttpResponse response = rh
+                .executeGetRequest("_searchguard/api/configuration/" + ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+        Assert.assertEquals(8, settings.size());
+        
+        addDotUserUserWithHash("my.dotuser0", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_BAD_REQUEST, false);
+        
+        addDotUserWithPassword("my.dot.user0", "12345678",
+                HttpStatus.SC_BAD_REQUEST, false);
+        
+        addDotUserUserWithHash("my.dotuser1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_CREATED, true);
+        
+        addDotUserWithPassword("my.dot.user2", "12345678",
+                HttpStatus.SC_CREATED, true);
 
 	}
 
