@@ -68,8 +68,8 @@ public class ActionGroupsApiAction extends PatchableResourceApiAction {
 	}
 
 	@Override
-	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new ActionGroupValidator(method, ref);
+	protected AbstractConfigurationValidator getValidator(final RestRequest request, BytesReference ref, Object... param) {
+		return new ActionGroupValidator(request, ref, this.settings, param);
 	}
 
 	@Override

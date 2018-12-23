@@ -344,7 +344,15 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         response = rh.executeGetRequest("/_searchguard/api/roles/bulknew1", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
         
+        // put valid field masks
+        response = rh.executePutRequest("/_searchguard/api/roles/sg_field_mask_valid",
+                FileHelper.loadFile("restapi/roles_field_masks_valid.json"), new Header[0]);
+        Assert.assertEquals(response.getBody(), HttpStatus.SC_CREATED, response.getStatusCode());
         
+        // put invalid field masks
+        response = rh.executePutRequest("/_searchguard/api/roles/sg_field_mask_invalid",
+                FileHelper.loadFile("restapi/roles_field_masks_invalid.json"), new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
         
 	}
 }
