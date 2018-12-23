@@ -32,11 +32,13 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.floragunn.searchguard.support.ConfigConstants;
 import com.google.common.base.Joiner;
 
 public abstract class AbstractConfigurationValidator {
@@ -83,12 +85,25 @@ public abstract class AbstractConfigurationValidator {
 	protected final Method method;
 
 	protected final BytesReference content;
+	
+	protected final Settings esSettings;
+	
+	protected final RestRequest request;
+	
+	protected final Object[] param;
 
-	public AbstractConfigurationValidator(final Method method, final BytesReference ref) {
+	public AbstractConfigurationValidator(final RestRequest request, final BytesReference ref, final Settings esSettings, Object... param) {
 		this.content = ref;
-		this.method = method;
+		this.method = request.method();
+		this.esSettings = esSettings;
+		this.request = request;
+		this.param = param;
 	}
 
+	/**
+	 * 
+	 * @return false if validation fails
+	 */
 	public boolean validateSettings() {
 		// no payload for DELETE and GET requests
 		if (method.equals(Method.DELETE) || method.equals(Method.GET)) {
@@ -189,13 +204,19 @@ public abstract class AbstractConfigurationValidator {
 			builder.startObject();
 			switch (this.errorType) {
 			case NONE:
-				return null;
+			    builder.field("status", "error");
+                builder.field("reason", errorType.getMessage());
+                break;
 			case INVALID_CONFIGURATION:
 				builder.field("status", "error");
 				builder.field("reason", ErrorType.INVALID_CONFIGURATION.getMessage());
 				addErrorMessage(builder, INVALID_KEYS_KEY, invalidKeys);
 				addErrorMessage(builder, MISSING_MANDATORY_KEYS_KEY, missingMandatoryKeys);
 				addErrorMessage(builder, MISSING_MANDATORY_OR_KEYS_KEY, missingMandatoryKeys);
+				break;
+			case INVALID_PASSWORD:
+				builder.field("status", "error");
+				builder.field("reason", esSettings.get(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_ERROR_MESSAGE,"Password does not match minimum criterias"));
 				break;
 			case WRONG_DATATYPE:
 				builder.field("status", "error");
@@ -250,6 +271,7 @@ public abstract class AbstractConfigurationValidator {
 	public static enum ErrorType {
 		NONE("ok"),		
 		INVALID_CONFIGURATION("Invalid configuration"),
+		INVALID_PASSWORD("Invalid password"),
 		WRONG_DATATYPE("Wrong datatype"),
 		BODY_NOT_PARSEABLE("Could not parse content of request."),
 		PAYLOAD_NOT_ALLOWED("Request body not allowed for this action."),
@@ -265,5 +287,9 @@ public abstract class AbstractConfigurationValidator {
 		public String getMessage() {
 			return message;
 		}
+	}
+	
+	protected final boolean hasParams() {
+	    return param != null && param.length>0;
 	}
 }

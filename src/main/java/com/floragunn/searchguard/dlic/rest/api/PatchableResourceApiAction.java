@@ -38,10 +38,10 @@ import org.elasticsearch.threadpool.ThreadPool;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.zjsonpatch.JsonPatch;
 import com.flipkart.zjsonpatch.JsonPatchApplicationException;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
@@ -52,7 +52,6 @@ import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 
 public abstract class PatchableResourceApiAction extends AbstractApiAction {
 
-    private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     protected final Logger log = LogManager.getLogger(this.getClass());
 
     public PatchableResourceApiAction(Settings settings, Path configPath, RestController controller, Client client,
@@ -63,7 +62,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
                 auditLog);
     }
 
-    protected Tuple<String[], RestResponse> handlePatch(final RestRequest request, final Client client)
+    private Tuple<String[], RestResponse> handlePatch(final RestRequest request, final Client client)
             throws Throwable {
         if (request.getXContentType() != XContentType.JSON) {
             return badRequestResponse("PATCH accepts only application/json");
@@ -75,7 +74,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         JsonNode jsonPatch;
 
         try {
-            jsonPatch = OBJECT_MAPPER.readTree(request.content().utf8ToString());
+            jsonPatch = DefaultObjectMapper.objectMapper.readTree(request.content().utf8ToString());
         } catch (JsonParseException e) {
             log.debug("Error while parsing JSON patch", e);
             return badRequestResponse("Error in JSON patch: " + e.getMessage());
@@ -96,7 +95,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         }
     }
 
-    protected Tuple<String[], RestResponse> handleSinglePatch(RestRequest request, Client client, String name,
+    private Tuple<String[], RestResponse> handleSinglePatch(RestRequest request, Client client, String name,
             Settings existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws Throwable {
         if (isHidden(existingAsSettings, name)) {
             return notFound(getResourceName() + " " + name + " not found.");
@@ -122,10 +121,18 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             log.debug("Error while applying JSON patch", e);
             return badRequestResponse(e.getMessage());
         }
-        
-        postProcessApplyPatchResult(existingResourceAsJsonNode, patchedResourceAsJsonNode);
+                
+        AbstractConfigurationValidator originalValidator = postProcessApplyPatchResult(request, existingResourceAsJsonNode, patchedResourceAsJsonNode, name);
 
-        AbstractConfigurationValidator validator = getValidator(request.method(), patchedResourceAsJsonNode);
+        if(originalValidator != null) {
+        	if (!originalValidator.validateSettings()) {
+                request.params().clear();
+                return new Tuple<String[], RestResponse>(new String[0],
+                        new BytesRestResponse(RestStatus.BAD_REQUEST, originalValidator.errorsAsXContent()));
+            }
+        }
+        
+        AbstractConfigurationValidator validator = getValidator(request, patchedResourceAsJsonNode);
 
         if (!validator.validateSettings()) {
             request.params().clear();
@@ -136,22 +143,22 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         JsonNode updatedAsJsonNode = existingAsObjectNode.deepCopy().set(name, patchedResourceAsJsonNode);
 
         BytesReference updatedAsBytesReference = new BytesArray(
-                OBJECT_MAPPER.writeValueAsString(updatedAsJsonNode).getBytes());
+                DefaultObjectMapper.objectMapper.writeValueAsString(updatedAsJsonNode).getBytes());
 
         save(client, request, getConfigName(), updatedAsBytesReference);
 
         return successResponse("'" + name + "' updated.", getConfigName());
     }
 
-    protected Tuple<String[], RestResponse> handleBulkPatch(RestRequest request, Client client,
+    private Tuple<String[], RestResponse> handleBulkPatch(RestRequest request, Client client,
             Settings existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws Throwable {
 
         JsonNode patchedAsJsonNode;
 
         try {
-            patchedAsJsonNode = applyBulkPatch(jsonPatch, existingAsObjectNode);
+            patchedAsJsonNode = applyPatch(jsonPatch, existingAsObjectNode);
         } catch (JsonPatchApplicationException e) {
-            log.debug("Error while applying JSON patch", e);            
+            log.debug("Error while applying JSON patch", e);
             return badRequestResponse(e.getMessage());
         }
 
@@ -176,11 +183,19 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
 
             JsonNode oldResource = existingAsObjectNode.get(resourceName);
             JsonNode patchedResource = patchedAsJsonNode.get(resourceName);
+                        
+            AbstractConfigurationValidator originalValidator = postProcessApplyPatchResult(request, oldResource, patchedResource, resourceName);
             
-            postProcessApplyPatchResult(oldResource, patchedResource);
+            if(originalValidator != null) {
+            	if (!originalValidator.validateSettings()) {
+                    request.params().clear();
+                    return new Tuple<String[], RestResponse>(new String[0],
+                            new BytesRestResponse(RestStatus.BAD_REQUEST, originalValidator.errorsAsXContent()));
+                }
+            }
 
             if (oldResource == null || !oldResource.equals(patchedResource)) {
-                AbstractConfigurationValidator validator = getValidator(request.method(), patchedResource);
+                AbstractConfigurationValidator validator = getValidator(request, patchedResource);
 
                 if (!validator.validateSettings()) {
                     request.params().clear();
@@ -191,25 +206,23 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         }
 
         BytesReference updatedAsBytesReference = new BytesArray(
-                OBJECT_MAPPER.writeValueAsString(patchedAsJsonNode).getBytes());
+                DefaultObjectMapper.objectMapper.writeValueAsString(patchedAsJsonNode).getBytes());
 
         save(client, request, getConfigName(), updatedAsBytesReference);
 
         return successResponse("Resource updated.", getConfigName());
     }
 
-    protected JsonNode applyPatch(JsonNode jsonPatch, JsonNode existingResourceAsJsonNode) {
+    private JsonNode applyPatch(JsonNode jsonPatch, JsonNode existingResourceAsJsonNode) {
         return JsonPatch.apply(jsonPatch, existingResourceAsJsonNode);
     }
 
-    protected JsonNode applyBulkPatch(JsonNode jsonPatch, JsonNode existingObjectAsJsonNode) {
-        return JsonPatch.apply(jsonPatch, existingObjectAsJsonNode);
-    }
-    
-    protected void postProcessApplyPatchResult(JsonNode existingResourceAsJsonNode, JsonNode updatedResourceAsJsonNode) {
+    protected AbstractConfigurationValidator postProcessApplyPatchResult(RestRequest request, JsonNode existingResourceAsJsonNode, JsonNode updatedResourceAsJsonNode, String resourceName) {
         // do nothing by default
+    	return null;
     }
     
+    @Override
     protected Tuple<String[], RestResponse> handleApiRequest(final RestRequest request, final Client client)
             throws Throwable {
 
@@ -220,11 +233,10 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         }
     }
 
-    protected AbstractConfigurationValidator getValidator(RestRequest.Method method, JsonNode patchedResource)
+    private AbstractConfigurationValidator getValidator(RestRequest request, JsonNode patchedResource)
             throws JsonProcessingException {
         BytesReference patchedResourceAsByteReference = new BytesArray(
-                OBJECT_MAPPER.writeValueAsString(patchedResource).getBytes());
-
-        return getValidator(method, patchedResourceAsByteReference);
+                DefaultObjectMapper.objectMapper.writeValueAsString(patchedResource).getBytes());
+        return getValidator(request, patchedResourceAsByteReference);
     }
 }

@@ -65,8 +65,8 @@ import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportRequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flipkart.zjsonpatch.JsonDiff;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage.Category;
 import com.floragunn.searchguard.compliance.ComplianceConfig;
@@ -103,7 +103,6 @@ public abstract class AbstractAuditLog implements AuditLog {
     private final boolean excludeSensitiveHeaders;
 
     private final String searchguardIndex;
-    private final ObjectMapper mapper = new ObjectMapper();
     private static final List<String> writeClasses = new ArrayList<>();
     
     {
@@ -569,7 +568,7 @@ public abstract class AbstractAuditLog implements AuditLog {
                     originalSource = XContentHelper.convertToJson(originalResult.internalSourceRef(), false, XContentType.JSON);
                     currentSource = XContentHelper.convertToJson(currentIndex.source(), false, XContentType.JSON);
                 }
-                final JsonNode diffnode = JsonDiff.asJson(mapper.readTree(originalSource), mapper.readTree(currentSource));
+                final JsonNode diffnode = JsonDiff.asJson(DefaultObjectMapper.objectMapper.readTree(originalSource), DefaultObjectMapper.objectMapper.readTree(currentSource));
                 msg.addComplianceWriteDiffSource(diffnode.size() == 0?"":diffnode.toString());
             } catch (Exception e) {
                 log.error("Unable to generate diff for {}",msg.toPrettyString(),e);

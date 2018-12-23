@@ -26,7 +26,7 @@ public class LoggingSink extends AuditLogSink {
     public StringBuffer sb = new StringBuffer();
     
     public LoggingSink(String name, Settings settings, String settingsPrefix, AuditLogSink fallbackSink) {
-        super(name, null, null, fallbackSink);
+        super(name, settings, null, fallbackSink);
     }
 
     

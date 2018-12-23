@@ -20,6 +20,12 @@ public final class ConfigConstants {
     public static final String LDAP_AUTHC_USERNAME_ATTRIBUTE = "username_attribute";
     public static final String LDAP_AUTHC_USERSEARCH = "usersearch";
 
+    public static final String LDAP_AUTHCZ_USERS = "users";
+    public static final String LDAP_AUTHZ_ROLES = "roles";
+    public static final String LDAP_AUTHCZ_BASE = "base";
+    public static final String LDAP_AUTHCZ_SEARCH = "search";
+
+    
     public static final String LDAP_AUTHZ_RESOLVE_NESTED_ROLES = "resolve_nested_roles";
     public static final String LDAP_AUTHZ_ROLEBASE = "rolebase";
     public static final String LDAP_AUTHZ_ROLENAME = "rolename";
@@ -36,6 +42,8 @@ public final class ConfigConstants {
     public static final String LDAP_BIND_DN = "bind_dn";
     public static final String LDAP_PASSWORD = "password";
     public static final String LDAP_FAKE_LOGIN_ENABLED = "fakelogin_enabled";
+    public static final String LDAP_SEARCH_ALL_BASES = "search_all_bases";
+
     public static final String LDAP_FAKE_LOGIN_DN = "fakelogin_dn";
     public static final String LDAP_FAKE_LOGIN_PASSWORD = "fakelogin_password";
 
@@ -44,6 +52,7 @@ public final class ConfigConstants {
 
     // ssl
     public static final String LDAPS_VERIFY_HOSTNAMES = "verify_hostnames";
+    public static final String LDAPS_TRUST_ALL = "trust_all";
     public static final boolean LDAPS_VERIFY_HOSTNAMES_DEFAULT = true;
     public static final String LDAPS_ENABLE_SSL = "enable_ssl";
     public static final String LDAPS_ENABLE_START_TLS = "enable_start_tls";
@@ -68,6 +77,14 @@ public final class ConfigConstants {
     public static final String LDAP_CUSTOM_ATTR_MAXVAL_LEN = "custom_attr_maxval_len";
     public static final String LDAP_CUSTOM_ATTR_WHITELIST = "custom_attr_whitelist";
 
+    public static final String LDAP_CONNECTION_STRATEGY = "connection_strategy";
+    
+    public static final String LDAP_POOL_ENABLED = "pool.enabled";
+    public static final String LDAP_POOL_MIN_SIZE = "pool.min_size";
+    public static final String LDAP_POOL_MAX_SIZE = "pool.max_size";
+
+    public static final String LDAP_POOL_TYPE = "pool.type";
+    
     private ConfigConstants() {
 
     }
