@@ -17,10 +17,17 @@ package com.floragunn.dlic.auth.ldap.util;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.logging.log4j.LogManager;
 import org.elasticsearch.SpecialPermission;
+import org.elasticsearch.common.settings.Settings;
 import org.ldaptive.Connection;
 
 public final class Utils {
@@ -97,6 +104,39 @@ public final class Utils {
             }
         }
         return out.toString();
+    }
+
+    public static List<Map.Entry<String, Settings>> getOrderedBaseSettings(Settings settings) {
+        return getOrderedBaseSettings(settings.getAsGroups(true));
+    }
+    
+    public static List<Map.Entry<String, Settings>> getOrderedBaseSettings(Map<String, Settings> settingsMap) {
+        return getOrderedBaseSettings(settingsMap.entrySet());
+    }
+
+    public static List<Map.Entry<String, Settings>> getOrderedBaseSettings(Set<Map.Entry<String, Settings>> set) {
+        List<Map.Entry<String, Settings>> result = new ArrayList<>(set);
+
+        sortBaseSettings(result);
+
+        return Collections.unmodifiableList(result);
+    }
+
+    private static void sortBaseSettings(List<Map.Entry<String, Settings>> list) {
+        list.sort(new Comparator<Map.Entry<String, Settings>>() {
+
+            @Override
+            public int compare(Map.Entry<String, Settings> o1, Map.Entry<String, Settings> o2) {
+                int attributeOrder = Integer.compare(o1.getValue().getAsInt("order", Integer.MAX_VALUE),
+                        o2.getValue().getAsInt("order", Integer.MAX_VALUE));
+
+                if (attributeOrder != 0) {
+                    return attributeOrder;
+                }
+
+                return o1.getKey().compareTo(o2.getKey());
+            }
+        });
     }
 
     private static void printLicenseInfo() {

@@ -20,12 +20,13 @@ package com.floragunn.searchguard.configuration;
 //https://github.com/salyh/elasticsearch-security-plugin/blob/4b53974a43b270ae77ebe79d635e2484230c9d01/src/main/java/org/elasticsearch/plugins/security/filter/DlsWriteFilter.java
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -44,14 +45,14 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.bouncycastle.crypto.digests.Blake2bDigest;
-import org.bouncycastle.util.encoders.Hex;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesArray;
@@ -79,6 +80,7 @@ import com.google.common.collect.Iterators;
 
 class DlsFlsFilterLeafReader extends FilterLeafReader {
 
+    private static final String KEYWORD = ".keyword";
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private final Set<String> includesSet;
     private final Set<String> excludesSet;
@@ -95,7 +97,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final ClusterService clusterService;
     private final ComplianceConfig complianceConfig;
     private final AuditLog auditlog;
-    private final Set<String> maskedFields;
+    private final Map<String, MaskedField> maskedFieldsMap;
+    private final Set<String> maskedFieldsKeySet;
     private final ShardId shardId;
     private BitSet bs;
     private final boolean maskFields;
@@ -114,7 +117,14 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         this.clusterService = clusterService;
         this.complianceConfig = complianceConfig;
         this.auditlog = auditlog;
-        this.maskedFields = maskedFields;
+        this.maskedFieldsMap = maskFields?extractMaskedFields(maskedFields):null;
+        
+        if(maskedFieldsMap != null) {
+            maskedFieldsKeySet = maskedFieldsMap.keySet();
+        } else {
+            maskedFieldsKeySet = null;
+        }
+        
         this.shardId = shardId;
         flsEnabled = includesExcludes != null && !includesExcludes.isEmpty();
         dlsEnabled = bsp != null;
@@ -204,6 +214,15 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 throw ExceptionsHelper.convertToElastic(e);
             }
         }
+    }
+
+    private Map<String, MaskedField> extractMaskedFields(Set<String> maskedFields) {
+        Map<String, MaskedField> retVal = new HashMap<>(maskedFields.size());
+        for(String mfs: maskedFields) {
+            MaskedField mf = new MaskedField(mfs, complianceConfig.getSalt16());
+            retVal.put(mf.getName(), mf);
+        }
+        return retVal;
     }
 
     private static class DlsFlsSubReaderWrapper extends FilterDirectoryReader.SubReaderWrapper {
@@ -325,7 +344,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         private final StoredFieldVisitor delegate;
         private FieldReadCallback fieldReadCallback = 
-                new FieldReadCallback(threadContext, indexService, clusterService, complianceConfig, auditlog, maskedFields, shardId);
+                new FieldReadCallback(threadContext, indexService, clusterService, complianceConfig, auditlog, maskedFieldsKeySet, shardId);
 
         public ComplianceAwareStoredFieldVisitor(final StoredFieldVisitor delegate) {
             super();
@@ -504,7 +523,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         public Status needsField(final FieldInfo fieldInfo) throws IOException {
-            return isFls(fieldInfo.name) ? delegate.needsField(fieldInfo) : Status.NO;
+            return delegate.needsField(fieldInfo);
         }
 
         @Override
@@ -514,8 +533,11 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         public void stringField(final FieldInfo fieldInfo, final byte[] value) throws IOException {
-            if(WildcardMatcher.matchAny(maskedFields, fieldInfo.name)) {
-                delegate.stringField(fieldInfo, hash(value));
+            
+            final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(maskedFieldsKeySet, fieldInfo.name);
+            
+            if(matchedPattern.isPresent()) {
+                delegate.stringField(fieldInfo, maskedFieldsMap.get(matchedPattern.get()).mask(value));
             } else {
                 delegate.stringField(fieldInfo, value);
             }
@@ -552,43 +574,47 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         }
     }
     
-    private byte[] hash(byte[] in) {
-        final Blake2bDigest hash = new Blake2bDigest(null, 32, null, complianceConfig.getSalt16());
-        hash.update(in, 0, in.length);
-        final byte[] out = new byte[hash.getDigestSize()];
-        hash.doFinal(out, 0);
-        return Hex.encode(out);
-    }
-    
-    private BytesRef hash(BytesRef in) {
-        final BytesRef copy = BytesRef.deepCopyOf(in);
-        //System.out.println("AGG--Hash: "+copy.utf8ToString()+" -> "+new String(hash(copy.bytes))+" with Salt: "+Arrays.hashCode(complianceConfig.getSalt16()));
-        return new BytesRef(hash(copy.bytes));
-    }
-    
-    private String hash(String in) {
-        //System.out.println("Search--Hash: "+in+" -> "+new String(hash(in.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8)+" with Salt: "+Arrays.hashCode(complianceConfig.getSalt16()));;
-        return new String(hash(in.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
-    }
-    
     private final MapUtils.Callback HASH_CB = new HashingCallback();
     
     private class HashingCallback implements MapUtils.Callback {
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Override
         public void call(String key, Map<String, Object> map, List<String> stack) {
             Object v = map.get(key);
-            if(v != null && (v instanceof String || v instanceof byte[])) {
-                final String field = stack.isEmpty()?key:Joiner.on('.').join(stack)+"."+key;
-                if(WildcardMatcher.matchAny(maskedFields, field)) {
-                    if(v instanceof String) {
-                        map.replace(key, hash((String) v));
+
+            if (v != null && (v instanceof List)) {
+                final String field = stack.isEmpty() ? key : Joiner.on('.').join(stack) + "." + key;
+                final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(maskedFieldsKeySet,
+                        field);
+                if (matchedPattern.isPresent()) {
+                    final List listField = (List) v;
+                    for (ListIterator iterator = listField.listIterator(); iterator.hasNext();) {
+                        final Object listFieldItem = iterator.next();
+
+                        if (listFieldItem instanceof String) {
+                            iterator.set(maskedFieldsMap.get(matchedPattern.get()).mask(((String) listFieldItem)));
+                        } else if (listFieldItem instanceof byte[]) {
+                            iterator.set(maskedFieldsMap.get(matchedPattern.get()).mask(((byte[]) listFieldItem)));
+                        }
+                    }
+                }
+            }
+
+            if (v != null && (v instanceof String || v instanceof byte[])) {
+
+                final String field = stack.isEmpty() ? key : Joiner.on('.').join(stack) + "." + key;
+                final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(maskedFieldsKeySet,
+                        field);
+                if (matchedPattern.isPresent()) {
+                    if (v instanceof String) {
+                        map.replace(key, maskedFieldsMap.get(matchedPattern.get()).mask(((String) v)));
                     } else {
-                        map.replace(key, hash((byte[]) v));
+                        map.replace(key, maskedFieldsMap.get(matchedPattern.get()).mask(((byte[]) v)));
                     }
                 }
             }
         }
-        
+
     }
 
     @Override
@@ -643,7 +669,14 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     
     private BinaryDocValues wrapBinaryDocValues(final String field, final BinaryDocValues binaryDocValues) {
 
-        if (binaryDocValues != null && evaluateMaskedFields(field)) {
+        final Map<String, MaskedField> rtMask;
+        
+        if (binaryDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null) {
+            
+            final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field));
+            assert matchedPattern.isPresent();
+            final MaskedField mf = rtMask.get(matchedPattern.get());
+            
             return new BinaryDocValues() {
 
                 @Override
@@ -673,7 +706,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
                 @Override
                 public BytesRef binaryValue() throws IOException {
-                    return hash(binaryDocValues.binaryValue());
+                    return mf.mask(binaryDocValues.binaryValue());
                 }
             };
         } else {
@@ -689,28 +722,37 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     
     private SortedDocValues wrapSortedDocValues(final String field, final SortedDocValues sortedDocValues) {
 
-        if (sortedDocValues != null && evaluateMaskedFields(field)) {
+        final Map<String, MaskedField> rtMask;
+        
+        if (sortedDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null) {
+
+            final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field));
+            assert matchedPattern.isPresent();
+            final MaskedField mf = rtMask.get(matchedPattern.get());
+            
+            
             return new SortedDocValues() {
 
                 @Override
                 public BytesRef binaryValue() throws IOException {
-                    return hash(sortedDocValues.binaryValue());
-                }
-
-                /*@Override
-                public int lookupTerm(BytesRef key) throws IOException {
-                    throw new RuntimeException("sdv lookupTerm");
+                    return mf.mask(sortedDocValues.binaryValue());
                 }
 
                 @Override
+                public int lookupTerm(BytesRef key) throws IOException {
+                    return sortedDocValues.lookupTerm(key);
+                }
+
+
+                @Override
                 public TermsEnum termsEnum() throws IOException {
-                    throw new RuntimeException("sdv termsEnum()");
+                    return sortedDocValues.termsEnum();
                 }
 
                 @Override
                 public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
-                    throw new RuntimeException("sdv intersetc");
-                }*/
+                    return sortedDocValues.intersect(automaton);
+                }
 
                 @Override
                 public int nextDoc() throws IOException {
@@ -744,7 +786,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
                 @Override
                 public BytesRef lookupOrd(int ord) throws IOException {
-                    return hash(sortedDocValues.lookupOrd(ord));
+                    return mf.mask(sortedDocValues.lookupOrd(ord));
                 }
 
                 @Override
@@ -769,23 +811,30 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     private SortedSetDocValues wrapSortedSetDocValues(final String field, final SortedSetDocValues sortedSetDocValues) {
 
-        if (sortedSetDocValues != null && evaluateMaskedFields(field)) {
+        final Map<String, MaskedField> rtMask;
+        
+        if (sortedSetDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null) {
+            
+            final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field));
+            assert matchedPattern.isPresent();
+            final MaskedField mf =  rtMask.get(matchedPattern.get());
+
             return new SortedSetDocValues() {
 
-                /*@Override
+                @Override
                 public long lookupTerm(BytesRef key) throws IOException {
-                    throw new RuntimeException("ssdv lookupTerm");
+                    return sortedSetDocValues.lookupTerm(key);
                 }
-                
+
                 @Override
                 public TermsEnum termsEnum() throws IOException {
-                    throw new RuntimeException("ssdv termsenum");
+                    return sortedSetDocValues.termsEnum();
                 }
-                
+
                 @Override
                 public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
-                    throw new RuntimeException("ssdv intersect");
-                }*/
+                    return sortedSetDocValues.intersect(automaton);
+                }
 
                 @Override
                 public int nextDoc() throws IOException {
@@ -819,7 +868,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
                 @Override
                 public BytesRef lookupOrd(long ord) throws IOException {
-                    return hash(sortedSetDocValues.lookupOrd(ord));
+                    return mf.mask(sortedSetDocValues.lookupOrd(ord));
                 }
 
                 @Override
@@ -848,7 +897,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     }
 
     private Terms wrapTerms(final String field, Terms terms) {
-        if(evaluateMaskedFields(field)) {
+        Map<String, MaskedField> rtMask = getRuntimeMaskedFieldInfo();
+        if(rtMask != null && WildcardMatcher.matchAny(rtMask.keySet(), handleKeyword(field))) {
             return null;
         } else {
             return terms;
@@ -957,10 +1007,11 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         return true;
     }
     
-    private boolean evaluateMaskedFields(String field) {
+    @SuppressWarnings("unchecked")
+    private Map<String, MaskedField> getRuntimeMaskedFieldInfo() {
         
         if(!complianceConfig.isEnabled()) {
-            return false;
+            return null;
         }
 
         final Map<String, Set<String>> maskedFieldsMap = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
@@ -970,12 +1021,19 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         if(maskedEval != null) {
             final Set<String> mf = maskedFieldsMap.get(maskedEval);
             if(mf != null && !mf.isEmpty()) {
-                return WildcardMatcher.matchAny(mf, field);
+                return extractMaskedFields(mf);
             }
             
         } 
 
-        return false;
+        return null;
+    }
+    
+    private String handleKeyword(final String field) {
+        if(field != null && field.endsWith(KEYWORD)) {
+            return field.substring(0, field.length()-KEYWORD.length());
+        }
+        return field;
     }
     
 }

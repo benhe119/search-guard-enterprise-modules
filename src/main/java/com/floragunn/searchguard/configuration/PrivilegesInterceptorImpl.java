@@ -15,7 +15,6 @@
 package com.floragunn.searchguard.configuration;
 
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,6 +45,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.privileges.PrivilegesInterceptor;
+import com.floragunn.searchguard.resolver.IndexResolverReplacer.Resolved;
 import com.floragunn.searchguard.user.User;
 
 public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
@@ -66,8 +66,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             log.warn("Tenant {} is not allowed for user {}", requestedTenant, user.getName());
             return false;
         } else {
-            // allowed, check read-write permissions
-            boolean isBuildNumRequest = false;
             
             if(log.isDebugEnabled()) {
                 log.debug("request "+request.getClass());
@@ -83,11 +81,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                     log.debug("source " + (ir.source() == null ? null : ir.source().utf8ToString()));
                 }
 
-                /*if (ir.type().equals("config") 
-                        && Character.isDigit(ir.id().charAt(0)) 
-                        && ir.source().toUtf8().contains("buildNum")) {
-                    isBuildNumRequest = true;
-                }*/
             }
             
             if (request instanceof UpdateRequest) {
@@ -101,7 +94,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 }
             }
             
-            if (!isBuildNumRequest && tenants.get(requestedTenant) == Boolean.FALSE 
+            if (tenants.get(requestedTenant) == Boolean.FALSE 
                     && action.startsWith("indices:data/write")) {
                 log.warn("Tenant {} is not allowed to write (user: {})", requestedTenant, user.getName());
                 return false;
@@ -118,7 +111,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
      *
      */
     @Override
-    public Boolean replaceKibanaIndex(final ActionRequest request, final String action, final User user, final Settings config, final Set<String> requestedResolvedIndices, final Map<String, Boolean> tenants) { 
+    public Boolean replaceKibanaIndex(final ActionRequest request, final String action, final User user, final Settings config, final Resolved requestedResolved, final Map<String, Boolean> tenants) { 
         
         final boolean enabled = config.getAsBoolean("searchguard.dynamic.kibana.multitenancy_enabled", true);
         
@@ -148,9 +141,14 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             requestedTenant = user.getName();
         }
         
+        if (log.isDebugEnabled() && !user.getName().equals(kibanaserverUsername)) {
+        	//log statements only here
+        	log.debug("requestedResolved: "+requestedResolved);
+        }
+        
         if (!user.getName().equals(kibanaserverUsername) 
-                && requestedResolvedIndices.size() == 1
-                && requestedResolvedIndices.contains(toUserIndexName(kibanaIndexName, requestedTenant))) {
+                && requestedResolved.getAllIndices().size() == 1
+                && requestedResolved.getAllIndices().contains(toUserIndexName(kibanaIndexName, requestedTenant))) {
             
             if(isTenantAllowed(request, action, user, tenants, requestedTenant)) {
                 return Boolean.FALSE;
@@ -158,11 +156,10 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             
         }
         
-        //intercept when requests are not made by the kibana server and if the kibana index (.kibana) is the only index involved
+        //intercept when requests are not made by the kibana server and if the kibana index/alias (.kibana) is the only index/alias involved
         if (!user.getName().equals(kibanaserverUsername) 
-                && requestedResolvedIndices.contains(kibanaIndexName)
-                && requestedResolvedIndices.size() == 1) {
-            
+                && resolveToKibanaIndexOrAlias(requestedResolved, kibanaIndexName)) {
+        		
             if(log.isDebugEnabled()) {
                 log.debug("requestedTenant: "+requestedTenant);
                 log.debug("is user tenant: "+requestedTenant.equals(user.getName()));
@@ -183,7 +180,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             if (log.isTraceEnabled()) {
                 log.trace("not a request to only the .kibana index");
                 log.trace(user.getName() + "/" + kibanaserverUsername);
-                log.trace(requestedResolvedIndices + " does not contain only " + kibanaIndexName);
+                log.trace(requestedResolved + " does not contain only " + kibanaIndexName);
             }
 
         }
@@ -203,8 +200,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 || request instanceof GetFieldMappingsRequest) {
             return;
         }
-
-        //createKibanaUserIndex(oldIndexName, newIndexName, action);
         
         //handle msearch and mget
         //in case of GET change the .kibana index to the userskibanaindex
@@ -297,5 +292,10 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
         }
         
         return originalKibanaIndex+"_"+tenant.hashCode()+"_"+tenant.toLowerCase().replaceAll("[^a-z0-9]+",EMPTY_STRING);
+    }
+    
+    private boolean resolveToKibanaIndexOrAlias(final Resolved requestedResolved, final String kibanaIndexName) {
+    	return (requestedResolved.getAllIndices().size() == 1 && requestedResolved.getAllIndices().contains(kibanaIndexName))
+    			|| (requestedResolved.getAliases().size() == 1 && requestedResolved.getAliases().contains(kibanaIndexName));
     }
 }
