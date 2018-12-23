@@ -28,7 +28,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.support.SearchGuardDeprecationHandler;
 
 public class Utils {
@@ -72,7 +72,7 @@ public class Utils {
     public static JsonNode convertJsonToJackson(ToXContent jsonContent) {
         try {
             final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, false);
-            return new ObjectMapper().readTree(bytes.utf8ToString());
+            return DefaultObjectMapper.objectMapper.readTree(bytes.utf8ToString());
         } catch (IOException e1) {
             throw ExceptionsHelper.convertToElastic(e1);
         }

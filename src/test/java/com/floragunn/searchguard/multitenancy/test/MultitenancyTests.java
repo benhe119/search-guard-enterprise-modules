@@ -349,8 +349,38 @@ public class MultitenancyTests extends SingleClusterTest {
         HttpResponse res;        
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest(".kibana-6/doc/6.2.2?pretty", encodeBasicHeader("kibanaro", "kibanaro"))).getStatusCode());
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest(".kibana/doc/6.2.2?pretty", encodeBasicHeader("kibanaro", "kibanaro"))).getStatusCode());
+
         System.out.println(res.getBody());
         
+    }
+    
+    @Test
+    public void testKibanaAlias65() throws Exception {
+        final Settings settings = Settings.builder()
+                .build();
+        setup(settings);
+        
+        try (TransportClient tc = getInternalTransportClient()) {
+            String body = "{\"buildNum\": 15460, \"defaultIndex\": \"humanresources\", \"tenant\": \"human_resources\"}";
+            Map indexSettings = new HashMap();
+            indexSettings.put("number_of_shards", 1);
+            indexSettings.put("number_of_replicas", 0);
+            tc.admin().indices().create(new CreateIndexRequest(".kibana_1")
+                .alias(new Alias(".kibana"))
+                .settings(indexSettings))
+                .actionGet();
+
+            tc.index(new IndexRequest(".kibana_1").type("doc").id("6.2.2").setRefreshPolicy(RefreshPolicy.IMMEDIATE).source(body, XContentType.JSON)).actionGet();
+            tc.index(new IndexRequest(".kibana_-900636979_kibanaro").type("doc").id("6.2.2").setRefreshPolicy(RefreshPolicy.IMMEDIATE).source(body, XContentType.JSON)).actionGet();
+
+        }
+
+        final RestHelper rh = nonSslRestHelper();
+
+        HttpResponse res;             
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest(".kibana/doc/6.2.2?pretty", new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("kibanaro", "kibanaro"))).getStatusCode());
+        System.out.println(res.getBody());
+        Assert.assertTrue(res.getBody().contains(".kibana_-900636979_kibanaro")); 
     }
 
 }
