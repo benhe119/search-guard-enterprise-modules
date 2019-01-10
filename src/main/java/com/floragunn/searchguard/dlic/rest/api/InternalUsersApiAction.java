@@ -90,11 +90,11 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         final String username = request.param("name");
 
         if (username == null || username.length() == 0) {
-            return badRequestResponse(channel, "No " + getResourceName() + " specified");
+            return badRequestResponse(channel, "No " + getResourceName() + " specified.");
         }
 
         if(username.contains(".")) {
-            return badRequestResponse(channel, "No dots are allowed in the name. User the username attribute: https://docs.search-guard.com/latest/internal-users-database");
+            return badRequestResponse(channel, "No dots are allowed in the name. User the username attribute: https://docs.search-guard.com/latest/internal-users-database.");
         }
 
         // TODO it might be sensible to consolidate this with the overridden method in
@@ -131,7 +131,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
 
         // sanity checks, hash is mandatory for newly created users
         if (!userExisted && additionalSettingsBuilder.get("hash") == null) {
-            return badRequestResponse(channel, "Please specify either 'hash' or 'password' when creating a new internal user");
+            return badRequestResponse(channel, "Please specify either 'hash' or 'password' when creating a new internal user.");
         }
 
         // for existing users, hash is optional
@@ -141,7 +141,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
             Map<String, String> existingUserSettings = (Map<String, String>) config.get(username);
             if (!existingUserSettings.containsKey("hash")) {
                 return internalErrorResponse(channel, 
-                        "Existing user " + username + " has no password, and no new password or hash was specified");
+                        "Existing user " + username + " has no password, and no new password or hash was specified.");
             }
             additionalSettingsBuilder.put("hash", (String) existingUserSettings.get("hash"));
         }
@@ -154,9 +154,9 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         save(client, request, ConfigConstants.CONFIGNAME_INTERNAL_USERS, Utils.convertStructuredMapToBytes(config));
 
         if (userExisted) {
-            return successResponse(channel, "'" + username + "' updated", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+            return successResponse(channel, "'" + username + "' updated.", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
         } else {
-            return createdResponse(channel, "'" + username + "' created", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+            return createdResponse(channel, "'" + username + "' created.", ConfigConstants.CONFIGNAME_INTERNAL_USERS);
         }
 
     }

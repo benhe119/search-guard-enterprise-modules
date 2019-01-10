@@ -133,7 +133,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		final String name = request.param("name");
 
 		if (name == null || name.length() == 0) {
-			return badRequestResponse(channel, "No " + getResourceName() + " specified");
+			return badRequestResponse(channel, "No " + getResourceName() + " specified.");
 		}
 
 		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
@@ -164,7 +164,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		final String name = request.param("name");
 
 		if (name == null || name.length() == 0) {
-			return badRequestResponse(channel, "No " + getResourceName() + " specified");
+			return badRequestResponse(channel, "No " + getResourceName() + " specified.");
 		}
 
 		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
