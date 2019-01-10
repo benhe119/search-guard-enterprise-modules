@@ -25,6 +25,7 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
@@ -62,14 +63,14 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleGet(RestRequest request, Client client,
+	protected Tuple<String[], RestResponse> handleGet(RestChannel channel, RestRequest request, Client client,
 			final Settings.Builder additionalSettingsBuilder) throws Throwable {
 		
 		final String configname = request.param("configname");
 
 		if (configname == null || configname.length() == 0
 				|| !ConfigConstants.CONFIG_NAMES.contains(configname)) {
-			return badRequestResponse("No configuration name given, must be one of "
+			return badRequestResponse(channel, "No configuration name given, must be one of "
 					+ Joiner.on(",").join(ConfigConstants.CONFIG_NAMES));
 
 		}
@@ -78,7 +79,7 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 		final Settings config = configBuilder.build();
 		
 		return new Tuple<String[], RestResponse>(new String[0],
-				new BytesRestResponse(RestStatus.OK, convertToJson(config)));
+				new BytesRestResponse(RestStatus.OK, convertToJson(channel, config)));
 	}
 
 	protected void filter(Settings.Builder builder, String resourceName) {

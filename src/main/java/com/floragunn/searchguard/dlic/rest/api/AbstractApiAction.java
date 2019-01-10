@@ -42,11 +42,11 @@ import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.util.concurrent.ThreadContext.StoredContext;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
@@ -81,10 +81,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	protected final Boolean acceptInvalidLicense;
 	protected final AuditLog auditLog;
 
-	static {
-		//printLicenseInfo();
-	}
-
 	protected AbstractApiAction(final Settings settings, final Path configPath, final RestController controller,
 			final Client client, final AdminDNs adminDNs, final IndexBaseConfigurationRepository cl,
 			final ClusterService cs, final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator,
@@ -108,7 +104,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 	protected abstract String getConfigName();
 
-	protected Tuple<String[], RestResponse> handleApiRequest(final RestRequest request, final Client client)
+	protected Tuple<String[], RestResponse> handleApiRequest(final RestChannel channel, final RestRequest request, final Client client)
 			throws Throwable {
 
 		// validate additional settings, if any
@@ -116,38 +112,38 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		if (!validator.validateSettings()) {
 			request.params().clear();
 			return new Tuple<String[], RestResponse>(new String[0],
-					new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent()));
+					new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
 		}
 		switch (request.method()) {
 		case DELETE:
-			return handleDelete(request, client, validator.settingsBuilder());
+			return handleDelete(channel,request, client, validator.settingsBuilder());
 		case POST:
-			return handlePost(request, client, validator.settingsBuilder());
+			return handlePost(channel,request, client, validator.settingsBuilder());
 		case PUT:
-			return handlePut(request, client, validator.settingsBuilder());
+			return handlePut(channel,request, client, validator.settingsBuilder());
 		case GET:
-			return handleGet(request, client, validator.settingsBuilder());
+			return handleGet(channel,request, client, validator.settingsBuilder());
 		default:
 			throw new IllegalArgumentException(request.method() + " not supported");
 		}
 	}
 
-	protected Tuple<String[], RestResponse> handleDelete(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handleDelete(final RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettingsBuilder) throws Throwable {
 		final String name = request.param("name");
 
 		if (name == null || name.length() == 0) {
-			return badRequestResponse("No " + getResourceName() + " specified");
+			return badRequestResponse(channel, "No " + getResourceName() + " specified");
 		}
 
 		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
 		
 		if (isHidden(existingAsSettings, name)) {
-            return notFound(getResourceName() + " " + name + " not found.");
+            return notFound(channel, getResourceName() + " " + name + " not found.");
 		}
 		
 		if (isReadOnly(existingAsSettings, name)) {
-			return forbidden("Resource '"+ name +"' is read-only.");
+			return forbidden(channel, "Resource '"+ name +"' is read-only.");
 		}
 		
 		final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(Settings.builder().put(existingAsSettings).build()); 
@@ -156,29 +152,29 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		config.remove(name);
 		if (resourceExisted) {
 			save(client, request, getConfigName(), Utils.convertStructuredMapToBytes(config));
-			return successResponse("'" + name + "' deleted.", getConfigName());
+			return successResponse(channel, "'" + name + "' deleted.", getConfigName());
 		} else {
-			return notFound(getResourceName() + " " + name + " not found.");
+			return notFound(channel, getResourceName() + " " + name + " not found.");
 		}
 	}
 
-	protected Tuple<String[], RestResponse> handlePut(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePut(final RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettingsBuilder) throws Throwable {
 		
 		final String name = request.param("name");
 
 		if (name == null || name.length() == 0) {
-			return badRequestResponse("No " + getResourceName() + " specified");
+			return badRequestResponse(channel, "No " + getResourceName() + " specified");
 		}
 
 		final Settings existingAsSettings = loadAsSettings(getConfigName(), false);
 
 		if (isHidden(existingAsSettings, name)) {
-            return forbidden("Resource '"+ name +"' is not available.");		    
+            return forbidden(channel, "Resource '"+ name +"' is not available.");		    
 		}
 		
 		if (isReadOnly(existingAsSettings, name)) {
-			return forbidden("Resource '"+ name +"' is read-only.");
+			return forbidden(channel, "Resource '"+ name +"' is read-only.");
 		}
 		
 		if (log.isTraceEnabled()) {
@@ -193,18 +189,18 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		
 		save(client, request, getConfigName(), Utils.convertStructuredMapToBytes(con));
 		if (existed) {
-			return successResponse("'" + name + "' updated.", getConfigName());
+			return successResponse(channel, "'" + name + "' updated.", getConfigName());
 		} else {
-			return createdResponse("'" + name + "' created.", getConfigName());
+			return createdResponse(channel, "'" + name + "' created.", getConfigName());
 		}
 	}
 
-	protected Tuple<String[], RestResponse> handlePost(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePost(final RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.POST);
+		return notImplemented(channel, Method.POST);
 	}
 
-	protected Tuple<String[], RestResponse> handleGet(RestRequest request, Client client, Builder additionalSettings)
+	protected Tuple<String[], RestResponse> handleGet(final RestChannel channel, RestRequest request, Client client, Builder additionalSettings)
 			throws Throwable {
 
 		final String resourcename = request.param("name");
@@ -219,7 +215,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
 			return new Tuple<String[], RestResponse>(new String[0],
-					new BytesRestResponse(RestStatus.OK, convertToJson(configurationSettings)));
+					new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
 		}
 		
 		
@@ -232,7 +228,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		        .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
 
 		if (!con.containsKey(resourcename)) {
-			return notFound("Resource '" + resourcename + "' not found.");
+			return notFound(channel, "Resource '" + resourcename + "' not found.");
 		}
 		return new Tuple<String[], RestResponse>(new String[0],
 				new BytesRestResponse(RestStatus.OK, XContentHelper.convertToJson(Utils.convertStructuredMapToBytes(con), false, false, XContentType.JSON)));
@@ -265,9 +261,9 @@ public abstract class AbstractApiAction extends BaseRestHandler {
         }
 	}
 	
-	protected void save(final Client client, final RestRequest request, final String config,
+	protected void save(final RestChannel channel, final Client client, final RestRequest request, final String config,
             final Settings.Builder settings) throws Throwable {
-	    save(client, request, config, toSource(settings));
+	    save(client, request, config, toSource(channel, settings));
 	}
 
 	protected void save(final Client client, final RestRequest request, final String config,
@@ -316,7 +312,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	}
 
 	@Override
-	protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
+	protected final RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
 
 		// consume all parameters first so we can return a correct HTTP status,
 		// not 400
@@ -326,7 +322,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		// check if SG index has been initialized
 		if (!ensureIndexExists(client)) {
 			return channel -> channel.sendResponse(
-					new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ErrorType.SG_NOT_INITIALIZED.getMessage()));
+					new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ErrorType.SG_NOT_INITIALIZED.getMessage())); //TODO return json
 		}
 
 		// check if request is authorized
@@ -338,90 +334,92 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			auditLog.logMissingPrivileges(authError, user==null?null:user.getName(), request);
 			// for rest request
 			request.params().clear();
-			final BytesRestResponse response = (BytesRestResponse)forbidden("No permission to access REST API: " + authError).v2();
-			return channel -> channel.sendResponse(response);
+			return channel -> channel.sendResponse((BytesRestResponse)forbidden(channel, "No permission to access REST API: " + authError).v2());
 		}
-
-		final Semaphore sem = new Semaphore(0);
-		final List<Throwable> exception = new ArrayList<Throwable>(1);
-		final Tuple<String[], RestResponse> response;
-
-		final Object originalUser = threadPool.getThreadContext().getTransient(ConfigConstants.SG_USER);
-		final Object originalRemoteAddress = threadPool.getThreadContext().getTransient(ConfigConstants.SG_REMOTE_ADDRESS);
-		final Object originalOrigin = threadPool.getThreadContext().getTransient(ConfigConstants.SG_ORIGIN);
 		
-		try (StoredContext ctx = threadPool.getThreadContext().stashContext()) {
+		return channel -> {
 
-			threadPool.getThreadContext().putHeader(ConfigConstants.SG_CONF_REQUEST_HEADER, "true");
-			threadPool.getThreadContext().putTransient(ConfigConstants.SG_USER, originalUser);
-			threadPool.getThreadContext().putTransient(ConfigConstants.SG_REMOTE_ADDRESS, originalRemoteAddress);
-			threadPool.getThreadContext().putTransient(ConfigConstants.SG_ORIGIN, originalOrigin);
-
-			response = handleApiRequest(request, client);
-
-			// reload config
-			if (response.v1().length > 0) {
-
-				final ConfigUpdateRequest cur = new ConfigUpdateRequest(response.v1());
-				// cur.putInContext(ConfigConstants.SG_USER,
-				// new User((String)
-				// request.getFromContext(ConfigConstants.SG_SSL_PRINCIPAL)));
-
-				client.execute(ConfigUpdateAction.INSTANCE, cur, new ActionListener<ConfigUpdateResponse>() {
-
-					@Override
-					public void onFailure(final Exception e) {
-						sem.release();
-						logger.error("Cannot update {} due to", Arrays.toString(response.v1()), e);
-						exception.add(e);
-					}
-
-					@Override
-					public void onResponse(final ConfigUpdateResponse ur) {
-						sem.release();
-						if (!checkConfigUpdateResponse(ur)) {
-							logger.error("Cannot update {}", Arrays.toString(response.v1()));
-							exception.add(
-									new ElasticsearchException("Unable to update " + Arrays.toString(response.v1())));
-						} else if (logger.isDebugEnabled()) {
-							logger.debug("Configs {} successfully updated", Arrays.toString(response.v1()));
-						}
-					}
-				});
-
-			} else {
-				sem.release();
-			}
-
-		} catch (final Throwable e) {
-			logger.error("Unexpected exception {}", e.toString(), e);
-			request.params().clear();
-			return channel -> channel
-					.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, e.toString()));
-		}
-
-		try {
-			if (!sem.tryAcquire(2, TimeUnit.MINUTES)) {
-				// timeout
-				logger.error("Cannot update {} due to timeout", Arrays.toString(response.v1()));
-				throw new ElasticsearchException("Timeout updating " + Arrays.toString(response.v1()));
-			}
-		} catch (final InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-
-		if (exception.size() > 0) {
-			request.params().clear();
-			return channel -> channel
-					.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, exception.get(0).toString()));
-		}
-
-		return channel -> channel.sendResponse(response.v2());
+    		final Semaphore sem = new Semaphore(0);
+    		final List<Throwable> exception = new ArrayList<Throwable>(1);
+    		final Tuple<String[], RestResponse> response;
+    
+    		final Object originalUser = threadPool.getThreadContext().getTransient(ConfigConstants.SG_USER);
+    		final Object originalRemoteAddress = threadPool.getThreadContext().getTransient(ConfigConstants.SG_REMOTE_ADDRESS);
+    		final Object originalOrigin = threadPool.getThreadContext().getTransient(ConfigConstants.SG_ORIGIN);
+    		
+    		try (StoredContext ctx = threadPool.getThreadContext().stashContext()) {
+    
+    			threadPool.getThreadContext().putHeader(ConfigConstants.SG_CONF_REQUEST_HEADER, "true");
+    			threadPool.getThreadContext().putTransient(ConfigConstants.SG_USER, originalUser);
+    			threadPool.getThreadContext().putTransient(ConfigConstants.SG_REMOTE_ADDRESS, originalRemoteAddress);
+    			threadPool.getThreadContext().putTransient(ConfigConstants.SG_ORIGIN, originalOrigin);
+    
+    			response = handleApiRequest(channel, request, client);
+    
+    			// reload config
+    			if (response.v1().length > 0) {
+    
+    				final ConfigUpdateRequest cur = new ConfigUpdateRequest(response.v1());
+    				// cur.putInContext(ConfigConstants.SG_USER,
+    				// new User((String)
+    				// request.getFromContext(ConfigConstants.SG_SSL_PRINCIPAL)));
+    
+    				client.execute(ConfigUpdateAction.INSTANCE, cur, new ActionListener<ConfigUpdateResponse>() {
+    
+    					@Override
+    					public void onFailure(final Exception e) {
+    						sem.release();
+    						logger.error("Cannot update {} due to", Arrays.toString(response.v1()), e);
+    						exception.add(e);
+    					}
+    
+    					@Override
+    					public void onResponse(final ConfigUpdateResponse ur) {
+    						sem.release();
+    						if (!checkConfigUpdateResponse(ur)) {
+    							logger.error("Cannot update {}", Arrays.toString(response.v1()));
+    							exception.add(
+    									new ElasticsearchException("Unable to update " + Arrays.toString(response.v1())));
+    						} else if (logger.isDebugEnabled()) {
+    							logger.debug("Configs {} successfully updated", Arrays.toString(response.v1()));
+    						}
+    					}
+    				});
+    
+    			} else {
+    				sem.release();
+    			}
+    
+    		} catch (final Throwable e) {
+    			logger.error("Unexpected exception {}", e.toString(), e);
+    			request.params().clear();
+    			channel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, e.toString())); //TODO return json
+    			return;
+    		}
+    
+    		try {
+    			if (!sem.tryAcquire(2, TimeUnit.MINUTES)) {
+    				// timeout
+    				logger.error("Cannot update {} due to timeout", Arrays.toString(response.v1()));
+    				throw new ElasticsearchException("Timeout updating " + Arrays.toString(response.v1()));
+    			}
+    		} catch (final InterruptedException e) {
+    			Thread.currentThread().interrupt();
+    		}
+    
+    		if (exception.size() > 0) {
+    			request.params().clear();
+    			channel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, exception.get(0).toString()));//TODO return json
+    			return;
+    		}
+    
+    		channel.sendResponse(response.v2());
+		};
 
 	}
 
-	protected static BytesReference toSource(final Settings.Builder settingsBuilder) throws IOException {
-		final XContentBuilder builder = XContentFactory.jsonBuilder();
+	protected static BytesReference toSource(RestChannel channel, final Settings.Builder settingsBuilder) throws IOException {
+		final XContentBuilder builder = channel.newBuilder();
 		builder.startObject(); // 1
 		settingsBuilder.build().toXContent(builder, ToXContent.EMPTY_PARAMS);
 		builder.endObject(); // 2
@@ -455,20 +453,19 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		return success;
 	}
 
-	protected static XContentBuilder convertToJson(Settings settings) throws IOException {
-		XContentBuilder builder = XContentFactory.jsonBuilder();
-		builder.prettyPrint();
+	protected static XContentBuilder convertToJson(RestChannel channel, Settings settings) throws IOException {
+		XContentBuilder builder = channel.newBuilder();
 		builder.startObject();
 		settings.toXContent(builder, ToXContent.EMPTY_PARAMS);
 		builder.endObject();
 		return builder;
 	}
 
-	protected Tuple<String[], RestResponse> response(RestStatus status, String statusString, String message,
+	protected Tuple<String[], RestResponse> response(RestChannel channel, RestStatus status, String statusString, String message,
 			String... configs) {
 
 		try {
-			final XContentBuilder builder = XContentFactory.jsonBuilder();
+			final XContentBuilder builder = channel.newBuilder();
 			builder.startObject();
 			builder.field("status", statusString);
 			builder.field("message", message);
@@ -481,36 +478,36 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		}
 	}
 
-	protected Tuple<String[], RestResponse> successResponse(String message, String... configs) {
-		return response(RestStatus.OK, RestStatus.OK.name(), message, configs);
+	protected Tuple<String[], RestResponse> successResponse(RestChannel channel, String message, String... configs) {
+		return response(channel, RestStatus.OK, RestStatus.OK.name(), message, configs);
 	}
 
-	protected Tuple<String[], RestResponse> createdResponse(String message, String... configs) {
-		return response(RestStatus.CREATED, RestStatus.CREATED.name(), message, configs);
+	protected Tuple<String[], RestResponse> createdResponse(RestChannel channel, String message, String... configs) {
+		return response(channel, RestStatus.CREATED, RestStatus.CREATED.name(), message, configs);
 	}
 
-	protected Tuple<String[], RestResponse> badRequestResponse(String message) {
-		return response(RestStatus.BAD_REQUEST, RestStatus.BAD_REQUEST.name(), message);
+	protected Tuple<String[], RestResponse> badRequestResponse(RestChannel channel, String message) {
+		return response(channel, RestStatus.BAD_REQUEST, RestStatus.BAD_REQUEST.name(), message);
 	}
 
-	protected Tuple<String[], RestResponse> notFound(String message) {
-		return response(RestStatus.NOT_FOUND, RestStatus.NOT_FOUND.name(), message);
+	protected Tuple<String[], RestResponse> notFound(RestChannel channel, String message) {
+		return response(channel, RestStatus.NOT_FOUND, RestStatus.NOT_FOUND.name(), message);
 	}
 
-	protected Tuple<String[], RestResponse> forbidden(String message) {
-		return response(RestStatus.FORBIDDEN, RestStatus.FORBIDDEN.name(), message);
+	protected Tuple<String[], RestResponse> forbidden(RestChannel channel, String message) {
+		return response(channel, RestStatus.FORBIDDEN, RestStatus.FORBIDDEN.name(), message);
 	}
 
-	protected Tuple<String[], RestResponse> internalErrorResponse(String message) {
-		return response(RestStatus.INTERNAL_SERVER_ERROR, RestStatus.INTERNAL_SERVER_ERROR.name(), message);
+	protected Tuple<String[], RestResponse> internalErrorResponse(RestChannel channel, String message) {
+		return response(channel, RestStatus.INTERNAL_SERVER_ERROR, RestStatus.INTERNAL_SERVER_ERROR.name(), message);
 	}
 
-	protected Tuple<String[], RestResponse> unprocessable(String message) {
-		return response(RestStatus.UNPROCESSABLE_ENTITY, RestStatus.UNPROCESSABLE_ENTITY.name(), message);
+	protected Tuple<String[], RestResponse> unprocessable(RestChannel channel, String message) {
+		return response(channel, RestStatus.UNPROCESSABLE_ENTITY, RestStatus.UNPROCESSABLE_ENTITY.name(), message);
 	}
 
-	protected Tuple<String[], RestResponse> notImplemented(Method method) {
-		return response(RestStatus.NOT_IMPLEMENTED, RestStatus.NOT_IMPLEMENTED.name(),
+	protected Tuple<String[], RestResponse> notImplemented(RestChannel channel, Method method) {
+		return response(channel, RestStatus.NOT_IMPLEMENTED, RestStatus.NOT_IMPLEMENTED.name(),
 				"Method " + method.name() + " not supported for this action.");
 	}
 	
@@ -533,32 +530,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	 */
 	protected void consumeParameters(final RestRequest request) {
 		request.param("name");
-	}
-
-	private static void printLicenseInfo() {
-		final StringBuilder sb = new StringBuilder();
-		sb.append("******************************************************" + System.lineSeparator());
-		sb.append("Search Guard REST Management API is not free software" + System.lineSeparator());
-		sb.append("for commercial use in production." + System.lineSeparator());
-		sb.append("You have to obtain a license if you " + System.lineSeparator());
-		sb.append("use it in production." + System.lineSeparator());
-		sb.append(System.lineSeparator());
-		sb.append("See https://floragunn.com/searchguard-validate-license" + System.lineSeparator());
-		sb.append("In case of any doubt mail to <sales@floragunn.com>" + System.lineSeparator());
-		sb.append("*****************************************************" + System.lineSeparator());
-
-		final String licenseInfo = sb.toString();
-
-		if (!Boolean.getBoolean("sg.display_lic_none")) {
-
-			if (!Boolean.getBoolean("sg.display_lic_only_stdout")) {
-				LogManager.getLogger(AbstractApiAction.class).warn(licenseInfo);
-				System.err.println(licenseInfo);
-			}
-
-			System.out.println(licenseInfo);
-		}
-
 	}
 
 	@Override

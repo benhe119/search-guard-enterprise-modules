@@ -27,6 +27,7 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
@@ -63,7 +64,7 @@ public class FlushCacheApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleDelete(RestRequest request, Client client, Builder additionalSettingsBuilder)
+	protected Tuple<String[], RestResponse> handleDelete(RestChannel channel, RestRequest request, Client client, Builder additionalSettingsBuilder)
 			throws Throwable {
 
 		final Semaphore sem = new Semaphore(0);
@@ -94,33 +95,33 @@ public class FlushCacheApiAction extends AbstractApiAction {
 
 		if (!sem.tryAcquire(30, TimeUnit.SECONDS)) {
 			logger.error("Cannot flush cache due to timeout");
-			return internalErrorResponse("Cannot flush cache due to timeout");
+			return internalErrorResponse(channel, "Cannot flush cache due to timeout");
 		}
 
 		if (exception.size() > 0) {
 			logger.error("Cannot flush cache due to", exception.get(0));
-			return internalErrorResponse("Cannot flush cache due to "+ exception.get(0).getMessage());
+			return internalErrorResponse(channel, "Cannot flush cache due to "+ exception.get(0).getMessage());
 		}		
 		
-		return successResponse("Cache flushed successfully.", new String[0]);
+		return successResponse(channel, "Cache flushed successfully.", new String[0]);
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handlePost(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePost(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.POST);
+		return notImplemented(channel, Method.POST);
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleGet(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handleGet(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.GET);
+		return notImplemented(channel, Method.GET);
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handlePut(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePut(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.PUT);
+		return notImplemented(channel, Method.PUT);
 	}
 
 	@Override
