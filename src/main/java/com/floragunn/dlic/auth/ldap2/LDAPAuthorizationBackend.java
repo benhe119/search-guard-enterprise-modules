@@ -329,7 +329,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend, Destroyab
                 }
 
                 for (final LdapName roleLdapName : nestedReturn) {
-                    final String role = getRoleFromAttribute(roleLdapName, roleName);
+                    final String role = getRoleFromEntry(connection, roleLdapName, roleName);
 
                     if (!Strings.isNullOrEmpty(role)) {
                         user.addRole(role);
@@ -341,7 +341,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend, Destroyab
             } else {
                 // DN roles, extract rolename according to config
                 for (final LdapName roleLdapName : ldapRoles) {
-                    final String role = getRoleFromAttribute(roleLdapName, roleName);
+                    final String role = getRoleFromEntry(connection, roleLdapName, roleName);
 
                     if (!Strings.isNullOrEmpty(role)) {
                         user.addRole(role);
@@ -498,30 +498,27 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend, Destroyab
         return true;
     }
 
-    private String getRoleFromAttribute(final LdapName ldapName, final String role) {
+    private String getRoleFromEntry(final Connection ldapConnection, final LdapName ldapName, final String role) {
 
         if (ldapName == null || Strings.isNullOrEmpty(role)) {
             return null;
         }
 
-        if ("dn".equalsIgnoreCase(role)) {
+        if("dn".equalsIgnoreCase(role)) {
             return ldapName.toString();
         }
 
-        List<Rdn> rdns = new ArrayList<>(ldapName.getRdns().size());
-        rdns.addAll(ldapName.getRdns());
+        try {
+            final LdapEntry roleEntry = LdapHelper.lookup(ldapConnection, ldapName.toString());
 
-        Collections.reverse(rdns);
-
-        for (Rdn rdn : rdns) {
-            if (role.equalsIgnoreCase(rdn.getType())) {
-
-                if (rdn.getValue() == null) {
-                    return null;
+            if(roleEntry != null) {
+                final LdapAttribute roleAttribute = roleEntry.getAttribute(role);
+                if(roleAttribute != null) {
+                    return roleAttribute.getStringValue();
                 }
-
-                return String.valueOf(rdn.getValue());
             }
+        } catch (LdapException e) {
+            log.error("Unable to handle role {} because of ",ldapName, e.toString(), e);
         }
 
         return null;

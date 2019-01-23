@@ -862,6 +862,30 @@ public class LdapBackendTestNewStyleConfig2 {
         Assert.assertTrue(user.getRoles().contains("crossnested2"));
         // The user is NOT in crossnested1!
     }
+    
+    @Test
+    public void testLdapAuthorizationNonDNEntry() throws Exception {
+
+        final Settings settings = Settings.builder()
+                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
+                .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,o=TEST")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLENAME, "description")
+                .put(ConfigConstants.LDAP_AUTHZ_ROLESEARCH, "(uniqueMember={0})")
+                .build();
+
+        final User user = new User("jacksonm");
+
+        new LDAPAuthorizationBackend(settings, null).fillRoles(user, null);
+
+        Assert.assertNotNull(user);
+        Assert.assertEquals("jacksonm", user.getName());
+        Assert.assertEquals(2, user.getRoles().size());
+        Assert.assertEquals("ceo-ceo", new ArrayList(new TreeSet(user.getRoles())).get(0));
+    }
+    
+
 
     @AfterClass
     public static void tearDown() throws Exception {
