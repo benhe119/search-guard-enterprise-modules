@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.settings.Settings;
 import org.ldaptive.Connection;
 import org.ldaptive.LdapEntry;
+import org.ldaptive.SearchFilter;
 import org.ldaptive.SearchScope;
 
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
@@ -22,7 +23,7 @@ import com.floragunn.dlic.auth.ldap.util.Utils;
 public class LDAPUserSearcher {
     protected static final Logger log = LogManager.getLogger(LDAPUserSearcher.class);
 
-    private static final String ZERO_PLACEHOLDER = "{0}";
+    private static final int ZERO_PLACEHOLDER = 0;
     private static final String DEFAULT_USERBASE = "";
     private static final String DEFAULT_USERSEARCH_PATTERN = "(sAMAccountName={0})";
 
@@ -70,15 +71,18 @@ public class LDAPUserSearcher {
     }
 
     private LdapEntry existsSearchingUntilFirstHit(Connection ldapConnection, String user) throws Exception {
-        final String username = Utils.escapeStringRfc2254(user);
+        final String username = user;
 
         for (Map.Entry<String, Settings> entry : userBaseSettings) {
             Settings baseSettings = entry.getValue();
+            
+            SearchFilter f = new SearchFilter();
+            f.setFilter(baseSettings.get(ConfigConstants.LDAP_AUTHCZ_SEARCH, DEFAULT_USERSEARCH_PATTERN));
+            f.setParameter(ZERO_PLACEHOLDER, username);
 
             List<LdapEntry> result = LdapHelper.search(ldapConnection,
                     baseSettings.get(ConfigConstants.LDAP_AUTHCZ_BASE, DEFAULT_USERBASE),
-                    baseSettings.get(ConfigConstants.LDAP_AUTHCZ_SEARCH, DEFAULT_USERSEARCH_PATTERN)
-                            .replace(ZERO_PLACEHOLDER, username),
+                    f,
                     SearchScope.SUBTREE);
 
             if (log.isDebugEnabled()) {
@@ -94,16 +98,19 @@ public class LDAPUserSearcher {
     }
 
     private LdapEntry existsSearchingAllBases(Connection ldapConnection, String user) throws Exception {
-        final String username = Utils.escapeStringRfc2254(user);
+        final String username = user;
         Set<LdapEntry> result = new HashSet<>();
 
         for (Map.Entry<String, Settings> entry : userBaseSettings) {
             Settings baseSettings = entry.getValue();
+            
+            SearchFilter f = new SearchFilter();
+            f.setFilter(baseSettings.get(ConfigConstants.LDAP_AUTHCZ_SEARCH, DEFAULT_USERSEARCH_PATTERN));
+            f.setParameter(ZERO_PLACEHOLDER, username);
 
             List<LdapEntry> foundEntries = LdapHelper.search(ldapConnection,
                     baseSettings.get(ConfigConstants.LDAP_AUTHCZ_BASE, DEFAULT_USERBASE),
-                    baseSettings.get(ConfigConstants.LDAP_AUTHCZ_SEARCH, DEFAULT_USERSEARCH_PATTERN)
-                            .replace(ZERO_PLACEHOLDER, username),
+                    f,
                     SearchScope.SUBTREE);
 
             if (log.isDebugEnabled()) {

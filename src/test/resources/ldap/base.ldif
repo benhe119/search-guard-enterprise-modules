@@ -163,6 +163,22 @@ description: krb user
 #krb5PrincipalName: hnelson@EXAMPLE.COM
 #krb5KeyVersionNumber: 0
 
+dn: cn=cabc,ou=people,o=TEST
+objectclass: inetOrgPerson
+cn: xyz
+cn: hij
+cn: 123
+cn: 456
+cn: abc
+cn: aaa
+cn: zzz
+cn: bbb
+cn: acc
+sn: multi
+uid: multi
+userPassword: multi
+mail: multi@example.com
+
 dn: cn=krbtgt,ou=people,o=TEST
 objectclass: inetOrgPerson
 #objectclass: krb5principal
@@ -214,3 +230,35 @@ mail: httploc@example.com
 description: krb user
 #krb5PrincipalName: HTTP/localhost@EXAMPLE.COM
 #krb5KeyVersionNumber: 0
+
+dn: CN=AA BB/CC (DD) my\, comp
+ any end\=with\=whitespace\ ,ou=people,o=TEST
+objectclass: inetOrgPerson
+cn: "AA BB/CC (DD) my\, company end\=with\=whitespace\ "
+sn: spec186
+uid: spec186
+userpassword: spec186
+mail: spec186@example.com
+
+dn: cn=ROLE/(186) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+objectClass: groupOfUniqueNames
+description: ROLE/(186) con
+ sists of\, special=
+uniqueMember: CN=AA BB/CC (DD) my\, company end\=with\=whitespace\ ,ou=people,o=TEST
+
+dn: cn=ROLE/(186n) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+objectClass: groupOfUniqueNames
+description: ROLEx(186n) con
+ sists of\, special=
+uniqueMember: cn=ROLE/(186) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+
+dn: cn=ROLE/(186nn) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+objectClass: groupOfUniqueNames
+description: ROLE/(186nn) con
+ sists of\, special=
+uniqueMember: cn=ROLE/(186n) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
