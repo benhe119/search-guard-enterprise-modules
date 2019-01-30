@@ -53,7 +53,7 @@ public class LdapBackendIntegTest extends SingleClusterTest {
         String sgConfigAsYamlString = FileHelper.loadFile("ldap/sg_config.yml");
         sgConfigAsYamlString = sgConfigAsYamlString.replace("${ldapsPort}", String.valueOf(ldapsPort));
         System.out.println(sgConfigAsYamlString);
-        setup(Settings.EMPTY, new DynamicSgConfig().setSgConfigAsYamlString0(sgConfigAsYamlString), Settings.EMPTY);
+        setup(Settings.EMPTY, new DynamicSgConfig().setSgConfigAsYamlString(sgConfigAsYamlString), Settings.EMPTY);
         final RestHelper rh = nonSslRestHelper();
         Assert.assertEquals(HttpStatus.SC_OK, rh.executeGetRequest("", encodeBasicHeader("jacksonm", "secret")).getStatusCode());
     }

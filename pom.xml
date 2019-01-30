@@ -273,7 +273,7 @@
 
     <dependency>
       <groupId>com.floragunn</groupId>
-      <artifactId>search-guard-6</artifactId>
+      <artifactId>search-guard-7</artifactId>
       <version>${sg2.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
