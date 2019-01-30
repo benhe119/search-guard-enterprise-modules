@@ -15,6 +15,8 @@
 package com.floragunn.searchguard.auditlog.sink;
 
 import java.io.IOException;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,6 +26,8 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 
 import com.floragunn.searchguard.auditlog.impl.AuditMessage;
+import com.floragunn.searchguard.support.ConfigConstants;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 public abstract class AuditLogSink {
 
@@ -31,13 +35,18 @@ public abstract class AuditLogSink {
     protected final Settings settings;
     protected final String settingsPrefix;
     private final String name;
-    final AuditLogSink fallbackSink;
+    protected final AuditLogSink fallbackSink;
+    private final int retryCount;
+    private final long delayMs;
     
     protected AuditLogSink(String name, Settings settings, String settingsPrefix, AuditLogSink fallbackSink) {
         this.name = name.toLowerCase();
-    	this.settings = settings;
+    	this.settings = Objects.requireNonNull(settings);
         this.settingsPrefix = settingsPrefix;
         this.fallbackSink = fallbackSink;
+        
+        retryCount = settings.getAsInt(ConfigConstants.SEARCHGUARD_AUDIT_RETRY_COUNT, 0);
+        delayMs = settings.getAsLong(ConfigConstants.SEARCHGUARD_AUDIT_RETRY_DELAY_MS, 1000L);
     }
     
     public boolean isHandlingBackpressure() {
@@ -53,9 +62,33 @@ public abstract class AuditLogSink {
     }
     
     public final void store(AuditMessage msg) {
-		if (!doStore(msg) && !fallbackSink.doStore(msg)) {
+		if (!doStoreWithRetry(msg) && !fallbackSink.doStoreWithRetry(msg)) {
 			System.err.println(msg.toPrettyString());
 		}
+    }
+    
+    private boolean doStoreWithRetry(AuditMessage msg) {
+        //retryCount of 0 means no retry (which is: try exactly once) - delayMs is ignored
+        //retryCount of 1 means: try and if this fails wait delayMs and try once again
+        
+        if(doStore(msg)) {
+            return true;
+        }
+
+        
+        for(int i=0; i<retryCount; i++) {
+            if(log.isDebugEnabled()) {
+                log.debug("Retry attempt {}/{} for {} ({})", i+1, retryCount, this.getName(), this.getClass());
+            }
+            Uninterruptibles.sleepUninterruptibly(delayMs, TimeUnit.MILLISECONDS);
+            if(!doStore(msg)) {
+                continue;
+            } else {
+                return true;
+            }
+        }
+
+        return false;
     }
     
     protected abstract boolean doStore(AuditMessage msg);

@@ -31,7 +31,7 @@ searchguard:
         authentication_backend:
           type: ldap
           config:
-            hosts: localhost:40623
+            hosts: localhost:${ldapsPort}
             usersearch: "(uid={0})"
             enable_ssl: true
             verify_hostnames: false

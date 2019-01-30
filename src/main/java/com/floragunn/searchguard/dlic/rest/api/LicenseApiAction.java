@@ -30,10 +30,10 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
@@ -76,11 +76,11 @@ public class LicenseApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleGet(RestRequest request, Client client, Builder additionalSettings) throws Throwable {
+	protected Tuple<String[], RestResponse> handleGet(RestChannel channel, RestRequest request, Client client, Builder additionalSettings) throws Throwable {
 		
 		final Semaphore sem = new Semaphore(0);
 		final List<Throwable> exception = new ArrayList<Throwable>(1);
-		final XContentBuilder builder = XContentFactory.jsonBuilder().prettyPrint();
+		final XContentBuilder builder = channel.newBuilder();
 		
 		client.execute(LicenseInfoAction.INSTANCE, new LicenseInfoRequest(), new ActionListener<LicenseInfoResponse>() {
 
@@ -124,7 +124,7 @@ public class LicenseApiAction extends AbstractApiAction {
 		if (exception.size() != 0) {
 		    request.params().clear();
 		    logger.error("Unable to fetch license due to", exception.get(0));
-		    return internalErrorResponse("Unable to fetch license: " + exception.get(0).getMessage());
+		    return internalErrorResponse(channel, "Unable to fetch license: " + exception.get(0).getMessage());
 		}
 			
 		return new Tuple<String[], RestResponse>(new String[0],
@@ -132,13 +132,13 @@ public class LicenseApiAction extends AbstractApiAction {
 	}
 	
 	@Override
-	protected Tuple<String[], RestResponse> handlePut(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePut(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder licenseBuilder) throws Throwable {
 		
 		String licenseString = licenseBuilder.get("sg_license");
 		
 		if (licenseString == null || licenseString.length() == 0) {
-			return badRequestResponse("License must not be null.");
+			return badRequestResponse(channel, "License must not be null.");
 		}
 		
 		// try to decode the license String as base 64, armored PGP encoded String
@@ -148,14 +148,14 @@ public class LicenseApiAction extends AbstractApiAction {
 			plaintextLicense = LicenseHelper.validateLicense(licenseString);					
 		} catch (Exception e) {
 			log.error("Could not decode license {} due to", licenseString, e);
-			return badRequestResponse("License could not be decoded due to: " + e.getMessage());
+			return badRequestResponse(channel, "License could not be decoded due to: " + e.getMessage());
 		}
 		
 		SearchGuardLicense license = new SearchGuardLicense(XContentHelper.convertToMap(XContentType.JSON.xContent(), plaintextLicense, true), cs);
 		
 		// check if license is valid at all, honor unsupported switch in es.yml 
 		if (!license.isValid() && !acceptInvalidLicense) {
-			return badRequestResponse("License invalid due to: " + String.join(",", license.getMsgs()));
+			return badRequestResponse(channel, "License invalid due to: " + String.join(",", license.getMsgs()));
 		}
 				
 		// load existing configuration into new map
@@ -171,24 +171,24 @@ public class LicenseApiAction extends AbstractApiAction {
 		// license is valid, overwrite old value
 		existing.put(CONFIG_LICENSE_KEY, licenseString);
 		
-		save(client, request, getConfigName(), existing);
+		save(channel, client, request, getConfigName(), existing);
 		if (licenseExists) {
-			return successResponse("License updated.", getConfigName());
+			return successResponse(channel, "License updated.", getConfigName());
 		} else {
 			// fallback, should not happen since we always have at least a trial license
 			log.warn("License created via REST API.");
-			return createdResponse("License created.", getConfigName());
+			return createdResponse(channel, "License created.", getConfigName());
 		}
 	}
 
-	protected Tuple<String[], RestResponse> handlePost(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePost(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.POST);
+		return notImplemented(channel, Method.POST);
 	}
 
 	@Override
-	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new LicenseValidator(method, ref);
+	protected AbstractConfigurationValidator getValidator(RestRequest request, BytesReference ref, Object... param) {
+		return new LicenseValidator(request, ref, this.settings, param);
 	}
 
 	@Override

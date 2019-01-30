@@ -23,6 +23,7 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
@@ -52,30 +53,30 @@ public class SgConfigAction extends AbstractApiAction {
 
 
 	@Override
-	protected Tuple<String[], RestResponse> handleGet(RestRequest request, Client client,
+	protected Tuple<String[], RestResponse> handleGet(RestChannel channel, RestRequest request, Client client,
 			final Settings.Builder additionalSettingsBuilder) throws Throwable {
 
 		final Settings configurationSettings = loadAsSettings(getConfigName(), true);
 
 		return new Tuple<String[], RestResponse>(new String[0],
-				new BytesRestResponse(RestStatus.OK, convertToJson(configurationSettings)));
+				new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
 	}
 	
 	@Override
-	protected Tuple<String[], RestResponse> handlePut(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePut(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.PUT);
+		return notImplemented(channel, Method.PUT);
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleDelete(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handleDelete(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.DELETE);
+		return notImplemented(channel, Method.DELETE);
 	}
 
 	@Override
-	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new NoOpValidator(method, ref);
+	protected AbstractConfigurationValidator getValidator(RestRequest request, BytesReference ref, Object... param) {
+		return new NoOpValidator(request, ref, this.settings, param);
 	}
 
 	@Override

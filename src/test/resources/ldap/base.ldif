@@ -1,5 +1,10 @@
 #dc=TEST
 
+dn: o=TEST
+dc: TEST
+objectClass: top
+objectClass: domain
+
 dn: ou=people,o=TEST
 objectclass: organizationalUnit
 objectclass: top
@@ -47,7 +52,7 @@ uid: jacksonm
 userpassword: secret
 mail: jacksonm@example.com
 ou: Human Resources
-userPKCS12::YWJjdmdmcnQ=YWJjdmdmcnQ=YWJjdmdmcnQ=YWJjdmdmcnQ=YWJjdmdmcnQ=
+userPKCS12::aW52YWxpZHBja3MxMgo=
 userSMIMECertificate;binary: abc
 
 dn: cn=Captain Spock,ou=people,o=TEST
@@ -92,6 +97,7 @@ uniqueMember: cn=Michael Jackson,ou=people,o=TEST
 uniqueMember: cn=Captain Spock,ou=people,o=TEST
 uniqueMember: cn=hnelson,ou=people,o=TEST
 uniqueMember: cn=Special\, Sign,ou=people,o=TEST
+description: ceo-ceo
 
 dn: cn=spec\,group,ou=groups,o=TEST
 objectClass: groupOfUniqueNames
@@ -100,7 +106,7 @@ uniqueMember: cn=Special\, Sign,ou=people,o=TEST
 
 dn: cn=spec\, groupnest,ou=groups,o=TEST
 objectClass: groupOfUniqueNames
-cn: special2
+cn: special2nest
 uniqueMember: cn=spec\,group,ou=groups,o=TEST
 
 dn: cn=role2,ou=groups,o=TEST
@@ -109,6 +115,7 @@ cn: role2
 uniqueMember: cn=Michael Jackson,ou=people,o=TEST
 uniqueMember: cn=nested1,ou=groups,o=TEST
 uniqueMember: cn=Non DN Roles,ou=people,o=TEST
+description: role2-role2
 
 dn: cn=nested1,ou=groups,o=TEST
 objectClass: groupOfUniqueNames
@@ -145,65 +152,113 @@ uniqueMember: cn=nested3,ou=groups,o=TEST
 
 dn: cn=hnelson,ou=people,o=TEST
 objectclass: inetOrgPerson
-objectclass: krb5principal
-objectclass: krb5kdcentry
+#objectclass: krb5principal
+#objectclass: krb5kdcentry
 cn: hnelson
 sn: hnelson
 uid: hnelson
 userPassword: secret
 mail: hnelson@example.com
 description: krb user
-krb5PrincipalName: hnelson@EXAMPLE.COM
-krb5KeyVersionNumber: 0
+#krb5PrincipalName: hnelson@EXAMPLE.COM
+#krb5KeyVersionNumber: 0
+
+dn: cn=cabc,ou=people,o=TEST
+objectclass: inetOrgPerson
+cn: xyz
+cn: hij
+cn: 123
+cn: 456
+cn: abc
+cn: aaa
+cn: zzz
+cn: bbb
+cn: acc
+sn: multi
+uid: multi
+userPassword: multi
+mail: multi@example.com
 
 dn: cn=krbtgt,ou=people,o=TEST
 objectclass: inetOrgPerson
-objectclass: krb5principal
-objectclass: krb5kdcentry
+#objectclass: krb5principal
+#objectclass: krb5kdcentry
 cn: krbtgt
 sn: krbtgt
 uid: krbtgt
 userpassword: secret
 mail: krbtgt@example.com
 description: krb user
-krb5PrincipalName: krbtgt/EXAMPLE.COM@EXAMPLE.COM
-krb5KeyVersionNumber: 0
+#krb5PrincipalName: krbtgt/EXAMPLE.COM@EXAMPLE.COM
+#krb5KeyVersionNumber: 0
 
 dn: cn=ldap,ou=people,o=TEST
 objectclass: inetOrgPerson
-objectclass: krb5principal
-objectclass: krb5kdcentry
+#objectclass: krb5principal
+#objectclass: krb5kdcentry
 cn: ldap
 sn: ldap
 uid: ldap
 userpassword: randall
 mail: ldap@example.com
 description: krb user
-krb5PrincipalName: ldap/localhost@EXAMPLE.COM
-krb5KeyVersionNumber: 0
+#krb5PrincipalName: ldap/localhost@EXAMPLE.COM
+#krb5KeyVersionNumber: 0
 
 dn: cn=http,ou=people,o=TEST
 objectclass: inetOrgPerson
-objectclass: krb5principal
-objectclass: krb5kdcentry
+#objectclass: krb5principal
+#objectclass: krb5kdcentry
 cn: http
 sn: http
 uid: http
 userpassword: httppwd
 mail: http@example.com
 description: krb user
-krb5PrincipalName: HTTP/${hostname}@EXAMPLE.COM
-krb5KeyVersionNumber: 0
+#krb5PrincipalName: HTTP/${hostname}@EXAMPLE.COM
+#krb5KeyVersionNumber: 0
 
 dn: cn=httploc,ou=people,o=TEST
 objectclass: inetOrgPerson
-objectclass: krb5principal
-objectclass: krb5kdcentry
+#objectclass: krb5principal
+#objectclass: krb5kdcentry
 cn: httploc
 sn: httploc
 uid: httploc
 userpassword: httppwd
 mail: httploc@example.com
 description: krb user
-krb5PrincipalName: HTTP/localhost@EXAMPLE.COM
-krb5KeyVersionNumber: 0
+#krb5PrincipalName: HTTP/localhost@EXAMPLE.COM
+#krb5KeyVersionNumber: 0
+
+dn: CN=AA BB/CC (DD) my\, comp
+ any end\=with\=whitespace\ ,ou=people,o=TEST
+objectclass: inetOrgPerson
+cn: "AA BB/CC (DD) my\, company end\=with\=whitespace\ "
+sn: spec186
+uid: spec186
+userpassword: spec186
+mail: spec186@example.com
+
+dn: cn=ROLE/(186) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+objectClass: groupOfUniqueNames
+description: ROLE/(186) con
+ sists of\, special=
+uniqueMember: CN=AA BB/CC (DD) my\, company end\=with\=whitespace\ ,ou=people,o=TEST
+
+dn: cn=ROLE/(186n) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+objectClass: groupOfUniqueNames
+description: ROLEx(186n) con
+ sists of\, special=
+uniqueMember: cn=ROLE/(186) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+
+dn: cn=ROLE/(186nn) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST
+objectClass: groupOfUniqueNames
+description: ROLE/(186nn) con
+ sists of\, special=
+uniqueMember: cn=ROLE/(186n) con
+ sists of\, special\=chars\ ,ou=groups,o=TEST

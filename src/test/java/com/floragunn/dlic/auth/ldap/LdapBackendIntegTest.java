@@ -15,24 +15,32 @@
 package com.floragunn.dlic.auth.ldap;
 
 import org.apache.http.HttpStatus;
+import org.elasticsearch.common.settings.Settings;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.floragunn.dlic.auth.ldap.srv.EmbeddedLDAPServer;
+import com.floragunn.searchguard.test.DynamicSgConfig;
 import com.floragunn.searchguard.test.SingleClusterTest;
+import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper;
 
 public class LdapBackendIntegTest extends SingleClusterTest {
 
     private static EmbeddedLDAPServer ldapServer = null;
     
+    private static int ldapPort;
+    private static int ldapsPort;
+    
     @BeforeClass
     public static void startLdapServer() throws Exception {
         ldapServer = new EmbeddedLDAPServer();
         ldapServer.start();
         ldapServer.applyLdif("base.ldif");
+        ldapPort = ldapServer.getLdapPort();
+        ldapsPort = ldapServer.getLdapsPort();
     }
     
     @Override
@@ -42,7 +50,10 @@ public class LdapBackendIntegTest extends SingleClusterTest {
 
     @Test
     public void testIntegLdapAuthenticationSSL() throws Exception {
-        setup();
+        String sgConfigAsYamlString = FileHelper.loadFile("ldap/sg_config.yml");
+        sgConfigAsYamlString = sgConfigAsYamlString.replace("${ldapsPort}", String.valueOf(ldapsPort));
+        System.out.println(sgConfigAsYamlString);
+        setup(Settings.EMPTY, new DynamicSgConfig().setSgConfigAsYamlString0(sgConfigAsYamlString), Settings.EMPTY);
         final RestHelper rh = nonSslRestHelper();
         Assert.assertEquals(HttpStatus.SC_OK, rh.executeGetRequest("", encodeBasicHeader("jacksonm", "secret")).getStatusCode());
     }

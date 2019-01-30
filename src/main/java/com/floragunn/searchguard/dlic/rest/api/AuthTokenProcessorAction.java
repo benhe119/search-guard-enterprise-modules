@@ -23,6 +23,7 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
@@ -51,7 +52,7 @@ public class AuthTokenProcessorAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handlePost(final RestRequest request, final Client client,
+	protected Tuple<String[], RestResponse> handlePost(RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws Throwable {
 
 		// Just do nothing here. Eligible authenticators will intercept calls and
@@ -61,8 +62,8 @@ public class AuthTokenProcessorAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected AbstractConfigurationValidator getValidator(Method method, BytesReference ref) {
-		return new NoOpValidator(method, ref);
+	protected AbstractConfigurationValidator getValidator(RestRequest request, BytesReference ref, Object... param) {
+		return new NoOpValidator(request, ref, this.settings, param);
 	}
 
 	@Override
