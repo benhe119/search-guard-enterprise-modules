@@ -90,14 +90,14 @@ public class DlsNestedTest extends AbstractDlsFlsTest{
         HttpResponse res;
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/mytype/_search?pretty", query, encodeBasicHeader("dept_manager", "password"))).getStatusCode());
         System.out.println(res.getBody());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 1,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 1,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"my_nested_object\" : {"));
         Assert.assertTrue(res.getBody().contains("\"field\" : \"my_nested_object\","));
         Assert.assertTrue(res.getBody().contains("\"offset\" : 0"));
         
         //Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/mytype/_search?pretty", query, encodeBasicHeader("admin", "admin"))).getStatusCode());
         //System.out.println(res.getBody());
-        //Assert.assertTrue(res.getBody().contains("\"total\" : 2,\n    \"max_"));
+        //Assert.assertTrue(res.getBody().contains("\"value\" : 2,\n      \"relation"));
         //Assert.assertTrue(res.getBody().contains("\"value\" : 1510.0"));
         //Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
     }

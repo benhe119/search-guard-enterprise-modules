@@ -65,12 +65,12 @@ public class FlsDlsTestForbiddenField extends AbstractDlsFlsTest{
         
         HttpResponse res;
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("dept_manager_fls_dls", "password"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 0,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 0,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"value\" : 0"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("admin", "admin"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 2,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 2,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"value\" : 1510.0"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
     }
@@ -82,11 +82,11 @@ public class FlsDlsTestForbiddenField extends AbstractDlsFlsTest{
         
         HttpResponse res;
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=0", encodeBasicHeader("dept_manager_fls_dls", "password"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 0,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 0,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=0", encodeBasicHeader("admin", "admin"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 2,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 2,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         
         
@@ -106,7 +106,7 @@ public class FlsDlsTestForbiddenField extends AbstractDlsFlsTest{
         
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query,encodeBasicHeader("dept_manager_fls_dls", "password"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 0,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 0,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         
         query =
@@ -125,15 +125,15 @@ public class FlsDlsTestForbiddenField extends AbstractDlsFlsTest{
             
             
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query,encodeBasicHeader("dept_manager_fls_dls", "password"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 0,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 0,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));      
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query,encodeBasicHeader("admin", "admin"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 1,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 1,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));  
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?q=amount:10&pretty", encodeBasicHeader("dept_manager_fls_dls", "password"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 0,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 0,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         
         res = rh.executeGetRequest("/deals/deals/0?pretty", encodeBasicHeader("dept_manager_fls_dls", "password"));
@@ -166,7 +166,7 @@ public class FlsDlsTestForbiddenField extends AbstractDlsFlsTest{
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty", encodeBasicHeader("user_combined", "password"))).getStatusCode());
         System.out.println(res.getBody());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 1,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 1,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         Assert.assertTrue(res.getBody().contains("customer"));
         Assert.assertTrue(res.getBody().contains("industry"));

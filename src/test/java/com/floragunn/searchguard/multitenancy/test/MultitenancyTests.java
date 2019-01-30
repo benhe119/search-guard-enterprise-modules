@@ -261,7 +261,7 @@ public class MultitenancyTests extends SingleClusterTest {
         //System.out.println(res.getBody());
         Assert.assertFalse(res.getBody().contains("exception"));
         Assert.assertTrue(res.getBody().contains("humanresources"));
-        Assert.assertTrue(res.getBody().contains("\"total\" : 1"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 1"));
         Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
         
         System.out.println("#### msearch");
@@ -273,7 +273,7 @@ public class MultitenancyTests extends SingleClusterTest {
         //System.out.println(res.getBody());
         Assert.assertFalse(res.getBody().contains("exception"));
         Assert.assertTrue(res.getBody().contains("humanresources"));
-        Assert.assertTrue(res.getBody().contains("\"total\" : 1"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 1"));
         Assert.assertTrue(res.getBody().contains(".kibana_92668751_admin"));
         
         System.out.println("#### get");

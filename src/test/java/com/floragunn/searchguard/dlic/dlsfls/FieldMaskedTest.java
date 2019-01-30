@@ -134,7 +134,7 @@ public class FieldMaskedTest extends AbstractDlsFlsTest{
         HttpResponse res;
 
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100", encodeBasicHeader("admin", "admin"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 32,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 32,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         Assert.assertTrue(res.getBody().contains("cust1"));
         Assert.assertTrue(res.getBody().contains("cust2"));
@@ -144,7 +144,7 @@ public class FieldMaskedTest extends AbstractDlsFlsTest{
 
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100", encodeBasicHeader("user_masked", "password"))).getStatusCode());
-        Assert.assertTrue(res.getBody().contains("\"total\" : 32,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"value\" : 32,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         Assert.assertTrue(res.getBody().contains("cust1"));
         Assert.assertTrue(res.getBody().contains("cust2"));
