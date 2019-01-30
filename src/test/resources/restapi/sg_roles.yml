@@ -210,3 +210,11 @@ sg_theindex_admin:
     theindex:
       '*':
         - ALL
+
+sg_kibana_ro:
+  applications:
+    - kibana:saved_objects/*/read
+
+sg_kibana_rw:
+  applications:
+    - kibana:saved_objects/*

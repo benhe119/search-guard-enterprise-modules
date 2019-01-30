@@ -32,9 +32,11 @@ public class RolesValidator extends AbstractConfigurationValidator {
 		allowedKeys.put("indices", DataType.OBJECT);
 		allowedKeys.put("cluster", DataType.ARRAY);
 		allowedKeys.put("tenants", DataType.OBJECT);
-		
+	    allowedKeys.put("applications", DataType.ARRAY);
+
 		mandatoryOrKeys.add("indices");
 		mandatoryOrKeys.add("cluster");
+	    mandatoryOrKeys.add("applications");
 	}
 
     @Override

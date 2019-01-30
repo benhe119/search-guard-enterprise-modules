@@ -1,0 +1,6 @@
+{
+  "applications": [
+     "kibana:test/*"
+  ]
+}
+

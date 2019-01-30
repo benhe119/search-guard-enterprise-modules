@@ -46,7 +46,20 @@ INTERNAL:
   permissions:
     - "indices:data/read/get*"
     - "indices:data/read/mget*"  
-
+KIBANA_READ:
+  readonly: true
+  permissions:
+    - "kibana:saved_objects/*/read"
+KIBANA_WRITE:
+  permissions:
+    - "kibana:saved_objects/*"
+    - "filter:me/*"
+KIBANA_RECURSIVE:
+  permissions:
+    - "kibana:foo/bar" 
+    - "bla:blub"
+    - KIBANA_WRITE 
+  
 # CLUSTER
 CLUSTER_ALL:
   - cluster:*

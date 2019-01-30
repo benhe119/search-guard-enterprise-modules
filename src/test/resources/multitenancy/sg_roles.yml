@@ -60,6 +60,10 @@ sg_human_resources:
     management: RW
     PerFormance    ___Reviews/&%%/&&/ : RW
     PerFormance ___Reviews%%%!!! : RW
+    vesting_stats:
+      applications:
+        - kibana:saved_objects/*
+        - kibana:foo/bar            
 
 sg_human_resources_trainee:
   cluster:
@@ -81,6 +85,9 @@ sg_human_resources_trainee:
     human_resources: RO
     performance_data: RO
     business_intelligence: RO
+    vesting_stats:
+      applications:    
+        - kibana:saved_objects/*/read
 
 sg_finance:
   cluster:

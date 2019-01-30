@@ -215,6 +215,9 @@ public class MultitenancyTests extends SingleClusterTest {
         Assert.assertEquals(HttpStatus.SC_FORBIDDEN, (res = rh.executePutRequest(".kibana/config/5.6.0?pretty",body, new BasicHeader("sgtenant", "business_intelligence"), encodeBasicHeader("hr_employee", "hr_employee"))).getStatusCode());
 
         body = "{\"buildNum\": 15460, \"defaultIndex\": \"humanresources\", \"tenant\": \"human_resources\"}";
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, (res = rh.executePutRequest(".kibana/config/5.6.0?pretty",body, new BasicHeader("sgtenant", "vesting_stats"), encodeBasicHeader("hr_trainee", "hr_trainee"))).getStatusCode());
+        
+        body = "{\"buildNum\": 15460, \"defaultIndex\": \"humanresources\", \"tenant\": \"human_resources\"}";
         Assert.assertEquals(HttpStatus.SC_CREATED, (res = rh.executePutRequest(".kibana/config/5.6.0?pretty",body, new BasicHeader("sgtenant", "human_resources"), encodeBasicHeader("hr_employee", "hr_employee"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(WildcardMatcher.match("*.kibana_*_humanresources*", res.getBody()));
@@ -222,6 +225,19 @@ public class MultitenancyTests extends SingleClusterTest {
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest(".kibana/config/5.6.0?pretty",new BasicHeader("sgtenant", "human_resources"), encodeBasicHeader("hr_employee", "hr_employee"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(WildcardMatcher.match("*human_resources*", res.getBody()));
+
+        body = "{\"buildNum\": 15460, \"defaultIndex\": \"humanresources\", \"humanresources\": \"vesting_stats\"}";
+        res = rh.executePutRequest(".kibana/config/5.6.0?pretty",body, new BasicHeader("sgtenant", "vesting_stats"), encodeBasicHeader("hr_employee", "hr_employee"));
+        Assert.assertEquals(HttpStatus.SC_CREATED, res.getStatusCode());
+        
+        res = rh.executeGetRequest(".kibana/config/5.6.0?pretty",new BasicHeader("sgtenant", "vesting_stats"), encodeBasicHeader("hr_trainee", "hr_trainee"));
+        Assert.assertEquals(HttpStatus.SC_OK, res.getStatusCode());
+
+        res = rh.executeGetRequest(".kibana/config/5.6.0?pretty",new BasicHeader("sgtenant", "vesting_stats"), encodeBasicHeader("hr_employee", "hr_employee"));
+        Assert.assertEquals(HttpStatus.SC_OK, res.getStatusCode());
+        
+        res = rh.executeGetRequest(".kibana/config/5.6.0?pretty",new BasicHeader("sgtenant", "vesting_stats"), encodeBasicHeader("test", "test"));
+        Assert.assertEquals(HttpStatus.SC_FORBIDDEN, res.getStatusCode());
 
     }
     

@@ -86,6 +86,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		// TODO: only one doctype allowed for ES6
 		//checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
 
+        response = rh.executeGetRequest("/_searchguard/api/roles/sg_kibana_ro", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();               
+        Assert.assertEquals("kibana:saved_objects/*/read", settings.getAsList("sg_kibana_ro.applications").get(0));		
 		
 		// -- DELETE
 
@@ -206,6 +210,12 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",
 				FileHelper.loadFile("restapi/roles_multiple_2.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+		
+		// application permissions
+        response = rh.executePutRequest("/_searchguard/api/roles/sg_kibana_new",
+                FileHelper.loadFile("restapi/roles_kibana_new.json"), new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
+        rh.sendHTTPClientCertificate = false;		
 		
 		// check tenants
 		rh.sendHTTPClientCertificate = true;
