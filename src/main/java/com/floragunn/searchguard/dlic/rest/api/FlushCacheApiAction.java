@@ -14,16 +14,11 @@
 package com.floragunn.searchguard.dlic.rest.api;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
@@ -31,7 +26,6 @@ import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
-import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
@@ -64,11 +58,9 @@ public class FlushCacheApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleDelete(RestChannel channel, RestRequest request, Client client, Builder additionalSettingsBuilder)
-			throws Throwable {
-
-		final Semaphore sem = new Semaphore(0);
-		final List<Throwable> exception = new ArrayList<Throwable>(1);
+	protected void handleDelete(RestChannel channel, 
+	        RestRequest request, Client client, Builder additionalSettingsBuilder)
+			{
 
 		client.execute(
 				ConfigUpdateAction.INSTANCE,
@@ -77,7 +69,7 @@ public class FlushCacheApiAction extends AbstractApiAction {
 
 					@Override
 					public void onResponse(ConfigUpdateResponse response) {
-						sem.release();
+					    successResponse(channel, "Cache flushed successfully.");
 						if (logger.isDebugEnabled()) {
 							logger.debug("cache flushed successfully");
 						}
@@ -85,43 +77,30 @@ public class FlushCacheApiAction extends AbstractApiAction {
 
 					@Override
 					public void onFailure(Exception e) {
-						sem.release();
-						exception.add(e);
-						logger.error("Cannot flush cache due to {}", e.toString(), e);
+					    logger.error("Cannot flush cache due to", e);
+			            internalErrorResponse(channel, "Cannot flush cache due to "+ e.getMessage()+".");
 					}
 
 				}
 		);
-
-		if (!sem.tryAcquire(30, TimeUnit.SECONDS)) {
-			logger.error("Cannot flush cache due to timeout");
-			return internalErrorResponse(channel, "Cannot flush cache due to timeout.");
-		}
-
-		if (exception.size() > 0) {
-			logger.error("Cannot flush cache due to", exception.get(0));
-			return internalErrorResponse(channel, "Cannot flush cache due to "+ exception.get(0).getMessage()+".");
-		}		
-		
-		return successResponse(channel, "Cache flushed successfully.", new String[0]);
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handlePost(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(channel, Method.POST);
+	protected void handlePost(RestChannel channel, final RestRequest request, final Client client,
+			final Settings.Builder additionalSettings) {
+		notImplemented(channel, Method.POST);
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleGet(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(channel, Method.GET);
+	protected void handleGet(RestChannel channel, final RestRequest request, final Client client,
+			final Settings.Builder additionalSettings) {
+		notImplemented(channel, Method.GET);
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handlePut(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(channel, Method.PUT);
+	protected void handlePut(RestChannel channel, final RestRequest request, final Client client,
+			final Settings.Builder additionalSettings) {
+		notImplemented(channel, Method.PUT);
 	}
 
 	@Override

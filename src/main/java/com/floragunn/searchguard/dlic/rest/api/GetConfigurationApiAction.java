@@ -29,7 +29,6 @@ import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
-import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
@@ -63,23 +62,25 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleGet(RestChannel channel, RestRequest request, Client client,
-			final Settings.Builder additionalSettingsBuilder) throws Throwable {
+	protected void handleGet(RestChannel channel, RestRequest request, Client client,
+			final Settings.Builder additionalSettingsBuilder) {
 		
 		final String configname = request.param("configname");
 
 		if (configname == null || configname.length() == 0
 				|| !ConfigConstants.CONFIG_NAMES.contains(configname)) {
-			return badRequestResponse(channel, "No configuration name given, must be one of "
+			badRequestResponse(channel, "No configuration name given, must be one of "
 					+ Joiner.on(",").join(ConfigConstants.CONFIG_NAMES));
+			return;
 
 		}
-		final Settings.Builder configBuilder = load(configname, true);
-		filter(configBuilder, configname);
-		final Settings config = configBuilder.build();
+		final Tuple<Long, Settings.Builder> configBuilder = load(configname, true);
+		filter(configBuilder.v2(), configname);
+		final Settings config = configBuilder.v2().build();
 		
-		return new Tuple<String[], RestResponse>(new String[0],
+		channel.sendResponse(
 				new BytesRestResponse(RestStatus.OK, convertToJson(channel, config)));
+		return;
 	}
 
 	protected void filter(Settings.Builder builder, String resourceName) {
