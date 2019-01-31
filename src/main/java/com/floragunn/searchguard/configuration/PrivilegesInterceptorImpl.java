@@ -227,6 +227,13 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
 
     }
 
+    @Override
+    public Boolean isRbacEnabled(Settings config) {
+    	boolean enabled = config.getAsBoolean("searchguard.dynamic.kibana.rbac_enabled", false);
+    	
+    	return enabled;
+    }
+    
     private boolean isPrivateTenant(String requestedTenant) {
         return USER_TENANT.equals(requestedTenant);
     }
