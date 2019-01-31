@@ -14,11 +14,13 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.Strings;
@@ -32,11 +34,9 @@ import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
-import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -63,53 +63,59 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
                 auditLog);
     }
 
-    private Tuple<String[], RestResponse> handlePatch(RestChannel channel, final RestRequest request, final Client client)
-            throws Throwable {
+    private void handlePatch(RestChannel channel, final RestRequest request, final Client client)
+            throws IOException  {
         if (request.getXContentType() != XContentType.JSON) {
-            return badRequestResponse(channel, "PATCH accepts only application/json");
+            badRequestResponse(channel, "PATCH accepts only application/json");
+            return;
         }
 
         String name = request.param("name");
-        Settings existingAsSettings = loadAsSettings(getConfigName(), false);
+        Tuple<Long, Settings> existingAsSettings = loadAsSettings(getConfigName(), false);
 
         JsonNode jsonPatch;
 
         try {
             jsonPatch = DefaultObjectMapper.objectMapper.readTree(request.content().utf8ToString());
-        } catch (JsonParseException e) {
+        } catch (IOException e) {
             log.debug("Error while parsing JSON patch", e);
-            return badRequestResponse(channel, "Error in JSON patch: " + e.getMessage());
+            badRequestResponse(channel, "Error in JSON patch: " + e.getMessage());
+            return;
         }
 
-        JsonNode existingAsJsonNode = Utils.convertJsonToJackson(existingAsSettings);
+        JsonNode existingAsJsonNode = Utils.convertJsonToJackson(existingAsSettings.v2());
 
         if (!(existingAsJsonNode instanceof ObjectNode)) {
-            return internalErrorResponse(channel, "Config " + getConfigName() + " is malformed");
+            internalErrorResponse(channel, "Config " + getConfigName() + " is malformed");
+            return;
         }
 
         ObjectNode existingAsObjectNode = (ObjectNode) existingAsJsonNode;
 
         if (Strings.isNullOrEmpty(name)) {
-            return handleBulkPatch(channel, request, client, existingAsSettings, existingAsObjectNode, jsonPatch);
+            handleBulkPatch(channel, request, client, existingAsSettings, existingAsObjectNode, jsonPatch);
         } else {
-            return handleSinglePatch(channel, request, client, name, existingAsSettings, existingAsObjectNode, jsonPatch);
+            handleSinglePatch(channel, request, client, name, existingAsSettings, existingAsObjectNode, jsonPatch);
         }
     }
 
-    private Tuple<String[], RestResponse> handleSinglePatch(RestChannel channel, RestRequest request, Client client, String name,
-            Settings existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws Throwable {
-        if (isHidden(existingAsSettings, name)) {
-            return notFound(channel, getResourceName() + " " + name + " not found.");
+    private void handleSinglePatch(RestChannel channel, RestRequest request, Client client, String name,
+            Tuple<Long,Settings> existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws IOException {
+        if (isHidden(existingAsSettings.v2(), name)) {
+            notFound(channel, getResourceName() + " " + name + " not found.");
+            return;
         }
 
-        if (isReadOnly(existingAsSettings, name)) {
-            return forbidden(channel, "Resource '" + name + "' is read-only.");
+        if (isReadOnly(existingAsSettings.v2(), name)) {
+            forbidden(channel, "Resource '" + name + "' is read-only.");
+            return;
         }
 
-        Settings resourceSettings = existingAsSettings.getAsSettings(name);
+        Settings resourceSettings = existingAsSettings.v2().getAsSettings(name);
 
         if (resourceSettings.isEmpty()) {
-            return notFound(channel, getResourceName() + " " + name + " not found.");
+            notFound(channel, getResourceName() + " " + name + " not found.");
+            return;
         }
 
         JsonNode existingResourceAsJsonNode = existingAsObjectNode.get(name);
@@ -120,7 +126,8 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             patchedResourceAsJsonNode = applyPatch(jsonPatch, existingResourceAsJsonNode);
         } catch (JsonPatchApplicationException e) {
             log.debug("Error while applying JSON patch", e);
-            return badRequestResponse(channel, e.getMessage());
+            badRequestResponse(channel, e.getMessage());
+            return;
         }
                 
         AbstractConfigurationValidator originalValidator = postProcessApplyPatchResult(channel, request, existingResourceAsJsonNode, patchedResourceAsJsonNode, name);
@@ -128,31 +135,39 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         if(originalValidator != null) {
         	if (!originalValidator.validateSettings()) {
                 request.params().clear();
-                return new Tuple<String[], RestResponse>(new String[0],
+                channel.sendResponse(
                         new BytesRestResponse(RestStatus.BAD_REQUEST, originalValidator.errorsAsXContent(channel)));
+                return;
             }
         }
         
-        AbstractConfigurationValidator validator = getValidator(request, patchedResourceAsJsonNode);
 
-        if (!validator.validateSettings()) {
-            request.params().clear();
-            return new Tuple<String[], RestResponse>(new String[0],
-                    new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
-        }
+            AbstractConfigurationValidator validator = getValidator(request, patchedResourceAsJsonNode);
 
-        JsonNode updatedAsJsonNode = existingAsObjectNode.deepCopy().set(name, patchedResourceAsJsonNode);
+            if (!validator.validateSettings()) {
+                request.params().clear();
+                channel.sendResponse(
+                        new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+                return;
+            }
 
-        BytesReference updatedAsBytesReference = new BytesArray(
-                DefaultObjectMapper.objectMapper.writeValueAsString(updatedAsJsonNode).getBytes());
+            JsonNode updatedAsJsonNode = existingAsObjectNode.deepCopy().set(name, patchedResourceAsJsonNode);
+            
+            BytesReference updatedAsBytesReference = new BytesArray(
+                    DefaultObjectMapper.objectMapper.writeValueAsString(updatedAsJsonNode).getBytes());
 
-        save(client, request, getConfigName(), updatedAsBytesReference);
-
-        return successResponse(channel, "'" + name + "' updated.", getConfigName());
+            saveAnUpdateConfigs(client, request, getConfigName(), updatedAsBytesReference, new OnSucessActionListener<IndexResponse>(channel){
+                
+                @Override
+                public void onResponse(IndexResponse response) {
+                    successResponse(channel, "'" + name + "' updated.");
+                    
+                }
+            }, existingAsSettings.v1());
     }
 
-    private Tuple<String[], RestResponse> handleBulkPatch(RestChannel channel, RestRequest request, Client client,
-            Settings existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws Throwable {
+    private void handleBulkPatch(RestChannel channel, RestRequest request, Client client,
+            Tuple<Long,Settings> existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws IOException {
 
         JsonNode patchedAsJsonNode;
 
@@ -160,58 +175,69 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             patchedAsJsonNode = applyPatch(jsonPatch, existingAsObjectNode);
         } catch (JsonPatchApplicationException e) {
             log.debug("Error while applying JSON patch", e);
-            return badRequestResponse(channel, e.getMessage());
+            badRequestResponse(channel, e.getMessage());
+            return;
         }
 
-        for (String resourceName : existingAsSettings.names()) {
+        for (String resourceName : existingAsSettings.v2().names()) {
             JsonNode oldResource = existingAsObjectNode.get(resourceName);
             JsonNode patchedResource = patchedAsJsonNode.get(resourceName);
 
             if (oldResource != null && !oldResource.equals(patchedResource)) {
 
-                if (isReadOnly(existingAsSettings, resourceName)) {
-                    return forbidden(channel, "Resource '" + resourceName + "' is read-only.");
+                if (isReadOnly(existingAsSettings.v2(), resourceName)) {
+                    forbidden(channel, "Resource '" + resourceName + "' is read-only.");
+                    return;
                 }
 
-                if (isHidden(existingAsSettings, resourceName)) {
-                    return badRequestResponse(channel, "Resource name '" + resourceName + "' is reserved");
+                if (isHidden(existingAsSettings.v2(), resourceName)) {
+                    badRequestResponse(channel, "Resource name '" + resourceName + "' is reserved");
+                    return;
                 }
             }
         }
 
-        for (Iterator<String> fieldNamesIter = patchedAsJsonNode.fieldNames(); fieldNamesIter.hasNext();) {
-            String resourceName = fieldNamesIter.next();
-
-            JsonNode oldResource = existingAsObjectNode.get(resourceName);
-            JsonNode patchedResource = patchedAsJsonNode.get(resourceName);
-                        
-            AbstractConfigurationValidator originalValidator = postProcessApplyPatchResult(channel, request, oldResource, patchedResource, resourceName);
             
-            if(originalValidator != null) {
-            	if (!originalValidator.validateSettings()) {
-                    request.params().clear();
-                    return new Tuple<String[], RestResponse>(new String[0],
-                            new BytesRestResponse(RestStatus.BAD_REQUEST, originalValidator.errorsAsXContent(channel)));
+            for (Iterator<String> fieldNamesIter = patchedAsJsonNode.fieldNames(); fieldNamesIter.hasNext();) {
+                String resourceName = fieldNamesIter.next();
+
+                JsonNode oldResource = existingAsObjectNode.get(resourceName);
+                JsonNode patchedResource = patchedAsJsonNode.get(resourceName);
+                            
+                AbstractConfigurationValidator originalValidator = postProcessApplyPatchResult(channel, request, oldResource, patchedResource, resourceName);
+                
+                if(originalValidator != null) {
+                    if (!originalValidator.validateSettings()) {
+                        request.params().clear();
+                        channel.sendResponse(
+                                new BytesRestResponse(RestStatus.BAD_REQUEST, originalValidator.errorsAsXContent(channel)));
+                        return;
+                    }
+                }
+
+                if (oldResource == null || !oldResource.equals(patchedResource)) {
+                    AbstractConfigurationValidator validator = getValidator(request, patchedResource);
+
+                    if (!validator.validateSettings()) {
+                        request.params().clear();
+                        channel.sendResponse(
+                                new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+                        return;
+                    }
                 }
             }
+            
+            BytesReference updatedAsBytesReference = new BytesArray(
+                    DefaultObjectMapper.objectMapper.writeValueAsString(patchedAsJsonNode).getBytes());
 
-            if (oldResource == null || !oldResource.equals(patchedResource)) {
-                AbstractConfigurationValidator validator = getValidator(request, patchedResource);
+            saveAnUpdateConfigs(client, request, getConfigName(), updatedAsBytesReference, new OnSucessActionListener<IndexResponse>(channel) {
 
-                if (!validator.validateSettings()) {
-                    request.params().clear();
-                    return new Tuple<String[], RestResponse>(new String[0],
-                            new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+                @Override
+                public void onResponse(IndexResponse response) {
+                    successResponse(channel, "Resource updated.");
                 }
-            }
-        }
+            }, existingAsSettings.v1());
 
-        BytesReference updatedAsBytesReference = new BytesArray(
-                DefaultObjectMapper.objectMapper.writeValueAsString(patchedAsJsonNode).getBytes());
-
-        save(client, request, getConfigName(), updatedAsBytesReference);
-
-        return successResponse(channel, "Resource updated.", getConfigName());
     }
 
     private JsonNode applyPatch(JsonNode jsonPatch, JsonNode existingResourceAsJsonNode) {
@@ -224,13 +250,13 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
     }
     
     @Override
-    protected Tuple<String[], RestResponse> handleApiRequest(RestChannel channel, final RestRequest request, final Client client)
-            throws Throwable {
+    protected void handleApiRequest(RestChannel channel, final RestRequest request, final Client client)
+         throws IOException {
 
         if (request.method() == Method.PATCH) {
-            return handlePatch(channel, request, client);
+            handlePatch(channel, request, client);
         } else {
-            return super.handleApiRequest(channel, request, client);
+            super.handleApiRequest(channel, request, client);
         }
     }
 
