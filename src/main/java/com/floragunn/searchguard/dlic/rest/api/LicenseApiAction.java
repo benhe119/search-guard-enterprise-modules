@@ -15,13 +15,9 @@ package com.floragunn.searchguard.dlic.rest.api;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
@@ -30,14 +26,13 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
-import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
@@ -76,69 +71,46 @@ public class LicenseApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handleGet(RestRequest request, Client client, Builder additionalSettings) throws Throwable {
-		
-		final Semaphore sem = new Semaphore(0);
-		final List<Throwable> exception = new ArrayList<Throwable>(1);
-		final XContentBuilder builder = XContentFactory.jsonBuilder().prettyPrint();
-		
+	protected void handleGet(RestChannel channel, RestRequest request, Client client, Builder additionalSettings) {
+
 		client.execute(LicenseInfoAction.INSTANCE, new LicenseInfoRequest(), new ActionListener<LicenseInfoResponse>() {
 
 			@Override
 			public void onFailure(final Exception e) {
-				try {
-					exception.add(e);
-					logger.error("Cannot fetch license information due to", e);							
-				} finally {
-					sem.release();
-				}
+			    request.params().clear();
+	            logger.error("Unable to fetch license due to", e);
+	            internalErrorResponse(channel, "Unable to fetch license: " + e.getMessage());
 			}
 
 			@Override
 			public void onResponse(final LicenseInfoResponse ur) {				
-				try {					
+				try {
+				    final XContentBuilder builder = channel.newBuilder();
 		            builder.startObject();
 		            ur.toXContent(builder, ToXContent.EMPTY_PARAMS);
 		            builder.endObject();
 					if (log.isDebugEnabled()) {
 						log.debug("Successfully fetched license " + ur.toString());
-					}					
+					}
+					channel.sendResponse(
+			                new BytesRestResponse(RestStatus.OK, builder));
 				} catch (IOException e) {
-					exception.add(e);
+				    internalErrorResponse(channel, "Unable to fetch license: " + e.getMessage());
 					logger.error("Cannot fetch convert license to XContent due to", e);		
-				} finally {
-					sem.release();
 				}
 			}
 		});
-		
-		try {
-			if (!sem.tryAcquire(2, TimeUnit.MINUTES)) {
-				logger.error("Cannot fetch config due to timeout");
-				throw new ElasticsearchException("Timeout fetching license.");
-			}
-		} catch (final InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-
-		if (exception.size() != 0) {
-		    request.params().clear();
-		    logger.error("Unable to fetch license due to", exception.get(0));
-		    return internalErrorResponse("Unable to fetch license: " + exception.get(0).getMessage());
-		}
-			
-		return new Tuple<String[], RestResponse>(new String[0],
-				new BytesRestResponse(RestStatus.OK, builder));
 	}
 	
 	@Override
-	protected Tuple<String[], RestResponse> handlePut(final RestRequest request, final Client client,
-			final Settings.Builder licenseBuilder) throws Throwable {
+	protected void handlePut(RestChannel channel, final RestRequest request, final Client client,
+			final Settings.Builder licenseBuilder) {
 		
 		String licenseString = licenseBuilder.get("sg_license");
 		
 		if (licenseString == null || licenseString.length() == 0) {
-			return badRequestResponse("License must not be null.");
+			badRequestResponse(channel, "License must not be null.");
+			return;
 		}
 		
 		// try to decode the license String as base 64, armored PGP encoded String
@@ -148,42 +120,51 @@ public class LicenseApiAction extends AbstractApiAction {
 			plaintextLicense = LicenseHelper.validateLicense(licenseString);					
 		} catch (Exception e) {
 			log.error("Could not decode license {} due to", licenseString, e);
-			return badRequestResponse("License could not be decoded due to: " + e.getMessage());
+			badRequestResponse(channel, "License could not be decoded due to: " + e.getMessage());
+			return;
 		}
 		
 		SearchGuardLicense license = new SearchGuardLicense(XContentHelper.convertToMap(XContentType.JSON.xContent(), plaintextLicense, true), cs);
 		
 		// check if license is valid at all, honor unsupported switch in es.yml 
 		if (!license.isValid() && !acceptInvalidLicense) {
-			return badRequestResponse("License invalid due to: " + String.join(",", license.getMsgs()));
+			badRequestResponse(channel, "License invalid due to: " + String.join(",", license.getMsgs()));
+			return;
 		}
 				
 		// load existing configuration into new map
-		final Settings.Builder existing = load(getConfigName(), false);
+		final Tuple<Long, Settings.Builder> existing = load(getConfigName(), false);
 		
 		if (log.isTraceEnabled()) {
-			log.trace(existing.build().toString());	
+			log.trace(existing.v2().build().toString());	
 		}
 		
 		// license already present?		
-		boolean licenseExists = existing.get(CONFIG_LICENSE_KEY) != null;
+		boolean licenseExists = existing.v2().get(CONFIG_LICENSE_KEY) != null;
 		
 		// license is valid, overwrite old value
-		existing.put(CONFIG_LICENSE_KEY, licenseString);
+		existing.v2().put(CONFIG_LICENSE_KEY, licenseString);
 		
-		save(client, request, getConfigName(), existing);
-		if (licenseExists) {
-			return successResponse("License updated.", getConfigName());
-		} else {
-			// fallback, should not happen since we always have at least a trial license
-			log.warn("License created via REST API.");
-			return createdResponse("License created.", getConfigName());
-		}
+		saveAnUpdateConfigs(channel, client, request, getConfigName(), existing.v2(), new OnSucessActionListener<IndexResponse>(channel) {
+
+            @Override
+            public void onResponse(IndexResponse response) {
+                if (licenseExists) {
+                    successResponse(channel, "License updated.");
+                } else {
+                    // fallback, should not happen since we always have at least a trial license
+                    log.warn("License created via REST API.");
+                    createdResponse(channel, "License created.");
+                }
+                
+            }
+        }, existing.v1());
+		
 	}
 
-	protected Tuple<String[], RestResponse> handlePost(final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) throws Throwable {
-		return notImplemented(Method.POST);
+	protected void handlePost(RestChannel channel, final RestRequest request, final Client client,
+			final Settings.Builder additionalSettings) {
+		notImplemented(channel, Method.POST);
 	}
 
 	@Override

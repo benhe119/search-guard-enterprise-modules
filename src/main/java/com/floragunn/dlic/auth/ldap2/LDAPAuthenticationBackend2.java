@@ -46,13 +46,9 @@ import com.floragunn.searchguard.auth.Destroyable;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.user.User;
 
-public class LDAPAuthenticationBackend implements AuthenticationBackend, Destroyable {
+public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destroyable {
 
-    static {
-        Utils.init();
-    }
-
-    protected static final Logger log = LogManager.getLogger(LDAPAuthenticationBackend.class);
+    protected static final Logger log = LogManager.getLogger(LDAPAuthenticationBackend2.class);
 
     private final Settings settings;
 
@@ -61,7 +57,7 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend, Destroy
     private ConnectionFactory authConnectionFactory;
     private LDAPUserSearcher userSearcher;
 
-    public LDAPAuthenticationBackend(final Settings settings, final Path configPath) throws SSLConfigException {
+    public LDAPAuthenticationBackend2(final Settings settings, final Path configPath) throws SSLConfigException {
         this.settings = settings;
 
         LDAPConnectionFactoryFactory ldapConnectionFactoryFactory = new LDAPConnectionFactoryFactory(settings,
@@ -83,7 +79,7 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend, Destroy
     public User authenticate(final AuthCredentials credentials) throws ElasticsearchSecurityException {
 
         Connection ldapConnection = null;
-        final String user = Utils.escapeStringRfc2254(credentials.getUsername());
+        final String user = credentials.getUsername();
         byte[] password = credentials.getPassword();
 
         try {
@@ -122,7 +118,7 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend, Destroy
             String username = dn;
 
             if (usernameAttribute != null && entry.getAttribute(usernameAttribute) != null) {
-                username = entry.getAttribute(usernameAttribute).getStringValue();
+                username = Utils.getSingleStringValue(entry.getAttribute(usernameAttribute));
             }
 
             if (log.isDebugEnabled()) {
