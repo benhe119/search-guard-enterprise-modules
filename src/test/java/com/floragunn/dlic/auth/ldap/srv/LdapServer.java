@@ -185,8 +185,8 @@ final class LdapServer {
         config.setEnforceAttributeSyntaxCompliance(false);
         config.setEnforceSingleStructuralObjectClass(false);
 
-        config.setLDAPDebugLogHandler(DEBUG_HANDLER);
-        config.setAccessLogHandler(DEBUG_HANDLER);
+        //config.setLDAPDebugLogHandler(DEBUG_HANDLER);
+        //config.setAccessLogHandler(DEBUG_HANDLER);
         //config.addAdditionalBindCredentials(configuration.getBindDn(), configuration.getPassword());
 
         server = new InMemoryDirectoryServer(config);
@@ -251,7 +251,7 @@ final class LdapServer {
 
         @Override
         public void publish(LogRecord logRecord) {
-           LOG.debug(ToStringBuilder.reflectionToString(logRecord, ToStringStyle.MULTI_LINE_STYLE));
+           //LOG.debug(ToStringBuilder.reflectionToString(logRecord, ToStringStyle.MULTI_LINE_STYLE));
         }
 
         @Override

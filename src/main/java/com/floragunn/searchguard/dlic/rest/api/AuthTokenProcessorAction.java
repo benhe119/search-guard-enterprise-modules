@@ -19,14 +19,13 @@ import java.nio.file.Path;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
-import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
@@ -51,13 +50,13 @@ public class AuthTokenProcessorAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected Tuple<String[], RestResponse> handlePost(final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) throws Throwable {
+	protected void handlePost(RestChannel channel, final RestRequest request, final Client client,
+			final Settings.Builder additionalSettings) {
 
 		// Just do nothing here. Eligible authenticators will intercept calls and
 		// provide own responses.
 
-		return new Tuple<String[], RestResponse>(new String[0], new BytesRestResponse(RestStatus.OK, ""));
+		channel.sendResponse(new BytesRestResponse(RestStatus.OK, ""));
 	}
 
 	@Override
