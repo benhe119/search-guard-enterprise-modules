@@ -16,7 +16,7 @@
   </parent>
 
   <artifactId>dlic-search-guard-enterprise-modules</artifactId>
-  <version>6.6-enterprise-HEAD-SNAPSHOT</version>
+  <version>6.6.0-33.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Search Guard Enterprise Modules</name>
@@ -25,7 +25,7 @@
   <inceptionYear>2016</inceptionYear>
 
   <properties>
-    <sg2.version>6.6-HEAD-SNAPSHOT</sg2.version>
+    <sg2.version>6.6.0-24.1-SNAPSHOT</sg2.version>
     <elasticsearch.version>6.6.0</elasticsearch.version>
 
     <!-- deps -->
