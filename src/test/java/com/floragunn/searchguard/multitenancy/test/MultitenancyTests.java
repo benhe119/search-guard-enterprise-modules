@@ -87,9 +87,9 @@ public class MultitenancyTests extends SingleClusterTest {
             System.out.println(resc.getBody());
 
             String msearchBody =
-                    "{\"index\":\"indexa\", \"type\":\"doc\", \"ignore_unavailable\": false}"+System.lineSeparator()+
+                    "{\"index\":\"indexa\", \"type\":\"doc\", \"ignore_unavailable\": true}"+System.lineSeparator()+
                     "{\"size\":10, \"query\":{\"bool\":{\"must\":{\"match_all\":{}}}}}"+System.lineSeparator()+
-                    "{\"index\":\"indexb\", \"type\":\"doc\", \"ignore_unavailable\": false}"+System.lineSeparator()+
+                    "{\"index\":\"indexb\", \"type\":\"doc\", \"ignore_unavailable\": true}"+System.lineSeparator()+
                     "{\"size\":10, \"query\":{\"bool\":{\"must\":{\"match_all\":{}}}}}"+System.lineSeparator();
             System.out.println("#### msearch a");
             resc = rh.executePostRequest("_msearch?pretty", msearchBody, encodeBasicHeader("user_a", "user_a"));
@@ -110,9 +110,9 @@ public class MultitenancyTests extends SingleClusterTest {
             Assert.assertTrue(resc.getBody(), resc.getBody().contains("permission"));
 
             msearchBody =
-                    "{\"index\":\"indexc\", \"type\":\"doc\", \"ignore_unavailable\": false}"+System.lineSeparator()+
+                    "{\"index\":\"indexc\", \"type\":\"doc\", \"ignore_unavailable\": true}"+System.lineSeparator()+
                     "{\"size\":10, \"query\":{\"bool\":{\"must\":{\"match_all\":{}}}}}"+System.lineSeparator()+
-                    "{\"index\":\"indexd\", \"type\":\"doc\", \"ignore_unavailable\": false}"+System.lineSeparator()+
+                    "{\"index\":\"indexd\", \"type\":\"doc\", \"ignore_unavailable\": true}"+System.lineSeparator()+
                     "{\"size\":10, \"query\":{\"bool\":{\"must\":{\"match_all\":{}}}}}"+System.lineSeparator();
 
             System.out.println("#### msearch b2");
