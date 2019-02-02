@@ -78,6 +78,26 @@ public class IndexPatternTest extends AbstractDlsFlsTest{
     }
     
     @Test
+    public void testFieldCaps() throws Exception {
+        
+        setup();
+
+        HttpResponse res;
+
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/logstash-2016/_field_caps?fields=*&pretty", encodeBasicHeader("admin", "admin"))).getStatusCode());
+        System.out.println(res.getBody());
+        Assert.assertTrue(res.getBody().contains("ipaddr"));
+        Assert.assertTrue(res.getBody().contains("message"));
+        Assert.assertTrue(res.getBody().contains("msgid"));
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/logstash-2016/_field_caps?fields=*&pretty", encodeBasicHeader("logstash", "password"))).getStatusCode());
+        System.out.println(res.getBody());
+        Assert.assertFalse(res.getBody().contains("ipaddr"));
+        Assert.assertFalse(res.getBody().contains("message"));
+        Assert.assertTrue(res.getBody().contains("msgid"));
+    }
+    
+    @Test
     public void testSearchWc() throws Exception {
         
         setup();

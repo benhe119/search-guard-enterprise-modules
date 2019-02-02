@@ -670,12 +670,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private BinaryDocValues wrapBinaryDocValues(final String field, final BinaryDocValues binaryDocValues) {
 
         final Map<String, MaskedField> rtMask;
+        final String matchedPattern;
         
-        if (binaryDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null) {
+        if (binaryDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null
+                && (matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field)).orElse(null)) != null) {
             
-            final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field));
-            assert matchedPattern.isPresent();
-            final MaskedField mf = rtMask.get(matchedPattern.get());
+            final MaskedField mf = rtMask.get(matchedPattern);
+            
+            if(mf == null) {
+                return binaryDocValues;
+            }
             
             return new BinaryDocValues() {
 
@@ -723,13 +727,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private SortedDocValues wrapSortedDocValues(final String field, final SortedDocValues sortedDocValues) {
 
         final Map<String, MaskedField> rtMask;
+        final String matchedPattern;
         
-        if (sortedDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null) {
+        if (sortedDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null
+                && (matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field)).orElse(null)) != null) {
 
-            final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field));
-            assert matchedPattern.isPresent();
-            final MaskedField mf = rtMask.get(matchedPattern.get());
+            final MaskedField mf = rtMask.get(matchedPattern);
             
+            if(mf == null) {
+                return sortedDocValues;
+            }
             
             return new SortedDocValues() {
 
@@ -812,12 +819,16 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private SortedSetDocValues wrapSortedSetDocValues(final String field, final SortedSetDocValues sortedSetDocValues) {
 
         final Map<String, MaskedField> rtMask;
+        final String matchedPattern;
         
-        if (sortedSetDocValues != null && (rtMask=getRuntimeMaskedFieldInfo())!=null) {
+        if (sortedSetDocValues != null && (rtMask=getRuntimeMaskedFieldInfo()) !=null
+                && (matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field)).orElse(null)) != null) {
+
+            final MaskedField mf = rtMask.get(matchedPattern);
             
-            final Optional<String> matchedPattern = WildcardMatcher.getFirstMatchingPattern(rtMask.keySet(), handleKeyword(field));
-            assert matchedPattern.isPresent();
-            final MaskedField mf =  rtMask.get(matchedPattern.get());
+            if(mf == null) {
+                return sortedSetDocValues;
+            }
 
             return new SortedSetDocValues() {
 
