@@ -61,6 +61,14 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		// GET, new URL endpoint in SG6
 		response = rh.executeGetRequest("/_searchguard/api/roles", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Assert.assertTrue(response.getBody().contains("\"cluster\":[\"*\"]"));
+		Assert.assertFalse(response.getBody().contains("\"cluster\" : ["));
+		
+		// GET, new URL endpoint in SG6, pretty
+        response = rh.executeGetRequest("/_searchguard/api/roles?pretty", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertFalse(response.getBody().contains("\"cluster\":[\"*\"]"));
+        Assert.assertTrue(response.getBody().contains("\"cluster\" : ["));
 
 	    // hidden role
         response = rh.executeGetRequest("/_searchguard/api/roles/sg_internal", new Header[0]);

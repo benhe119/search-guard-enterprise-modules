@@ -25,22 +25,6 @@ import com.floragunn.dlic.auth.ldap.util.Utils;
 public class UtilsTest {
     
     @Test
-    public void testRfc2254StringEscape() throws Exception {
-        Assert.assertEquals("", Utils.escapeStringRfc2254(""));
-        Assert.assertEquals("abc", Utils.escapeStringRfc2254("abc"));
-        Assert.assertEquals("abc<>;./", Utils.escapeStringRfc2254("abc<>;./"));
-        Assert.assertEquals("abc\\2a", Utils.escapeStringRfc2254("abc*"));
-        Assert.assertEquals("\\2a", Utils.escapeStringRfc2254("*"));
-        Assert.assertEquals("\\2a\\2a", Utils.escapeStringRfc2254("**"));
-        Assert.assertEquals("\\28\\2a\\29", Utils.escapeStringRfc2254("(*)"));
-        Assert.assertEquals("\\28\\2a\\29", Utils.escapeStringRfc2254("(*)"));
-        Assert.assertEquals("\\5c\\28\\2a\\29", Utils.escapeStringRfc2254("\\(*)"));
-        Assert.assertEquals("\\5c\\28\\2a\\29\\00", Utils.escapeStringRfc2254("\\(*)\0"));
-        Assert.assertEquals("\\5c\\28abc\\2adef\\29\\00", Utils.escapeStringRfc2254("\\(abc*def)\0"));
-        Assert.assertNotEquals("\\5c\\28abc\\2adef\\29\\00", Utils.escapeStringRfc2254(Utils.escapeStringRfc2254("\\(abc*def)\0")));
-    }
-    
-    @Test
     public void testLDAPName() throws Exception {
         //same ldapname
         Assert.assertEquals(new LdapName("CN=1,OU=2,O=3,C=4"),new LdapName("CN=1,OU=2,O=3,C=4"));

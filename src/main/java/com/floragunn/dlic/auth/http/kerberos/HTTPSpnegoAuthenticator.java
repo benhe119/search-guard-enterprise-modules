@@ -24,6 +24,9 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
@@ -47,6 +50,7 @@ import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSName;
+import org.ietf.jgss.Oid;
 
 import com.floragunn.dlic.auth.http.kerberos.util.JaasKrbUtil;
 import com.floragunn.dlic.auth.http.kerberos.util.KrbConstants;
@@ -57,31 +61,32 @@ import com.google.common.base.Strings;
 public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
 
     private static final String EMPTY_STRING = "";
+    private static final Oid[] KRB_OIDS = new Oid[] {KrbConstants.SPNEGO, KrbConstants.KRB5MECH};
 
     static {
         //printLicenseInfo();
     }
-    
+
     protected final Logger log = LogManager.getLogger(this.getClass());
 
     private boolean stripRealmFromPrincipalName;
-    private String acceptorPrincipal;
+    private Set<String> acceptorPrincipal;
     private Path acceptorKeyTabPath;
 
     public HTTPSpnegoAuthenticator(final Settings settings, final Path configPath) {
         super();
         try {
-            final Path configDir = new Environment(settings, configPath).configFile();            
+            final Path configDir = new Environment(settings, configPath).configFile();
             final String krb5PathSetting = settings.get("searchguard.kerberos.krb5_filepath");
-            
+
             final SecurityManager sm = System.getSecurityManager();
-    
+
             if (sm != null) {
                 sm.checkPermission(new SpecialPermission());
             }
-    
+
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
-                
+
                 @Override
                 public Void run() {       
 
@@ -104,11 +109,11 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                     }
 
                     System.setProperty(KrbConstants.USE_SUBJECT_CREDS_ONLY_PROP, "false");
-                    
+
                     String krb5Path = krb5PathSetting;
-                    
+
                     if(!Strings.isNullOrEmpty(krb5Path)) {
-                        
+
                         if(Paths.get(krb5Path).isAbsolute()) {
                             log.debug("krb5_filepath: {}", krb5Path);
                             System.setProperty(KrbConstants.KRB5_CONF_PROP, krb5Path);
@@ -116,7 +121,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                             krb5Path = configDir.resolve(krb5Path).toAbsolutePath().toString();
                             log.debug("krb5_filepath (resolved from {}): {}", configDir, krb5Path);
                         }
-                        
+
                         System.setProperty(KrbConstants.KRB5_CONF_PROP, krb5Path);
                     } else {
                         if(Strings.isNullOrEmpty(System.getProperty(KrbConstants.KRB5_CONF_PROP))) {
@@ -124,22 +129,22 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                             log.debug("krb5_filepath (was not set or configured, set to default): /etc/krb5.conf");
                         }
                     }
-                    
+
                     stripRealmFromPrincipalName = settings.getAsBoolean("strip_realm_from_principal", true);
-                    acceptorPrincipal = settings.get("searchguard.kerberos.acceptor_principal");
+                    acceptorPrincipal = new HashSet<>(settings.getAsList("searchguard.kerberos.acceptor_principal", Collections.emptyList()));
                     final String _acceptorKeyTabPath = settings.get("searchguard.kerberos.acceptor_keytab_filepath");
-                    
-                    if(acceptorPrincipal == null || acceptorPrincipal.length() == 0) {
+
+                    if(acceptorPrincipal == null || acceptorPrincipal.size() == 0) {
                         log.error("acceptor_principal must not be null or empty. Kerberos authentication will not work");
                         acceptorPrincipal = null;
                     } 
-                    
+
                     if(_acceptorKeyTabPath == null || _acceptorKeyTabPath.length() == 0) {
                         log.error("searchguard.kerberos.acceptor_keytab_filepath must not be null or empty. Kerberos authentication will not work");
                         acceptorKeyTabPath = null;
                     } else {
                         acceptorKeyTabPath = configDir.resolve(settings.get("searchguard.kerberos.acceptor_keytab_filepath"));
-                        
+
                         if(!Files.exists(acceptorKeyTabPath)) {
                             log.error("Unable to read keytab from {} - Maybe the file does not exist or is not readable. Kerberos authentication will not work", acceptorKeyTabPath);
                             acceptorKeyTabPath = null;
@@ -149,11 +154,11 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                     return null;
                 }
             });      
-       
+
             log.debug("strip_realm_from_principal {}", stripRealmFromPrincipalName);
             log.debug("acceptor_principal {}", acceptorPrincipal);
             log.debug("acceptor_keytab_filepath {}", acceptorKeyTabPath);
-        
+
         } catch (Throwable e) {
             log.error("Cannot construct HTTPSpnegoAuthenticator due to {}", e.getMessage(), e);
             log.error("Please make sure you configured 'searchguard.kerberos.acceptor_keytab_filepath' realtive to the ES config/ dir!");
@@ -161,7 +166,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
         }
 
     }
-    
+
     @Override
     public AuthCredentials extractCredentials(final RestRequest request, ThreadContext threadContext) {
         final SecurityManager sm = System.getSecurityManager();
@@ -176,17 +181,17 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                 return extractCredentials0(request);
             }
         });
-        
+
         return creds;
     }
 
     private AuthCredentials extractCredentials0(final RestRequest request) {
-        
+
         if (acceptorPrincipal == null || acceptorKeyTabPath == null) {
             log.error("Missing acceptor principal or keytab configuration. Kerberos authentication will not work");
             return null;
         }
-        
+
         Principal principal = null;
         final String authorizationHeader = request.header("Authorization");
 
@@ -210,7 +215,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                     final PrivilegedExceptionAction<GSSCredential> action = new PrivilegedExceptionAction<GSSCredential>() {
                         @Override
                         public GSSCredential run() throws GSSException {
-                            return manager.createCredential(null, credentialLifetime, KrbConstants.SPNEGO, GSSCredential.ACCEPT_ONLY);
+                            return manager.createCredential(null, credentialLifetime, KRB_OIDS, GSSCredential.ACCEPT_ONLY);
                         }
                     };
                     gssContext = manager.createContext(Subject.doAs(subject, action));
@@ -251,36 +256,36 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                 if (principal == null) {
                     return new AuthCredentials("_incomplete_", (Object) outToken);
                 }
-                
+
 
                 final String username = ((SimpleUserPrincipal) principal).getName();
-                
+
                 if(username == null || username.length() == 0) {
                     log.error("Got empty or null user from kerberos. Normally this means that you acceptor principal {} does not match the server hostname", acceptorPrincipal);
                 }
-                
+
                 return new AuthCredentials(username, (Object) outToken).markComplete();
-                
+
             }
         } else {
             log.trace("No 'Authorization' header, send 401 and 'WWW-Authenticate Negotiate'");
             return null;
         }
-        
+
     }
 
     @Override
     public boolean reRequestAuthentication(final RestChannel channel, AuthCredentials creds) {
 
-    	final BytesRestResponse wwwAuthenticateResponse;
-    	XContentBuilder response = getNegotiateResponseBody();
-    	
-    	if (response != null) {
-        	wwwAuthenticateResponse = new BytesRestResponse(RestStatus.UNAUTHORIZED, response);        	
+        final BytesRestResponse wwwAuthenticateResponse;
+        XContentBuilder response = getNegotiateResponseBody();
+
+        if (response != null) {
+            wwwAuthenticateResponse = new BytesRestResponse(RestStatus.UNAUTHORIZED, response);        	
         } else {
-        	wwwAuthenticateResponse = new BytesRestResponse(RestStatus.UNAUTHORIZED, EMPTY_STRING);
+            wwwAuthenticateResponse = new BytesRestResponse(RestStatus.UNAUTHORIZED, EMPTY_STRING);
         }
-        
+
         if(creds == null || creds.getNativeCredentials() == null) {
             wwwAuthenticateResponse.addHeader("WWW-Authenticate", "Negotiate");
         } else {
@@ -294,7 +299,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
     public String getType() {
         return "spnego";
     }
-    
+
     /**
      * This class gets a gss credential via a privileged action.
      */
@@ -358,26 +363,26 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
 
         return null;
     }
-    
-	private XContentBuilder getNegotiateResponseBody() {
-		try {
-			XContentBuilder negotiateResponseBody = XContentFactory.jsonBuilder();
-			negotiateResponseBody.startObject();
-			negotiateResponseBody.field("error");
-			negotiateResponseBody.startObject();
-			negotiateResponseBody.field("header");
-			negotiateResponseBody.startObject();
-			negotiateResponseBody.field("WWW-Authenticate", "Negotiate");
-			negotiateResponseBody.endObject();
-			negotiateResponseBody.endObject();
-			negotiateResponseBody.endObject();
-			return negotiateResponseBody;
-		} catch (Exception ex) {
-			log.error("Can't construct response body", ex);
-			return null;
-		}
-	}
-    
+
+    private XContentBuilder getNegotiateResponseBody() {
+        try {
+            XContentBuilder negotiateResponseBody = XContentFactory.jsonBuilder();
+            negotiateResponseBody.startObject();
+            negotiateResponseBody.field("error");
+            negotiateResponseBody.startObject();
+            negotiateResponseBody.field("header");
+            negotiateResponseBody.startObject();
+            negotiateResponseBody.field("WWW-Authenticate", "Negotiate");
+            negotiateResponseBody.endObject();
+            negotiateResponseBody.endObject();
+            negotiateResponseBody.endObject();
+            return negotiateResponseBody;
+        } catch (Exception ex) {
+            log.error("Can't construct response body", ex);
+            return null;
+        }
+    }
+
     private static String stripRealmName(String name, boolean strip){
         if (strip && name != null) {
             final int i = name.indexOf('@');
@@ -386,7 +391,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                 name = name.substring(0, i);
             }
         }
-        
+
         return name;
     }
 
@@ -444,7 +449,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
             return buffer.toString();
         }
     }
-    
+
     public static void printLicenseInfo() {
         System.out.println("***********************************************");
         System.out.println("Searchguard Kerberos/SPNEGO is not free software");
