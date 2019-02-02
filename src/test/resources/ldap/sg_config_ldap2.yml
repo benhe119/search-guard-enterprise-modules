@@ -29,7 +29,7 @@ searchguard:
         http_authenticator:
           type: basic
         authentication_backend:
-          type: com.floragunn.dlic.auth.ldap2.LDAPAuthenticationBackend
+          type: com.floragunn.dlic.auth.ldap2.LDAPAuthenticationBackend2
           config:
             hosts: localhost:${ldapsPort}
             usersearch: "(uid={0})"

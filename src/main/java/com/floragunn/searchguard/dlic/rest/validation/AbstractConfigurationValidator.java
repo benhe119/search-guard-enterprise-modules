@@ -29,9 +29,9 @@ import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 
@@ -198,9 +198,9 @@ public abstract class AbstractConfigurationValidator {
 		}
 	}
 
-	public XContentBuilder errorsAsXContent() {
+	public XContentBuilder errorsAsXContent(RestChannel channel) {
 		try {
-			final XContentBuilder builder = XContentFactory.jsonBuilder();
+			final XContentBuilder builder = channel.newBuilder();
 			builder.startObject();
 			switch (this.errorType) {
 			case NONE:
