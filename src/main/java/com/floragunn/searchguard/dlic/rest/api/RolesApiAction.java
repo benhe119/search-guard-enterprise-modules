@@ -17,6 +17,7 @@ package com.floragunn.searchguard.dlic.rest.api;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -28,6 +29,7 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
@@ -39,6 +41,7 @@ import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
+import com.floragunn.searchguard.dlic.rest.validation.NoOpValidator;
 import com.floragunn.searchguard.dlic.rest.validation.RolesValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
@@ -89,7 +92,11 @@ public class RolesApiAction extends PatchableResourceApiAction {
 	protected void handlePost(final RestChannel channel, final RestRequest request, final Client client,
 			final Settings.Builder additionalSettings) throws IOException {
 
-		if ("upgrade".equalsIgnoreCase(request.param("action"))) {
+		XContentParser contentParser = request.contentParser();
+
+		Map<String, Object> structuredMap = contentParser.map();
+
+		if ("formatUpgrade".equalsIgnoreCase(String.valueOf(structuredMap.get("action")))) {
 			handleUpgrade(channel, request, client, additionalSettings);
 		} else {
 			badRequestResponse(channel, "Invalid action parameter: " + request.param("action"));
@@ -110,7 +117,7 @@ public class RolesApiAction extends PatchableResourceApiAction {
 
 		for (String sgRole : sgRoles) {
 
-			Settings tenants = settings.getByPrefix(sgRole + ".tenants.");
+			Settings tenants = existingAsSettings.v2().getByPrefix(sgRole + ".tenants.");
 
 			if (tenants == null) {
 				continue;
@@ -133,10 +140,10 @@ public class RolesApiAction extends PatchableResourceApiAction {
 					String legacyTenantConfig = tenants.get(tenant, "RO");
 
 					if ("RW".equalsIgnoreCase(legacyTenantConfig)) {
-						updatedSettingsBuilder.putList(sgRole + ".tenants." + tenant,
+						updatedSettingsBuilder.putList(sgRole + ".tenants." + tenant + ".applications",
 								Collections.singletonList("kibana:saved_objects/*/*"));
 					} else {
-						updatedSettingsBuilder.putList(sgRole + ".tenants." + tenant,
+						updatedSettingsBuilder.putList(sgRole + ".tenants." + tenant + ".applications",
 								Collections.singletonList("kibana:saved_objects/*/read"));
 					}
 

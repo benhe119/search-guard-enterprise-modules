@@ -371,4 +371,5 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
         
 	}
+	
 }

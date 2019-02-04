@@ -87,12 +87,13 @@ public abstract class AbstractConfigurationValidator {
 	protected final BytesReference content;
 	
 	protected final Settings esSettings;
-	
+
 	protected final RestRequest request;
-	
+
 	protected final Object[] param;
 
-	public AbstractConfigurationValidator(final RestRequest request, final BytesReference ref, final Settings esSettings, Object... param) {
+	public AbstractConfigurationValidator(final RestRequest request, final BytesReference ref,
+			final Settings esSettings, Object... param) {
 		this.content = ref;
 		this.method = request.method();
 		this.esSettings = esSettings;
@@ -106,7 +107,7 @@ public abstract class AbstractConfigurationValidator {
 	 */
 	public boolean validateSettings() {
 		// no payload for DELETE and GET requests
-		if (method.equals(Method.DELETE) || method.equals(Method.GET)) {
+		if (method.equals(Method.DELETE) || method.equals(Method.GET) || method.equals(Method.POST)) {
 			return true;
 		}
 		// try to parse payload
@@ -164,37 +165,38 @@ public abstract class AbstractConfigurationValidator {
 		return valid;
 	}
 
-	private boolean checkDatatypes() throws Exception {		
+	private boolean checkDatatypes() throws Exception {
 		String contentAsJson = XContentHelper.convertToJson(content, false, XContentType.YAML);
-		try(JsonParser parser = factory.createParser(contentAsJson)) {
-    		JsonToken token = null;
-    		while ((token = parser.nextToken()) != null) {
-    			if(token.equals(JsonToken.FIELD_NAME)) {
-    				String currentName = parser.getCurrentName();
-    				DataType dataType = allowedKeys.get(currentName);
-    				if(dataType != null) {
-    					JsonToken valueToken = parser.nextToken();
-    					switch (dataType) {
-    					case STRING:
-    						if(!valueToken.equals(JsonToken.VALUE_STRING)) {
-    							wrongDatatypes.put(currentName, "String expected");
-    						}
-    						break;
-    					case ARRAY:
-    						if(!valueToken.equals(JsonToken.START_ARRAY) && !valueToken.equals(JsonToken.END_ARRAY)) {
-    							wrongDatatypes.put(currentName, "Array expected");
-    						}
-    						break;
-    					case OBJECT:
-    						if(!valueToken.equals(JsonToken.START_OBJECT) && !valueToken.equals(JsonToken.END_OBJECT)) {
-    							wrongDatatypes.put(currentName, "Object expected");
-    						}
-    						break;						
-    					}
-    				}
-    			}
-    		}
-    		return wrongDatatypes.isEmpty();
+		try (JsonParser parser = factory.createParser(contentAsJson)) {
+			JsonToken token = null;
+			while ((token = parser.nextToken()) != null) {
+				if (token.equals(JsonToken.FIELD_NAME)) {
+					String currentName = parser.getCurrentName();
+					DataType dataType = allowedKeys.get(currentName);
+					if (dataType != null) {
+						JsonToken valueToken = parser.nextToken();
+						switch (dataType) {
+						case STRING:
+							if (!valueToken.equals(JsonToken.VALUE_STRING)) {
+								wrongDatatypes.put(currentName, "String expected");
+							}
+							break;
+						case ARRAY:
+							if (!valueToken.equals(JsonToken.START_ARRAY) && !valueToken.equals(JsonToken.END_ARRAY)) {
+								wrongDatatypes.put(currentName, "Array expected");
+							}
+							break;
+						case OBJECT:
+							if (!valueToken.equals(JsonToken.START_OBJECT)
+									&& !valueToken.equals(JsonToken.END_OBJECT)) {
+								wrongDatatypes.put(currentName, "Object expected");
+							}
+							break;
+						}
+					}
+				}
+			}
+			return wrongDatatypes.isEmpty();
 		}
 	}
 
@@ -204,9 +206,9 @@ public abstract class AbstractConfigurationValidator {
 			builder.startObject();
 			switch (this.errorType) {
 			case NONE:
-			    builder.field("status", "error");
-                builder.field("reason", errorType.getMessage());
-                break;
+				builder.field("status", "error");
+				builder.field("reason", errorType.getMessage());
+				break;
 			case INVALID_CONFIGURATION:
 				builder.field("status", "error");
 				builder.field("reason", ErrorType.INVALID_CONFIGURATION.getMessage());
@@ -216,13 +218,15 @@ public abstract class AbstractConfigurationValidator {
 				break;
 			case INVALID_PASSWORD:
 				builder.field("status", "error");
-				builder.field("reason", esSettings.get(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_ERROR_MESSAGE,"Password does not match minimum criterias"));
+				builder.field("reason",
+						esSettings.get(ConfigConstants.SEARCHGUARD_RESTAPI_PASSWORD_VALIDATION_ERROR_MESSAGE,
+								"Password does not match minimum criterias"));
 				break;
 			case WRONG_DATATYPE:
 				builder.field("status", "error");
 				builder.field("reason", ErrorType.WRONG_DATATYPE.getMessage());
 				for (Entry<String, String> entry : wrongDatatypes.entrySet()) {
-					builder.field( entry.getKey(), entry.getValue());
+					builder.field(entry.getKey(), entry.getValue());
 				}
 				break;
 			default:
@@ -254,30 +258,25 @@ public abstract class AbstractConfigurationValidator {
 		if (ref == null || ref.length() == 0) {
 			return Settings.builder();
 		}
-		
+
 		try {
-		    return Settings.builder().loadFromSource(ref.utf8ToString(), XContentType.JSON);
+			return Settings.builder().loadFromSource(ref.utf8ToString(), XContentType.JSON);
 		} catch (final Exception e) {
 			throw ExceptionsHelper.convertToElastic(e);
 		}
 	}
 
 	public static enum DataType {
-		STRING,
-		ARRAY,
-		OBJECT;
+		STRING, ARRAY, OBJECT;
 	}
 
 	public static enum ErrorType {
-		NONE("ok"),		
-		INVALID_CONFIGURATION("Invalid configuration"),
-		INVALID_PASSWORD("Invalid password"),
-		WRONG_DATATYPE("Wrong datatype"),
-		BODY_NOT_PARSEABLE("Could not parse content of request."),
+		NONE("ok"), INVALID_CONFIGURATION("Invalid configuration"), INVALID_PASSWORD("Invalid password"),
+		WRONG_DATATYPE("Wrong datatype"), BODY_NOT_PARSEABLE("Could not parse content of request."),
 		PAYLOAD_NOT_ALLOWED("Request body not allowed for this action."),
 		PAYLOAD_MANDATORY("Request body required for this action."),
 		SG_NOT_INITIALIZED("Search Guard index not initialized (SG11)");
-		
+
 		private String message;
 
 		private ErrorType(String message) {
@@ -288,8 +287,8 @@ public abstract class AbstractConfigurationValidator {
 			return message;
 		}
 	}
-	
+
 	protected final boolean hasParams() {
-	    return param != null && param.length>0;
+		return param != null && param.length > 0;
 	}
 }
