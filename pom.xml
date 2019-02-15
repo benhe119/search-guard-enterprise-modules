@@ -26,7 +26,7 @@
 
   <properties>
     <sg2.version>7.x-HEAD-SNAPSHOT</sg2.version>
-    <elasticsearch.version>7.0.0-alpha2</elasticsearch.version>
+    <elasticsearch.version>7.0.0-beta1</elasticsearch.version>
 
     <!-- deps -->
     <log4j.version>2.11.1</log4j.version>
@@ -50,6 +50,15 @@
       <releases><enabled>true</enabled></releases>
       <snapshots><enabled>false</enabled></snapshots>
     </repository>
+    
+    <repository>
+      <id>sg-intermediate</id>
+      <name>sg intermediate</name>
+      <url>https://oss.sonatype.org/service/local/repositories/comfloragunn-1528/content</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+    
   </repositories>
 
   <scm>
@@ -308,6 +317,19 @@
     <dependency>
       <groupId>org.elasticsearch.plugin</groupId>
       <artifactId>reindex-client</artifactId>
+      <version>${elasticsearch.version}</version>
+      <scope>test</scope>
+      <exclusions>
+      <exclusion>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-ssl-config</artifactId>
+      </exclusion>
+      </exclusions>
+    </dependency>
+    
+     <dependency>
+      <groupId>com.floragunn</groupId>
+      <artifactId>elasticsearch-ssl-config</artifactId>
       <version>${elasticsearch.version}</version>
       <scope>test</scope>
     </dependency>

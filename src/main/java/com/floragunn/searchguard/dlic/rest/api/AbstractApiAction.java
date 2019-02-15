@@ -274,7 +274,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	protected void filter(Settings.Builder builder) {
 	    Settings settings = builder.build();
 	    
-        for (Map.Entry<String, Settings> entry : settings.getAsGroups(true).entrySet()) {
+        for (Map.Entry<String, Settings> entry : settings.getAsGroups().entrySet()) {
             if (entry.getValue().getAsBoolean("hidden", false)) {
                 for (String subKey : entry.getValue().keySet()) {
                     builder.remove(entry.getKey() + "." + subKey);

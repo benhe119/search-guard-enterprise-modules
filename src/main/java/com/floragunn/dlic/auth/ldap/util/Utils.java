@@ -64,7 +64,7 @@ public final class Utils {
     }
     
     public static List<Map.Entry<String, Settings>> getOrderedBaseSettings(Settings settings) {
-        return getOrderedBaseSettings(settings.getAsGroups(true));
+        return getOrderedBaseSettings(settings.getAsGroups());
     }
     
     public static List<Map.Entry<String, Settings>> getOrderedBaseSettings(Map<String, Settings> settingsMap) {
