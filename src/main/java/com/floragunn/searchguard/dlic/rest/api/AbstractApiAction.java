@@ -260,7 +260,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		return new Tuple<Long, Settings.Builder>(t.v1(), Settings.builder().put(t.v2()));
 	}
 
-	protected final DynamicConfiguration loadAsSettings(final String config, boolean logComplianceEvent) {
+	protected final Tuple<Long, Settings> loadAsSettings(final String config, boolean logComplianceEvent) {
 	    return cl.loadConfigurations(Collections.singleton(config), logComplianceEvent).get(config);
 	}
 
