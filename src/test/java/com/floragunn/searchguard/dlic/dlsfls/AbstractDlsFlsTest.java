@@ -21,6 +21,7 @@ import org.junit.Assert;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.SingleClusterTest;
 import com.floragunn.searchguard.test.helper.rest.RestHelper;
@@ -41,7 +42,7 @@ public abstract class AbstractDlsFlsTest extends SingleClusterTest {
         try(TransportClient tc = getInternalTransportClient(this.clusterInfo, Settings.EMPTY)) {
             populate(tc);
             ConfigUpdateResponse cur = tc
-                    .execute(ConfigUpdateAction.INSTANCE, new ConfigUpdateRequest(ConfigConstants.CONFIG_NAMES.toArray(new String[0])))
+                    .execute(ConfigUpdateAction.INSTANCE, new ConfigUpdateRequest(CType.lcStringValues().toArray(new String[0])))
                     .actionGet();
             Assert.assertEquals(this.clusterInfo.numNodes, cur.getNodes().size());
         }

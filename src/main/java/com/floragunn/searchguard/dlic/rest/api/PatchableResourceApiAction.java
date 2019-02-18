@@ -26,7 +26,6 @@ import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.BytesRestResponse;
@@ -46,6 +45,7 @@ import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
@@ -71,7 +71,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         }
 
         String name = request.param("name");
-        Tuple<Long, Settings> existingAsSettings = loadAsSettings(getConfigName(), false);
+        SgDynamicConfiguration<?> existingAsSettings = load(getConfigName(), false);
 
         JsonNode jsonPatch;
 
@@ -83,7 +83,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             return;
         }
 
-        JsonNode existingAsJsonNode = Utils.convertJsonToJackson(existingAsSettings.v2());
+        JsonNode existingAsJsonNode = Utils.convertJsonToJackson(existingAsSettings);
 
         if (!(existingAsJsonNode instanceof ObjectNode)) {
             internalErrorResponse(channel, "Config " + getConfigName() + " is malformed");
@@ -100,20 +100,18 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
     }
 
     private void handleSinglePatch(RestChannel channel, RestRequest request, Client client, String name,
-            Tuple<Long,Settings> existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws IOException {
-        if (isHidden(existingAsSettings.v2(), name)) {
+            SgDynamicConfiguration<?> existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws IOException {
+        if (isHidden(existingAsSettings, name)) {
             notFound(channel, getResourceName() + " " + name + " not found.");
             return;
         }
 
-        if (isReadOnly(existingAsSettings.v2(), name)) {
+        if (isReadOnly(existingAsSettings, name)) {
             forbidden(channel, "Resource '" + name + "' is read-only.");
             return;
         }
 
-        Settings resourceSettings = existingAsSettings.v2().getAsSettings(name);
-
-        if (resourceSettings.isEmpty()) {
+        if (!existingAsSettings.exists(name)) {
             notFound(channel, getResourceName() + " " + name + " not found.");
             return;
         }
@@ -152,22 +150,22 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             }
 
             JsonNode updatedAsJsonNode = existingAsObjectNode.deepCopy().set(name, patchedResourceAsJsonNode);
-            
-            BytesReference updatedAsBytesReference = new BytesArray(
-                    DefaultObjectMapper.objectMapper.writeValueAsString(updatedAsJsonNode).getBytes());
 
-            saveAnUpdateConfigs(client, request, getConfigName(), updatedAsBytesReference, new OnSucessActionListener<IndexResponse>(channel){
+            SgDynamicConfiguration<?> mdc = SgDynamicConfiguration.fromNode(updatedAsJsonNode, existingAsSettings.getCType()
+                    , existingAsSettings.getVersion(), existingAsSettings.getSeqNo(), existingAsSettings.getPrimaryTerm());
+
+            saveAnUpdateConfigs(client, request, getConfigName(), mdc, new OnSucessActionListener<IndexResponse>(channel){
                 
                 @Override
                 public void onResponse(IndexResponse response) {
                     successResponse(channel, "'" + name + "' updated.");
                     
                 }
-            }, existingAsSettings.v1());
+            });
     }
 
     private void handleBulkPatch(RestChannel channel, RestRequest request, Client client,
-            Tuple<Long,Settings> existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws IOException {
+            SgDynamicConfiguration<?> existingAsSettings, ObjectNode existingAsObjectNode, JsonNode jsonPatch) throws IOException {
 
         JsonNode patchedAsJsonNode;
 
@@ -179,18 +177,18 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             return;
         }
 
-        for (String resourceName : existingAsSettings.v2().names()) {
+        for (String resourceName : existingAsSettings.getCEntries().keySet()) {
             JsonNode oldResource = existingAsObjectNode.get(resourceName);
             JsonNode patchedResource = patchedAsJsonNode.get(resourceName);
 
             if (oldResource != null && !oldResource.equals(patchedResource)) {
 
-                if (isReadOnly(existingAsSettings.v2(), resourceName)) {
+                if (isReadOnly(existingAsSettings, resourceName)) {
                     forbidden(channel, "Resource '" + resourceName + "' is read-only.");
                     return;
                 }
 
-                if (isHidden(existingAsSettings.v2(), resourceName)) {
+                if (isHidden(existingAsSettings, resourceName)) {
                     badRequestResponse(channel, "Resource name '" + resourceName + "' is reserved");
                     return;
                 }
@@ -227,16 +225,16 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
                 }
             }
             
-            BytesReference updatedAsBytesReference = new BytesArray(
-                    DefaultObjectMapper.objectMapper.writeValueAsString(patchedAsJsonNode).getBytes());
-
-            saveAnUpdateConfigs(client, request, getConfigName(), updatedAsBytesReference, new OnSucessActionListener<IndexResponse>(channel) {
+            SgDynamicConfiguration<?> mdc = SgDynamicConfiguration.fromNode(patchedAsJsonNode, existingAsSettings.getCType()
+                    , existingAsSettings.getVersion(), existingAsSettings.getSeqNo(), existingAsSettings.getPrimaryTerm());
+            
+            saveAnUpdateConfigs(client, request, getConfigName(), mdc, new OnSucessActionListener<IndexResponse>(channel) {
 
                 @Override
                 public void onResponse(IndexResponse response) {
                     successResponse(channel, "Resource updated.");
                 }
-            }, existingAsSettings.v1());
+            });
 
     }
 

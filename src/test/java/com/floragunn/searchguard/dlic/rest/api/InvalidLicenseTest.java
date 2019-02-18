@@ -33,7 +33,7 @@ public class InvalidLicenseTest extends LicenseTest {
 		
 		String license = FileHelper.loadFile("restapi/license/single_expired.txt");
 		HttpResponse response = rh.executePutRequest("/_searchguard/api/license", createLicenseRequestBody(license), new Header[0]);
-		Assert.assertEquals(201, response.getStatusCode());
+		Assert.assertEquals(response.getBody(), 201, response.getStatusCode());
 		
 		 Settings settingsAsMap = getCurrentLicense();
 		 Assert.assertEquals(SearchGuardLicense.Type.SINGLE.name(), settingsAsMap.get("sg_license.type"));

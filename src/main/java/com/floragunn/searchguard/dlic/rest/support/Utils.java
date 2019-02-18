@@ -79,4 +79,14 @@ public class Utils {
         
     }
     
+    public static <T> T serializeToXContentToPojo(ToXContent jsonContent, Class<T> clazz) {
+        try {
+            final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, false);
+            return DefaultObjectMapper.readValue(bytes.utf8ToString(), clazz);
+        } catch (IOException e1) {
+            throw ExceptionsHelper.convertToElastic(e1);
+        }
+        
+    }
+    
 }

@@ -21,7 +21,6 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -41,13 +40,14 @@ import com.floragunn.searchguard.action.licenseinfo.LicenseInfoRequest;
 import com.floragunn.searchguard.action.licenseinfo.LicenseInfoResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
 import com.floragunn.searchguard.configuration.SearchGuardLicense;
+import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.LicenseValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
-import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.support.LicenseHelper;
 
 public class LicenseApiAction extends AbstractApiAction {
@@ -133,19 +133,19 @@ public class LicenseApiAction extends AbstractApiAction {
 		}
 				
 		// load existing configuration into new map
-		final Tuple<Long, Settings.Builder> existing = load(getConfigName(), false);
+		final SgDynamicConfiguration<?> existing = load(getConfigName(), false);
 		
 		if (log.isTraceEnabled()) {
-			log.trace(existing.v2().build().toString());	
+			log.trace(existing.toString());	
 		}
 		
 		// license already present?		
-		boolean licenseExists = existing.v2().get(CONFIG_LICENSE_KEY) != null;
+		boolean licenseExists = CType.getConfig(existing).dynamic.license != null;
 		
 		// license is valid, overwrite old value
-		existing.v2().put(CONFIG_LICENSE_KEY, licenseString);
+		CType.getConfig(existing).dynamic.license = licenseString;
 		
-		saveAnUpdateConfigs(channel, client, request, getConfigName(), existing.v2(), new OnSucessActionListener<IndexResponse>(channel) {
+		saveAnUpdateConfigs(client, request, getConfigName(), existing, new OnSucessActionListener<IndexResponse>(channel) {
 
             @Override
             public void onResponse(IndexResponse response) {
@@ -158,7 +158,7 @@ public class LicenseApiAction extends AbstractApiAction {
                 }
                 
             }
-        }, existing.v1());
+        });
 		
 	}
 
@@ -178,9 +178,9 @@ public class LicenseApiAction extends AbstractApiAction {
 		return null;
 	}
 
-	@Override
-	protected String getConfigName() {		
-		return ConfigConstants.CONFIGNAME_CONFIG;
-	}
+    @Override
+    protected CType getConfigName() {
+        return CType.CONFIG;
+    }
 
 }

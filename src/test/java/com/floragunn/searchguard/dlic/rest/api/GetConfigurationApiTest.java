@@ -67,7 +67,7 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(settings.getAsList("ALL").get(0), "indices:*");
+		Assert.assertEquals(settings.getAsList("ALL.permissions").get(0), "indices:*");
 		Assert.assertFalse(settings.hasValue("INTERNAL.permissions"));
 	}
 

@@ -198,7 +198,7 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
         rh.sendHTTPClientCertificate = true;
         response = rh.executePatchRequest("/_searchguard/api/actiongroups/CRUD", "[{ \"op\": \"add\", \"path\": \"/hidden\", \"value\": true }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
-        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+        Assert.assertTrue(response.getBody(), response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
         
         // PATCH with relative JSON pointer, must fail
         rh.sendHTTPClientCertificate = true;

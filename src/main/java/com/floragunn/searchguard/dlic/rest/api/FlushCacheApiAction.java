@@ -33,6 +33,7 @@ import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.NoOpValidator;
@@ -115,10 +116,9 @@ public class FlushCacheApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected String getConfigName() {
-		// not needed
-		return null;
-	}
+    protected CType getConfigName() {
+        return null;
+    }
 
 	@Override
 	protected void consumeParameters(final RestRequest request) {

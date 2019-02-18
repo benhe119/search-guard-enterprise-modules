@@ -31,6 +31,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.NoOpValidator;
@@ -70,9 +71,9 @@ public class AuthTokenProcessorAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected String getConfigName() {
-		return null;
-	}
+    protected CType getConfigName() {
+        return null;
+    }
 
 	@Override
 	protected Endpoint getEndpoint() {

@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BytesRestResponse;
@@ -32,12 +31,13 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.NoOpValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
-import com.floragunn.searchguard.support.ConfigConstants;
 
 public class SgConfigAction extends AbstractApiAction {
 
@@ -55,10 +55,10 @@ public class SgConfigAction extends AbstractApiAction {
 	protected void handleGet(RestChannel channel, RestRequest request, Client client,
 			final Settings.Builder additionalSettingsBuilder) {
 
-		final Tuple<Long, Settings> configurationSettings = loadAsSettings(getConfigName(), true);
+		final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), true);
 
 		channel.sendResponse(
-				new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings.v2())));
+				new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
 	}
 	
 	@Override
@@ -78,10 +78,10 @@ public class SgConfigAction extends AbstractApiAction {
 		return new NoOpValidator(request, ref, this.settings, param);
 	}
 
-	@Override
-	protected String getConfigName() {
-		return ConfigConstants.CONFIGNAME_CONFIG;
-	}
+    @Override
+    protected CType getConfigName() {
+        return CType.CONFIG;
+    }
 
 	@Override
 	protected Endpoint getEndpoint() {

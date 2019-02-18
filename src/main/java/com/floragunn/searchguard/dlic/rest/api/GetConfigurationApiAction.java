@@ -16,12 +16,10 @@ package com.floragunn.searchguard.dlic.rest.api;
 
 
 import java.nio.file.Path;
-import java.util.Set;
 
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BytesRestResponse;
@@ -34,12 +32,13 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.NoOpValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
-import com.floragunn.searchguard.support.ConfigConstants;
 import com.google.common.base.Joiner;
 
 /**
@@ -68,22 +67,22 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 		final String configname = request.param("configname");
 
 		if (configname == null || configname.length() == 0
-				|| !ConfigConstants.CONFIG_NAMES.contains(configname)) {
+				|| !CType.lcStringValues().contains(configname)) {
 			badRequestResponse(channel, "No configuration name given, must be one of "
-					+ Joiner.on(",").join(ConfigConstants.CONFIG_NAMES));
+					+ Joiner.on(",").join(CType.lcStringValues()));
 			return;
 
 		}
-		final Tuple<Long, Settings.Builder> configBuilder = load(configname, true);
-		filter(configBuilder.v2(), configname);
-		final Settings config = configBuilder.v2().build();
+		final SgDynamicConfiguration<?> configBuilder = load(CType.fromString(configname), true);
+		filter(configBuilder, configname);
+		//final Settings config = configBuilder.build();
 		
 		channel.sendResponse(
-				new BytesRestResponse(RestStatus.OK, convertToJson(channel, config)));
+				new BytesRestResponse(RestStatus.OK, convertToJson(channel, configBuilder)));
 		return;
 	}
 
-	protected void filter(Settings.Builder builder, String resourceName) {
+	protected void filter(SgDynamicConfiguration<?> builder, String resourceName) {
 	    // common filtering
 	    filter(builder);
 	    // filter sensitive resources for internal users
@@ -102,25 +101,22 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 		// GET is handled by this class directly
 		return null;
 	}
-
+	
 	@Override
-	protected String getConfigName() {
-		// GET is handled by this class directly
-		return null;
-	}
+    protected CType getConfigName() {
+	 // GET is handled by this class directly
+	    return null;
+    }
 
 	@Override
 	protected void consumeParameters(final RestRequest request) {
 		request.param("configname");
 	}
 
-    private void filterHashes(Settings.Builder builder) {
+    private void filterHashes(SgDynamicConfiguration<?> builder) {
         // replace password hashes in addition. We must not remove them from the
         // Builder since this would remove users completely if they
         // do not have any addition properties like roles or attributes
-        Set<String> entries = builder.build().getAsGroups().keySet();
-        for (String key : entries) {
-            builder.put(key + ".hash", "");
-        }
+        builder.clearHashes();
     }
 }

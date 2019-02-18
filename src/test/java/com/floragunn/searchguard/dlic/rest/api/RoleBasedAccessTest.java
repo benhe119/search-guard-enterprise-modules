@@ -104,7 +104,8 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("sarek", "sarek"));
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Assert.assertEquals("", settings.getAsList("ALL").get(0), "indices:*");
+		Assert.assertEquals("", settings.getAsList("ALL").get(0), "indices:*"); //mixed action groups not supported
+		//because jackson can not serialize it. Old format is supportedbut noch a mixture of both
 		Assert.assertEquals("", settings.getAsList("CLUSTER_MONITOR").get(0), "cluster:monitor/*");
 		// new format for action groups
 		Assert.assertEquals("", settings.getAsList("CRUD.permissions").get(0), "READ");

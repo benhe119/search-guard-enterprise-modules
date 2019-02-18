@@ -18,16 +18,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.bouncycastle.crypto.generators.OpenBSDBCrypt;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -42,13 +39,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
+import com.floragunn.searchguard.configuration.Hashed;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.InternalUsersValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
-import com.floragunn.searchguard.support.ConfigConstants;
 
 public class InternalUsersApiAction extends PatchableResourceApiAction {
 
@@ -101,17 +100,15 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         // TODO it might be sensible to consolidate this with the overridden method in
         // order to minimize duplicated logic
 
-        final Tuple<Long, Settings> configurationSettings = loadAsSettings(getConfigName(), false);
+        final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), false);
 
-        if (isHidden(configurationSettings.v2(), username)) {
+        if (isHidden(configurationSettings, username)) {
             forbidden(channel, "Resource '" + username + "' is not available.");
             return;
         }
 
         // check if resource is writeable
-        Boolean readOnly = configurationSettings.v2().getAsBoolean(username + "." + ConfigConstants.CONFIGKEY_READONLY,
-                Boolean.FALSE);
-        if (readOnly) {
+        if (isReadOnly(configurationSettings, username)) {
             forbidden(channel, "Resource '" + username + "' is read-only.");
             return;
         }
@@ -124,10 +121,10 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         }
 
         // check if user exists
-        final Tuple<Long, Settings.Builder> internaluser = load(ConfigConstants.CONFIGNAME_INTERNAL_USERS, false);
-        final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(internaluser.v2().build());
+        final SgDynamicConfiguration<?> internaluser = load(CType.INTERNALUSERS, false);
+        //final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(internaluser.build());
 
-        final boolean userExisted = config.containsKey(username);
+        final boolean userExisted = internaluser.exists(username);
 
         // when updating an existing user password hash can be blank, which means no
         // changes
@@ -142,21 +139,21 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         if (userExisted && additionalSettingsBuilder.get("hash") == null) {
             // sanity check, this should usually not happen
             @SuppressWarnings("unchecked")
-            Map<String, String> existingUserSettings = (Map<String, String>) config.get(username);
-            if (!existingUserSettings.containsKey("hash")) {
+            final String hash = ((Hashed)internaluser).getHash();
+            if (hash == null || hash.length() == 0) {
                 internalErrorResponse(channel, 
                         "Existing user " + username + " has no password, and no new password or hash was specified.");
                 return;
             }
-            additionalSettingsBuilder.put("hash", (String) existingUserSettings.get("hash"));
+            additionalSettingsBuilder.put("hash", hash);
         }
 
-        config.remove(username);
+        internaluser.remove(username);
 
         // checks complete, create or update the user
-        config.put(username, Utils.convertJsonToxToStructuredMap(additionalSettingsBuilder.build()));
+        internaluser.putCObject(username, Utils.serializeToXContentToPojo(additionalSettingsBuilder.build(), internaluser.getImplementingClass()));
 
-        saveAnUpdateConfigs(client, request, ConfigConstants.CONFIGNAME_INTERNAL_USERS, Utils.convertStructuredMapToBytes(config), new OnSucessActionListener<IndexResponse>(channel) {
+        saveAnUpdateConfigs(client, request, CType.INTERNALUSERS, internaluser, new OnSucessActionListener<IndexResponse>(channel) {
             
             @Override
             public void onResponse(IndexResponse response) {
@@ -167,22 +164,19 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
                 }
                 
             }
-        }, internaluser.v1());
+        });
 
         
 
     }
 
     @Override
-    protected void filter(Settings.Builder builder) {
+    protected void filter(SgDynamicConfiguration<?> builder) {
         super.filter(builder);
         // replace password hashes in addition. We must not remove them from the
         // Builder since this would remove users completely if they
         // do not have any addition properties like roles or attributes
-        Set<String> entries = builder.build().getAsGroups().keySet();
-        for (String key : entries) {
-            builder.put(key + ".hash", "");
-        }
+        builder.clearHashes();
     }
     
     @Override
@@ -226,8 +220,8 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
     }
 
     @Override
-    protected String getConfigName() {
-        return ConfigConstants.CONFIGNAME_INTERNAL_USERS;
+    protected CType getConfigName() {
+        return CType.INTERNALUSERS;
     }
 
     @Override

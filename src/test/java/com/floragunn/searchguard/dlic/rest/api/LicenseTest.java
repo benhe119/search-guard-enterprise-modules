@@ -167,7 +167,7 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 	protected final void uploadAndCheckValidLicense(String licenseFileName, int statusCode) throws Exception {
 		String licenseKey = loadLicenseKey(licenseFileName);
 		HttpResponse response = rh.executePutRequest("/_searchguard/api/license", createLicenseRequestBody(licenseKey), new Header[0]);
-		Assert.assertEquals(statusCode, response.getStatusCode());
+		Assert.assertEquals(response.getBody(), statusCode, response.getStatusCode());
 		Settings config = getCurrentConfig();
 		Settings.Builder expectectConfig = Settings.builder().put(originalConfig);
 		expectectConfig.put(CONFIG_LICENSE_KEY, licenseKey);

@@ -18,9 +18,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +30,6 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.util.concurrent.ThreadContext.StoredContext;
@@ -56,7 +52,10 @@ import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
+import com.floragunn.searchguard.configuration.Hideable;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator.ErrorType;
@@ -100,7 +99,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 	protected abstract String getResourceName();
 
-	protected abstract String getConfigName();
+	protected abstract CType getConfigName();
 
 	protected void handleApiRequest(final RestChannel channel, final RestRequest request, final Client client) throws IOException {
 
@@ -119,7 +118,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		case PUT:
 			handlePut(channel,request, client, validator.settingsBuilder());break;
 		case GET:
-			handleGet(channel,request, client, validator.settingsBuilder());break;
+             handleGet(channel,request, client, validator.settingsBuilder());break;
 		default:
 			throw new IllegalArgumentException(request.method() + " not supported");
 		}
@@ -134,30 +133,34 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return;
 		}
 
-		final Tuple<Long, Settings> existingAsSettings = loadAsSettings(getConfigName(), false);
+		final SgDynamicConfiguration<?> existingAsSettings = load(getConfigName(), false);
 		
-		if (isHidden(existingAsSettings.v2(), name)) {
+		if (isHidden(existingAsSettings, name)) {
             notFound(channel, getResourceName() + " " + name + " not found.");
             return;
 		}
 		
-		if (isReadOnly(existingAsSettings.v2(), name)) {
+		if (isReadOnly(existingAsSettings, name)) {
 			forbidden(channel, "Resource '"+ name +"' is read-only.");
 			return;
 		}
 		
-		final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(Settings.builder().put(existingAsSettings.v2()).build()); 
+        boolean existed = existingAsSettings.exists(name);
+        existingAsSettings.remove(name);
+		
+		//final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(Settings.builder().put(existingAsSettings).build()); 
 
-		boolean resourceExisted = config.containsKey(name);
-		config.remove(name);
-		if (resourceExisted) {
-			saveAnUpdateConfigs(client, request, getConfigName(), Utils.convertStructuredMapToBytes(config), new OnSucessActionListener<IndexResponse>(channel) {
+		//boolean resourceExisted = config.containsKey(name);
+		//config.remove(name);
+		
+		if (existed) {
+			saveAnUpdateConfigs(client, request, getConfigName(), existingAsSettings, new OnSucessActionListener<IndexResponse>(channel) {
                 
                 @Override
                 public void onResponse(IndexResponse response) {
                     successResponse(channel, "'" + name + "' deleted.");
                 }
-            }, existingAsSettings.v1());
+            });
 			
 		} else {
 			notFound(channel, getResourceName() + " " + name + " not found.");
@@ -174,14 +177,14 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return;
 		}
 
-		final Tuple<Long, Settings> existingAsSettings = loadAsSettings(getConfigName(), false);
+		final SgDynamicConfiguration<?> existingAsSettings = load(getConfigName(), false);
 
-		if (isHidden(existingAsSettings.v2(), name)) {
+		if (isHidden(existingAsSettings, name)) {
             forbidden(channel, "Resource '"+ name +"' is not available.");
             return;
 		}
 		
-		if (isReadOnly(existingAsSettings.v2(), name)) {
+		if (isReadOnly(existingAsSettings, name)) {
 			forbidden(channel, "Resource '"+ name +"' is read-only.");
 			return;
 		}
@@ -190,13 +193,16 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			log.trace(additionalSettingsBuilder.build());
 		}
 		
-		final Map<String, Object> con = Utils.convertJsonToxToStructuredMap(existingAsSettings.v2()); 
+		boolean existed = existingAsSettings.exists(name);
+		existingAsSettings.putCObject(name, Utils.serializeToXContentToPojo(additionalSettingsBuilder.build(), existingAsSettings.getImplementingClass()));
 		
-		boolean existed = con.containsKey(name);
+		//final Map<String, Object> con = Utils.convertJsonToxToStructuredMap(existingAsSettings); 
+		
+		//boolean existed = con.containsKey(name);
 
-		con.put(name, Utils.convertJsonToxToStructuredMap(additionalSettingsBuilder.build()));
+		//con.put(name, Utils.convertJsonToxToStructuredMap(additionalSettingsBuilder.build()));
 		
-		saveAnUpdateConfigs(client, request, getConfigName(), Utils.convertStructuredMapToBytes(con), new OnSucessActionListener<IndexResponse>(channel) {
+		saveAnUpdateConfigs(client, request, getConfigName(), existingAsSettings, new OnSucessActionListener<IndexResponse>(channel) {
 
             @Override
             public void onResponse(IndexResponse response) {
@@ -207,7 +213,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
                 }
                 
             }
-        }, existingAsSettings.v1());
+        });
 		
 	}
 
@@ -221,47 +227,42 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	    
 		final String resourcename = request.param("name");
 
-		final Tuple<Long, Settings.Builder> settingsBuilder = load(getConfigName(), true);
+		final SgDynamicConfiguration<?> settingsBuilder = load(getConfigName(), true);
 
 		// filter hidden resources and sensitive settings
-		filter(settingsBuilder.v2());
+		filter(settingsBuilder);
 		
-		final Settings configurationSettings = settingsBuilder.v2().build();
+		//final DynamicConfiguration configurationSettings = settingsBuilder.toDynamicConfiguration();
 
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
 			channel.sendResponse(
-					new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
+					new BytesRestResponse(RestStatus.OK, convertToJson(channel, settingsBuilder)));
 			return;
 		}
 		
 		
 		
-		final Map<String, Object> con = 
+		/*final Map<String, Object> con = 
 		        new HashMap<>(Utils.convertJsonToxToStructuredMap(Settings.builder().put(configurationSettings).build()))
 		        .entrySet()
 		        .stream()
 		        .filter(f->f.getKey() != null && f.getKey().equals(resourcename)) //copy keys
-		        .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+		        .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));*/
 
-		if (!con.containsKey(resourcename)) {
+		if (!settingsBuilder.exists(resourcename)) {
 			notFound(channel, "Resource '" + resourcename + "' not found.");
 			return;
 		}
-            
+		
 		channel.sendResponse(
-            		new BytesRestResponse(RestStatus.OK, XContentHelper.convertToJson(Utils.convertStructuredMapToBytes(con), false, false, XContentType.JSON)));
+            		new BytesRestResponse(RestStatus.OK, convertToJson(channel, settingsBuilder.getCEntryFull(resourcename))));
 
 		return;
 	}
 
-	protected final Tuple<Long, Settings.Builder> load(final String config, boolean logComplianceEvent) {
-	    Tuple<Long, Settings> t = loadAsSettings(config, logComplianceEvent);
-		return new Tuple<Long, Settings.Builder>(t.v1(), Settings.builder().put(t.v2()));
-	}
-
-	protected final Tuple<Long, Settings> loadAsSettings(final String config, boolean logComplianceEvent) {
-	    return cl.loadConfigurations(Collections.singleton(config), logComplianceEvent).get(config);
+	protected final SgDynamicConfiguration<?> load(final CType config, boolean logComplianceEvent) {
+	    return cl.loadConfigurations(Collections.singleton(config), logComplianceEvent).get(config).deepClone();
 	}
 
 	protected boolean ensureIndexExists() {
@@ -271,16 +272,8 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		return true;
 	}
 	
-	protected void filter(Settings.Builder builder) {
-	    Settings settings = builder.build();
-	    
-        for (Map.Entry<String, Settings> entry : settings.getAsGroups().entrySet()) {
-            if (entry.getValue().getAsBoolean("hidden", false)) {
-                for (String subKey : entry.getValue().keySet()) {
-                    builder.remove(entry.getKey() + "." + subKey);
-                }
-            }
-        }
+	protected void filter(SgDynamicConfiguration<?> builder) {
+        builder.removeHidden();
 	}
 	
 	abstract class OnSucessActionListener<Response> implements ActionListener<Response> {
@@ -299,18 +292,18 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	    
 	}
 	
-	protected void saveAnUpdateConfigs(final RestChannel channel, final Client client, final RestRequest request, final String config,
-            final Settings.Builder settings, OnSucessActionListener<IndexResponse> actionListener, long version) {
-	    saveAnUpdateConfigs(client, request, config, toSource(channel, settings), actionListener, version);
-	}
+	/*protected void saveAnUpdateConfigs(final RestChannel channel, final Client client, final RestRequest request, final String config,
+            final MutableDynamicConfiguration settings, OnSucessActionListener<IndexResponse> actionListener, long version) {
+	    saveAnUpdateConfigs(client, request, config, nulltoSource(channel, settings), actionListener, version);
+	}*/
 
 
-	protected void saveAnUpdateConfigs(final Client client, final RestRequest request, final String config,
-			final BytesReference bytesRef, OnSucessActionListener<IndexResponse> actionListener, long version) {
+	protected void saveAnUpdateConfigs(final Client client, final RestRequest request, final CType cType,
+	        final SgDynamicConfiguration<?> settings, OnSucessActionListener<IndexResponse> actionListener) {
 		final IndexRequest ir = new IndexRequest(this.searchguardIndex);
 
 		final String type = "sg";
-		final String id = config;
+		final String id = cType.toLCString();
 
 		//TODO types removal
 		//if (cs.state().metaData().index(this.searchguardIndex).mapping("config") != null) {
@@ -318,11 +311,16 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		//	id = "0";
 		//}
 
-		client.index(ir.type(type).id(id)
-		        .setRefreshPolicy(RefreshPolicy.IMMEDIATE)
-		        .version(version)
-		        .source(config, bytesRef),
-		        new ConfigUpdatingActionListener<IndexResponse>(client, actionListener));
+		try {
+            client.index(ir.type(type).id(id)
+                    .setRefreshPolicy(RefreshPolicy.IMMEDIATE)
+                    .setIfSeqNo(settings.getSeqNo())
+                    .setIfPrimaryTerm(settings.getPrimaryTerm())
+                    .source(id, XContentHelper.toXContent(settings, XContentType.JSON, false)),
+                    new ConfigUpdatingActionListener<IndexResponse>(client, actionListener));
+        } catch (IOException e) {
+            throw ExceptionsHelper.convertToElastic(e);
+        }
 	}
 	
 	private static class ConfigUpdatingActionListener<Response> implements ActionListener<Response>{
@@ -408,7 +406,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
         };
     }
 
-	protected static BytesReference toSource(RestChannel channel, final Settings.Builder settingsBuilder) { //not throws
+	/*protected static BytesReference toSource(RestChannel channel, final Settings.Builder settingsBuilder) { //not throws
         try {
             final XContentBuilder builder = channel.newBuilder();
             builder.startObject(); // 1
@@ -419,7 +417,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
             throw ExceptionsHelper.convertToElastic(e);
         }
         
-	}
+	}*/
 
 	protected boolean checkConfigUpdateResponse(final ConfigUpdateResponse response) {
 
@@ -448,12 +446,12 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		return success;
 	}
 
-	protected static XContentBuilder convertToJson(RestChannel channel, Settings settings) {
+	protected static XContentBuilder convertToJson(RestChannel channel, ToXContent settings) {
 		try {
             XContentBuilder builder = channel.newBuilder();
-            builder.startObject();
+            //builder.startObject();
             settings.toXContent(builder, ToXContent.EMPTY_PARAMS);
-            builder.endObject();
+            //builder.endObject();
             return builder;
         } catch (IOException e) {
             throw ExceptionsHelper.convertToElastic(e);
@@ -507,12 +505,14 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 				"Method " + method.name() + " not supported for this action.");
 	}
 	
-	protected boolean isReadOnly(Settings settings, String resourceName) {
-	    return settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
+	protected boolean isReadOnly(SgDynamicConfiguration<?> settings, String resourceName) {
+	    final Object o = settings.getCEntry(resourceName);
+	    return o != null && o instanceof Hideable && ((Hideable) o).isReadonly();
 	}
 
-    protected boolean isHidden(Settings settings, String resourceName) {
-        return settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_HIDDEN, Boolean.FALSE);
+    protected boolean isHidden(SgDynamicConfiguration<?> settings, String resourceName) {
+        final Object o = settings.getCEntry(resourceName);
+        return o != null && o instanceof Hideable && ((Hideable) o).isHidden();
     }
 	
 	/**

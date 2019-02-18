@@ -28,12 +28,12 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.RolesMappingValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
-import com.floragunn.searchguard.support.ConfigConstants;
 
 public class RolesMappingApiAction extends PatchableResourceApiAction {
 
@@ -67,9 +67,9 @@ public class RolesMappingApiAction extends PatchableResourceApiAction {
 		return "rolesmapping";
 	}
 
-	@Override
-	protected String getConfigName() {
-		return ConfigConstants.CONFIGNAME_ROLES_MAPPING;
-	}
+    @Override
+    protected CType getConfigName() {
+        return CType.ROLESMAPPING;
+    }
 
 }

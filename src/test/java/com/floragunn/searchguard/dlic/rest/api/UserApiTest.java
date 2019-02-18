@@ -25,6 +25,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
@@ -42,16 +43,18 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 
 		// initial configuration, 5 users
 		HttpResponse response = rh
-				.executeGetRequest("_searchguard/api/configuration/" + ConfigConstants.CONFIGNAME_INTERNAL_USERS);
-		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+				.executeGetRequest("_searchguard/api/configuration/" + CType.INTERNALUSERS.toLCString());
+		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(8, settings.size());
+		Assert.assertEquals(8, settings.size()); //response now contain also empty or null properties
+        //guess its easy to tell jackson to exclude them
 
 		// --- GET
 
 		// GET, user admin, exists
 		response = rh.executeGetRequest("/_searchguard/api/user/admin", new Header[0]);
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
+		System.out.println(response.getBody());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(1, settings.size());
 		// hash must be filtered
@@ -334,10 +337,12 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 
 		// initial configuration, 5 users
 		HttpResponse response = rh
-				.executeGetRequest("_searchguard/api/configuration/" + ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+				.executeGetRequest("_searchguard/api/configuration/" + CType.INTERNALUSERS.toLCString());
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		System.out.println(response.getBody());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(8, settings.size());
+		Assert.assertEquals(8, settings.size()); //response now contain also empty or null properties
+		                                         //guess its easy to tell jackson to exclude them
 
 		addUserWithPassword("tooshoort", "123", HttpStatus.SC_BAD_REQUEST);
 		addUserWithPassword("tooshoort", "1234567", HttpStatus.SC_BAD_REQUEST);
@@ -397,7 +402,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 
         // initial configuration, 5 users
         HttpResponse response = rh
-                .executeGetRequest("_searchguard/api/configuration/" + ConfigConstants.CONFIGNAME_INTERNAL_USERS);
+                .executeGetRequest("_searchguard/api/configuration/" + CType.INTERNALUSERS.toLCString());
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
         Assert.assertEquals(8, settings.size());

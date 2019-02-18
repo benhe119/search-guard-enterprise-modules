@@ -28,12 +28,12 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
+import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.ActionGroupValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
-import com.floragunn.searchguard.support.ConfigConstants;
 
 public class ActionGroupsApiAction extends PatchableResourceApiAction {
 
@@ -76,8 +76,8 @@ public class ActionGroupsApiAction extends PatchableResourceApiAction {
 	}
 
 	@Override
-	protected String getConfigName() {
-		return ConfigConstants.CONFIGNAME_ACTION_GROUPS;
+	protected CType getConfigName() {
+		return CType.ACTIONGROUPS;
 	}
 
 	@Override
