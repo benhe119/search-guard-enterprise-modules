@@ -50,7 +50,7 @@ searchguard:
   dynamic:
     kibana:
       do_not_fail_on_forbidden: true
-    composite_enabled: true
+    #composite_enabled: true
     http:
       anonymous_auth_enabled: false
       xff:
