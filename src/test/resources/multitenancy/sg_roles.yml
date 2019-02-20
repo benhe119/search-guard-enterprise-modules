@@ -62,7 +62,8 @@ sg_human_resources:
     PerFormance ___Reviews%%%!!! : RW
     vesting_stats:
       applications:
-        - kibana:saved_objects/*
+        - searchguard:tenant/write
+        - kibana:ui:navLinks/*
         - kibana:foo/bar            
 
 sg_human_resources_trainee:
@@ -87,7 +88,8 @@ sg_human_resources_trainee:
     business_intelligence: RO
     vesting_stats:
       applications:    
-        - kibana:saved_objects/*/read
+        - searchguard:tenant/read
+        - kibana:ui:navLinks/*
 
 sg_finance:
   cluster:

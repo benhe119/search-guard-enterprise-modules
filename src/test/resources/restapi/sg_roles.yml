@@ -213,8 +213,10 @@ sg_theindex_admin:
 
 sg_kibana_ro:
   applications:
-    - kibana:saved_objects/*/read
+    - searchguard:tenant/read
+    - kibana:ui:navLinks/*
 
 sg_kibana_rw:
   applications:
-    - kibana:saved_objects/*
+    - searchguard:tenant/write
+    - kibana:ui:navLinks/*

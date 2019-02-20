@@ -49,11 +49,13 @@ INTERNAL:
 KIBANA_READ:
   readonly: true
   permissions:
-    - "kibana:saved_objects/*/read"
+    - searchguard:tenant/read
+    - kibana:ui:navLinks/*
 KIBANA_WRITE:
   permissions:
-    - "kibana:saved_objects/*"
-    - "filter:me/*"
+    - searchguard:tenant/write
+    - kibana:ui:navLinks/*
+    - filter:me/*
 KIBANA_RECURSIVE:
   permissions:
     - "kibana:foo/bar" 

@@ -89,7 +89,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         response = rh.executeGetRequest("/_searchguard/api/roles/sg_kibana_ro", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();               
-        Assert.assertEquals("kibana:saved_objects/*/read", settings.getAsList("sg_kibana_ro.applications").get(0));		
+        Assert.assertTrue(settings.getAsList("sg_kibana_ro.applications").contains("searchguard:tenant/read"));
 		
 		// -- DELETE
 
