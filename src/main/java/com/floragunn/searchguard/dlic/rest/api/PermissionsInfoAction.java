@@ -38,7 +38,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
-import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 import com.floragunn.searchguard.support.ConfigConstants;
@@ -54,7 +54,7 @@ public class PermissionsInfoAction extends BaseRestHandler {
 	private final PrivilegesEvaluator privilegesEvaluator;
 	
 	protected PermissionsInfoAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
-			final AdminDNs adminDNs, final IndexBaseConfigurationRepository cl, final ClusterService cs,
+			final AdminDNs adminDNs, final ConfigurationRepository cl, final ClusterService cs,
 			final PrincipalExtractor principalExtractor, final PrivilegesEvaluator privilegesEvaluator, ThreadPool threadPool, AuditLog auditLog) {
 		super(settings);
 		controller.registerHandler(Method.GET, "/_searchguard/api/permissionsinfo", this);

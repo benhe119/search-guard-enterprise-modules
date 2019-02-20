@@ -41,7 +41,7 @@ import com.floragunn.searchguard.action.licenseinfo.LicenseInfoResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.CType;
-import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.configuration.SearchGuardLicense;
 import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
@@ -55,7 +55,7 @@ public class LicenseApiAction extends AbstractApiAction {
 	public final static String CONFIG_LICENSE_KEY = "searchguard.dynamic.license";
 	
 	protected LicenseApiAction(Settings settings, Path configPath, RestController controller, Client client, AdminDNs adminDNs,
-			IndexBaseConfigurationRepository cl, ClusterService cs, PrincipalExtractor principalExtractor, 
+			ConfigurationRepository cl, ClusterService cs, PrincipalExtractor principalExtractor, 
 			final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
 		super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool, auditLog);		
 		controller.registerHandler(Method.DELETE, "/_searchguard/api/license", this);

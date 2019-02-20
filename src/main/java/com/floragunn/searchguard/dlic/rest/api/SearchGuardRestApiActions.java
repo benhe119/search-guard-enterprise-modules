@@ -28,7 +28,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
-import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 
@@ -36,7 +36,7 @@ public class SearchGuardRestApiActions {
 
 	@SuppressWarnings("deprecation")
 	public static Collection<RestHandler> getHandler(Settings settings, Path configPath, RestController controller, Client client, 
-	        AdminDNs adminDns, IndexBaseConfigurationRepository cr, ClusterService cs, PrincipalExtractor principalExtractor, 
+	        AdminDNs adminDns, ConfigurationRepository cr, ClusterService cs, PrincipalExtractor principalExtractor, 
 	        final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
 	    final List<RestHandler> handlers = new ArrayList<RestHandler>(10);
 	    handlers.add(new InternalUsersApiAction(settings, configPath, controller, client, adminDns, cr, cs, principalExtractor, evaluator, threadPool, auditLog));

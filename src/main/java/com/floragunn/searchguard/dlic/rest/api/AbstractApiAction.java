@@ -54,7 +54,7 @@ import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.CType;
 import com.floragunn.searchguard.configuration.Hideable;
-import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
@@ -68,7 +68,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 	protected final Logger log = LogManager.getLogger(this.getClass());
 
-	protected final IndexBaseConfigurationRepository cl;
+	protected final ConfigurationRepository cl;
 	protected final ClusterService cs;
 	final ThreadPool threadPool;
 	private String searchguardIndex;
@@ -78,7 +78,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	protected final Settings settings;
 
 	protected AbstractApiAction(final Settings settings, final Path configPath, final RestController controller,
-			final Client client, final AdminDNs adminDNs, final IndexBaseConfigurationRepository cl,
+			final Client client, final AdminDNs adminDNs, final ConfigurationRepository cl,
 			final ClusterService cs, final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator,
 			ThreadPool threadPool, AuditLog auditLog) {
 		super(settings);
@@ -262,7 +262,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	}
 
 	protected final SgDynamicConfiguration<?> load(final CType config, boolean logComplianceEvent) {
-	    return cl.loadConfigurations(Collections.singleton(config), logComplianceEvent).get(config).deepClone();
+	    return cl.getConfigurationsFromIndex(Collections.singleton(config), logComplianceEvent).get(config).deepClone();
 	}
 
 	protected boolean ensureIndexExists() {

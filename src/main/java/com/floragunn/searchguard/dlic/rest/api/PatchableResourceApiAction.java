@@ -44,7 +44,7 @@ import com.flipkart.zjsonpatch.JsonPatchApplicationException;
 import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
-import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
+import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.configuration.SgDynamicConfiguration;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
@@ -56,7 +56,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
     protected final Logger log = LogManager.getLogger(this.getClass());
 
     public PatchableResourceApiAction(Settings settings, Path configPath, RestController controller, Client client,
-            AdminDNs adminDNs, IndexBaseConfigurationRepository cl, ClusterService cs,
+            AdminDNs adminDNs, ConfigurationRepository cl, ClusterService cs,
             PrincipalExtractor principalExtractor, PrivilegesEvaluator evaluator, ThreadPool threadPool,
             AuditLog auditLog) {
         super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool,
