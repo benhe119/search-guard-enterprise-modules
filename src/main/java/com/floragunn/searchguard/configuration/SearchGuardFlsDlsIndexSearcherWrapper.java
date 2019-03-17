@@ -79,19 +79,19 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
             final Map<String, Set<String>> maskedFieldsMap = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
                     ConfigConstants.SG_MASKED_FIELD_HEADER);
 
-            final String flsEval = SgUtils.evalMap(allowedFlsFields, index.getName());
-            final String dlsEval = SgUtils.evalMap(queries, index.getName());
-            final String maskedEval = SgUtils.evalMap(maskedFieldsMap, index.getName());
+            final Set<String> flsEval = SgUtils.getIndexPatterns(allowedFlsFields, index.getName());
+            final Set<String> dlsEval = SgUtils.getIndexPatterns(queries, index.getName());
+            final Set<String> maskedEval = SgUtils.getIndexPatterns(maskedFieldsMap, index.getName());
 
             if (flsEval != null) {
                 flsFields = new HashSet<>(metaFields);
-                flsFields.addAll(allowedFlsFields.get(flsEval));
+                flsFields.addAll(flsEval);
             }
 
             
             
             if (dlsEval != null) { 
-                final Set<String> unparsedDlsQueries = queries.get(dlsEval);
+                final Set<String> unparsedDlsQueries = dlsEval;
                 if(unparsedDlsQueries != null && !unparsedDlsQueries.isEmpty()) { 
                     final BitsetFilterCache bsfc = this.indexService.cache().bitsetFilterCache();
                     //disable reader optimizations
@@ -103,7 +103,7 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
             
             if (maskedEval != null) {
                 maskedFields = new HashSet<>();
-                maskedFields.addAll(maskedFieldsMap.get(maskedEval));
+                maskedFields.addAll(maskedEval);
             }
         }
         

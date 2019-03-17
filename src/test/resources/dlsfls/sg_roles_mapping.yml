@@ -2,6 +2,7 @@ sg_all_access:
   users:
     - admin
     - user_combined
+    - dlsandnon-dls
     
 sg_public:
   users:
@@ -10,6 +11,7 @@ sg_public:
 sg_midsized_deals:
   users:
     - dept_manager
+    - dlsandnon-dls
     
 sg_deals_without_amount:
   users:

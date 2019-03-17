@@ -224,6 +224,12 @@ public class DlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("_sg_fls_fields"));
         Assert.assertTrue(res.getBody().contains("amount"));
         Assert.assertTrue(res.getBody().contains("\"found\" : false"));
+        
+        
+        //Enable if we assume match all for any role not containing dls
+        //Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty", encodeBasicHeader("dlsandnon-dls", "password"))).getStatusCode());
+        //Assert.assertTrue(res.getBody().contains("\"total\" : 2,\n    \"max_"));
+        //Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
 
     }
 

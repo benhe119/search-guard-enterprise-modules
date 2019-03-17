@@ -116,7 +116,7 @@ public class DlsFlsCrossClusterSearchTest extends AbstractSGUnitTest{
         Assert.assertEquals(HttpStatus.SC_OK, ccs.getStatusCode());
         Assert.assertFalse(ccs.getBody().contains("crl1"));
         Assert.assertTrue(ccs.getBody().contains("crl2"));
-        Assert.assertTrue(ccs.getBody().contains("\"total\" : 1"));
+        Assert.assertTrue(ccs.getBody().contains("\"total\" : 1,\n    \"max_score\""));
         Assert.assertFalse(ccs.getBody().contains("CEO"));
         Assert.assertFalse(ccs.getBody().contains("salary0"));
         Assert.assertFalse(ccs.getBody().contains("secret0"));

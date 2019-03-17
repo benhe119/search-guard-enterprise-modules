@@ -89,6 +89,10 @@ sg_midsized_deals:
   cluster:
     - '*'
   indices:
+    'matchall*':
+       '*':  
+         - READ
+       _dls_: '{"match_all": {}}'
     'deals':
        '*':  
          - READ
@@ -107,6 +111,17 @@ sg_midsized_deals:
        #  - fieldx
        #  - field2.b
        #  - field3.m.*
+    'pattern1':
+       '*':  
+         - READ
+       _dls_: '{"term" : {"${user.name}" : "pattern1"}}'
+    'patte*1':
+       '*':  
+         - READ
+       _dls_: '{"term" : {"${user.name}" : "patte*1"}}'
+    'nodlspat':
+       '*':  
+         - READ
        
 sg_deals_without_amount:
   cluster:
