@@ -1027,13 +1027,13 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         final Map<String, Set<String>> maskedFieldsMap = (Map<String, Set<String>>) HeaderHelper.deserializeSafeFromHeader(threadContext,
         ConfigConstants.SG_MASKED_FIELD_HEADER);
-        final String maskedEval = SgUtils.evalMap(maskedFieldsMap, indexService.index().getName());
+        final Set<String> maskedEval = SgUtils.getIndexPatterns(maskedFieldsMap, indexService.index().getName());
         
         if(maskedEval != null) {
-            final Set<String> mf = maskedFieldsMap.get(maskedEval);
-            if(mf != null && !mf.isEmpty()) {
-                return extractMaskedFields(mf);
-            }
+            //final Set<String> mf = maskedFieldsMap.get(maskedEval);
+            //if(mf != null && !mf.isEmpty()) {
+                return extractMaskedFields(maskedEval);
+            //}
             
         } 
 
