@@ -243,7 +243,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		        .stream()
 		        .filter(f->f.getKey() != null && f.getKey().equals(resourcename)) //copy keys
 		        .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
-
+		
 		if (!con.containsKey(resourcename)) {
 			notFound(channel, "Resource '" + resourcename + "' not found.");
 			return;
@@ -274,10 +274,10 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	protected void filter(Settings.Builder builder) {
 	    Settings settings = builder.build();
 	    
-        for (Map.Entry<String, Settings> entry : settings.getAsGroups(true).entrySet()) {
-            if (entry.getValue().getAsBoolean("hidden", false)) {
-                for (String subKey : entry.getValue().keySet()) {
-                    builder.remove(entry.getKey() + "." + subKey);
+        for (String key: settings.names()) {
+            if (settings.getAsBoolean(key+".hidden", false)) {
+                for (String subKey : settings.getByPrefix(key).keySet()) {
+                    builder.remove(key+subKey);
                 }
             }
         }
