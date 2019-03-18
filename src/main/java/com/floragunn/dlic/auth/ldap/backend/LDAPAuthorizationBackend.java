@@ -243,6 +243,9 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
                 if (connection != null && connection.isOpen()) {
                     break;
+                } else {
+                    Utils.unbindAndCloseSilently(connection);
+                    connection = null;
                 }
             } catch (final Exception e) {
                 lastException = e;
