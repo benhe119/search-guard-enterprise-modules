@@ -1015,7 +1015,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public boolean hasDeletions() {
-        return true;
+        return dlsEnabled?true:in.hasDeletions();
     }
     
     @SuppressWarnings("unchecked")
