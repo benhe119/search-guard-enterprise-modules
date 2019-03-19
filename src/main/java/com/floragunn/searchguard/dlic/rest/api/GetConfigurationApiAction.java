@@ -118,7 +118,7 @@ public class GetConfigurationApiAction extends AbstractApiAction {
         // replace password hashes in addition. We must not remove them from the
         // Builder since this would remove users completely if they
         // do not have any addition properties like roles or attributes
-        Set<String> entries = builder.build().getAsGroups().keySet();
+        Set<String> entries = builder.build().names();
         for (String key : entries) {
             builder.put(key + ".hash", "");
         }
