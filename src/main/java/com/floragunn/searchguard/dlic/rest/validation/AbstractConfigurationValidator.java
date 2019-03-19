@@ -165,7 +165,7 @@ public abstract class AbstractConfigurationValidator {
 	}
 
 	private boolean checkDatatypes() throws Exception {		
-		String contentAsJson = XContentHelper.convertToJson(content, false, XContentType.YAML);
+		String contentAsJson = XContentHelper.convertToJson(content, false, XContentType.JSON);
 		try(JsonParser parser = factory.createParser(contentAsJson)) {
     		JsonToken token = null;
     		while ((token = parser.nextToken()) != null) {
