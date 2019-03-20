@@ -71,8 +71,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             return false;
         } else {
             // allowed, check read-write permissions
-            boolean isBuildNumRequest = false;
-
             if (log.isDebugEnabled()) {
                 log.debug("request " + request.getClass());
             }
@@ -100,7 +98,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 }
             }
 
-            if (!isBuildNumRequest && tenants.get(requestedTenant) == Boolean.FALSE && action.startsWith("indices:data/write")) {
+            if (Boolean.FALSE.equals(tenants.get(requestedTenant))  && action.startsWith("indices:data/write")) {
                 log.warn("Tenant {} is not allowed to write (user: {})", requestedTenant, user.getName());
                 return false;
             }
