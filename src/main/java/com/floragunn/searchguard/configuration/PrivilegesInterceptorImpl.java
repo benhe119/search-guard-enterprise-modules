@@ -70,7 +70,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             log.warn("Tenant {} is not allowed for user {}", requestedTenant, user.getName());
             return false;
         } else {
-            // allowed, check read-write permissions
             if (log.isDebugEnabled()) {
                 log.debug("request " + request.getClass());
             }
@@ -143,6 +142,11 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
 
         if (USER_TENANT.equals(requestedTenant)) {
             requestedTenant = user.getName();
+        }
+
+        if (log.isDebugEnabled() && !user.getName().equals(kibanaserverUsername)) {
+            //log statements only here
+            log.debug("requestedResolved: " + requestedResolved);
         }
 
         if (!user.getName().equals(kibanaserverUsername) && requestedResolved.getAllIndices().size() == 1
