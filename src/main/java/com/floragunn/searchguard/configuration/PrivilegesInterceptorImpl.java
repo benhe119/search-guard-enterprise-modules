@@ -108,8 +108,9 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
     }
 
     /**
-     * return Boolean.TRUE to prematurely deny request return Boolean.FALSE to
-     * prematurely allow request return null to go through original eval flow
+     * return Boolean.TRUE to prematurely deny request
+     * return Boolean.FALSE to prematurely allow request
+     * return null to go through original eval flow
      *
      */
     @Override
@@ -204,7 +205,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
         Collection<String> tenantPermissions;
 
         if (isPrivateTenant(requestedTenant)) {
-            // TODO check
             tenantPermissions = Privileges.Defaults.TENANT_RW;
         } else {
             tenantPermissions = roles.getApplicationPermissionsForTenant(user, requestedTenant);
@@ -237,12 +237,10 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             return;
         }
 
-        // createKibanaUserIndex(oldIndexName, newIndexName, action);
-
-        // handle msearch and mget
-        // in case of GET change the .kibana index to the userskibanaindex
-        // in case of Search add the userskibanaindex
-        // if (request instanceof CompositeIndicesRequest) {
+        //handle msearch and mget
+        //in case of GET change the .kibana index to the userskibanaindex
+        //in case of Search add the userskibanaindex
+        //if (request instanceof CompositeIndicesRequest) {
         String[] newIndexNames = new String[] { newIndexName };
 
         // CreateIndexRequest
