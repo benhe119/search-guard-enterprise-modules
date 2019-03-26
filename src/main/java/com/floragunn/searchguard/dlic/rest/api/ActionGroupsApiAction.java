@@ -49,13 +49,11 @@ import com.google.common.base.Strings;
 public class ActionGroupsApiAction extends PatchableResourceApiAction {
 
     protected final Logger log = LogManager.getLogger(this.getClass());
-
     @Inject
     public ActionGroupsApiAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
             final AdminDNs adminDNs, final IndexBaseConfigurationRepository cl, final ClusterService cs, final PrincipalExtractor principalExtractor,
             final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
         super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool, auditLog);
-
         // legacy mapping for backwards compatibility
         // TODO: remove in SG7
         controller.registerHandler(Method.GET, "/_searchguard/api/actiongroup/{name}", this);
@@ -74,13 +72,13 @@ public class ActionGroupsApiAction extends PatchableResourceApiAction {
     }
 
     @Override
-    protected AbstractConfigurationValidator getValidator(final RestRequest request, BytesReference ref, Object... param) {
-        return new ActionGroupValidator(request, ref, this.settings, param);
+    protected Endpoint getEndpoint() {
+        return Endpoint.ACTIONGROUPS;
     }
 
     @Override
-    protected Endpoint getEndpoint() {
-        return Endpoint.ACTIONGROUPS;
+    protected AbstractConfigurationValidator getValidator(final RestRequest request, BytesReference ref, Object... param) {
+        return new ActionGroupValidator(request, ref, this.settings, param);
     }
 
     @Override
