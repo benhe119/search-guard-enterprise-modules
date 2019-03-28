@@ -26,7 +26,7 @@
 
   <properties>
     <sg2.version>7.x-HEAD-SNAPSHOT</sg2.version>
-    <elasticsearch.version>7.0.0-beta1</elasticsearch.version>
+    <elasticsearch.version>7.0.0-rc1</elasticsearch.version>
 
     <!-- deps -->
     <log4j.version>2.11.1</log4j.version>
@@ -41,25 +41,6 @@
     <mockito.version>2.23.0</mockito.version>
     <unboundid-ldapsdk.version>4.0.9</unboundid-ldapsdk.version>
   </properties>
-  
-  <repositories>
-    <repository>
-      <id>elastic-lucene-snapshots</id>
-      <name>Elastic Lucene Snapshots</name>
-      <url>http://s3.amazonaws.com/download.elasticsearch.org/lucenesnapshots/83f9835</url>
-      <releases><enabled>true</enabled></releases>
-      <snapshots><enabled>false</enabled></snapshots>
-    </repository>
-    
-    <repository>
-      <id>sg-intermediate</id>
-      <name>sg intermediate</name>
-      <url>https://oss.sonatype.org/service/local/repositories/comfloragunn-1528/content</url>
-      <releases><enabled>true</enabled></releases>
-      <snapshots><enabled>false</enabled></snapshots>
-    </repository>
-    
-  </repositories>
 
   <scm>
     <url>https://github.com/floragunncom/search-guard-enterprise-modules</url>
@@ -329,9 +310,9 @@
       </exclusion>
       </exclusions>
     </dependency>
-    
+
      <dependency>
-      <groupId>com.floragunn</groupId>
+      <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch-ssl-config</artifactId>
       <version>${elasticsearch.version}</version>
       <scope>test</scope>
