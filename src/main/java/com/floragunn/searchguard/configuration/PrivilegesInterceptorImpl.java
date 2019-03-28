@@ -53,23 +53,23 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
     private static final String EMPTY_STRING = "";
 
     protected final Logger log = LogManager.getLogger(this.getClass());
-    
-    public PrivilegesInterceptorImpl(IndexNameExpressionResolver resolver, ClusterService clusterService, Client client,
-            ThreadPool threadPool) {
+
+    public PrivilegesInterceptorImpl(IndexNameExpressionResolver resolver, ClusterService clusterService, Client client, ThreadPool threadPool) {
         super(resolver, clusterService, client, threadPool);
     }
-    
-    private boolean isTenantAllowed(final ActionRequest request, final String action, final User user, final Map<String, Boolean> tenants, final String requestedTenant) {
-        
+
+    private boolean isTenantAllowed(final ActionRequest request, final String action, final User user, final Map<String, Boolean> tenants,
+            final String requestedTenant) {
+
         if (!tenants.keySet().contains(requestedTenant)) {
             log.warn("Tenant {} is not allowed for user {}", requestedTenant, user.getName());
             return false;
         } else {
-            
-            if(log.isDebugEnabled()) {
-                log.debug("request "+request.getClass());
+
+            if (log.isDebugEnabled()) {
+                log.debug("request " + request.getClass());
             }
-            
+
             if (request instanceof IndexRequest) {
 
                 final IndexRequest ir = ((IndexRequest) request);
@@ -81,7 +81,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 }
 
             }
-            
+
             if (request instanceof UpdateRequest) {
 
                 final UpdateRequest ir = ((UpdateRequest) request);
@@ -89,20 +89,19 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 if (log.isDebugEnabled()) {
                     log.debug("type " + ir.type());
                     log.debug("id " + ir.id());
-                    log.debug("source " + (ir.doc() == null ? null : ir.doc().source()==null?null:ir.doc().source().utf8ToString()));
+                    log.debug("source " + (ir.doc() == null ? null : ir.doc().source() == null ? null : ir.doc().source().utf8ToString()));
                 }
             }
-            
-            if (tenants.get(requestedTenant) == Boolean.FALSE 
-                    && action.startsWith("indices:data/write")) {
+
+            if (tenants.get(requestedTenant) == Boolean.FALSE && action.startsWith("indices:data/write")) {
                 log.warn("Tenant {} is not allowed to write (user: {})", requestedTenant, user.getName());
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * return Boolean.TRUE to prematurely deny request
      * return Boolean.FALSE to prematurely allow request
@@ -110,67 +109,66 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
      *
      */
     @Override
-    public Boolean replaceKibanaIndex(final ActionRequest request, final String action, final User user, final Config config, final Resolved requestedResolved, final Map<String, Boolean> tenants) { 
-        
+    public Boolean replaceKibanaIndex(final ActionRequest request, final String action, final User user, final Config config,
+            final Resolved requestedResolved, final Map<String, Boolean> tenants) {
+
         final boolean enabled = config.dynamic.kibana.multitenancy_enabled;
-        
-        if(!enabled) {
+
+        if (!enabled) {
             return null;
         }
-        
+
         //next two lines needs to be retrieved from configuration
         final String kibanaserverUsername = config.dynamic.kibana.server_username;
         final String kibanaIndexName = config.dynamic.kibana.index;
 
         String requestedTenant = user.getRequestedTenant();
-        
-        if(log.isDebugEnabled()) {
-            log.debug("raw requestedTenant: '"+requestedTenant+"'");
+
+        if (log.isDebugEnabled()) {
+            log.debug("raw requestedTenant: '" + requestedTenant + "'");
         }
-        
-        if(requestedTenant == null || requestedTenant.length() == 0) {
-            if(log.isTraceEnabled()) {
-                log.trace("No tenant, will resolve to "+kibanaIndexName);    
+
+        if (requestedTenant == null || requestedTenant.length() == 0) {
+            if (log.isTraceEnabled()) {
+                log.trace("No tenant, will resolve to " + kibanaIndexName);
             }
 
             return null;
         }
-        
-        if(USER_TENANT.equals(requestedTenant)) {
+
+        if (USER_TENANT.equals(requestedTenant)) {
             requestedTenant = user.getName();
         }
-        
+
         if (log.isDebugEnabled() && !user.getName().equals(kibanaserverUsername)) {
-        	//log statements only here
-        	log.debug("requestedResolved: "+requestedResolved);
+            //log statements only here
+            log.debug("requestedResolved: " + requestedResolved);
         }
-        
-        if (!user.getName().equals(kibanaserverUsername) 
-                && requestedResolved.getAllIndices().size() == 1
+
+        if (!user.getName().equals(kibanaserverUsername) && requestedResolved.getAllIndices().size() == 1
                 && requestedResolved.getAllIndices().contains(toUserIndexName(kibanaIndexName, requestedTenant))) {
-            
-            if(isTenantAllowed(request, action, user, tenants, requestedTenant)) {
+
+            if (isTenantAllowed(request, action, user, tenants, requestedTenant)) {
                 return Boolean.FALSE;
             }
-            
+
         }
-        
+
         //intercept when requests are not made by the kibana server and if the kibana index/alias (.kibana) is the only index/alias involved
-        if (!user.getName().equals(kibanaserverUsername) 
-                && resolveToKibanaIndexOrAlias(requestedResolved, kibanaIndexName)) {
-        		
-            if(log.isDebugEnabled()) {
-                log.debug("requestedTenant: "+requestedTenant);
-                log.debug("is user tenant: "+requestedTenant.equals(user.getName()));
+        if (!user.getName().equals(kibanaserverUsername) && resolveToKibanaIndexOrAlias(requestedResolved, kibanaIndexName)) {
+
+            if (log.isDebugEnabled()) {
+                log.debug("requestedTenant: " + requestedTenant);
+                log.debug("is user tenant: " + requestedTenant.equals(user.getName()));
             }
-                        
-            if(!isTenantAllowed(request, action, user, tenants, requestedTenant)) {
+
+            if (!isTenantAllowed(request, action, user, tenants, requestedTenant)) {
                 return Boolean.TRUE;
             }
 
             //TODO handle user tenant in that way that this tenant cannot be specified as regular tenant
             //to avoid security issue
-            
+
             replaceIndex(request, kibanaIndexName, toUserIndexName(kibanaIndexName, requestedTenant), action);
             return Boolean.FALSE;
 
@@ -183,30 +181,27 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             }
 
         }
-        
+
         return null;
     }
-    
-    
+
     private void replaceIndex(final ActionRequest request, final String oldIndexName, final String newIndexName, final String action) {
         boolean kibOk = false;
-                
-        if(log.isDebugEnabled()) {
+
+        if (log.isDebugEnabled()) {
             log.debug("{} index will be replaced with {} in this {} request", oldIndexName, newIndexName, request.getClass().getName());
         }
-        
-        if(request instanceof GetFieldMappingsIndexRequest
-                || request instanceof GetFieldMappingsRequest) {
+
+        if (request instanceof GetFieldMappingsIndexRequest || request instanceof GetFieldMappingsRequest) {
             return;
         }
-        
+
         //handle msearch and mget
         //in case of GET change the .kibana index to the userskibanaindex
         //in case of Search add the userskibanaindex
         //if (request instanceof CompositeIndicesRequest) {
         String[] newIndexNames = new String[] { newIndexName };
-        
-        
+
         // CreateIndexRequest
         if (request instanceof CreateIndexRequest) {
             ((CreateIndexRequest) request).index(newIndexName);
@@ -215,19 +210,19 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
 
             for (DocWriteRequest<?> ar : ((BulkRequest) request).requests()) {
 
-                if(ar instanceof DeleteRequest) {
+                if (ar instanceof DeleteRequest) {
                     ((DeleteRequest) ar).index(newIndexName);
                 }
-                
-                if(ar instanceof IndexRequest) {
+
+                if (ar instanceof IndexRequest) {
                     ((IndexRequest) ar).index(newIndexName);
                 }
-                
-                if(ar instanceof UpdateRequest) {
+
+                if (ar instanceof UpdateRequest) {
                     ((UpdateRequest) ar).index(newIndexName);
                 }
             }
-            
+
             kibOk = true;
 
         } else if (request instanceof MultiGetRequest) {
@@ -235,7 +230,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             for (Item item : ((MultiGetRequest) request).getItems()) {
                 item.index(newIndexName);
             }
-            
+
             kibOk = true;
 
         } else if (request instanceof MultiSearchRequest) {
@@ -243,7 +238,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             for (SearchRequest ar : ((MultiSearchRequest) request).requests()) {
                 ar.indices(newIndexNames);
             }
-            
+
             kibOk = true;
 
         } else if (request instanceof MultiTermVectorsRequest) {
@@ -266,7 +261,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             ((SingleShardRequest<?>) request).index(newIndexName);
             kibOk = true;
         } else if (request instanceof RefreshRequest) {
-            (( RefreshRequest) request).indices(newIndexNames); //???
+            ((RefreshRequest) request).indices(newIndexNames); //???
             kibOk = true;
         } else if (request instanceof ReplicationRequest) {
             ((ReplicationRequest<?>) request).index(newIndexName);
@@ -285,16 +280,16 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
     }
 
     private String toUserIndexName(final String originalKibanaIndex, final String tenant) {
-        
-        if(tenant == null) {
+
+        if (tenant == null) {
             throw new ElasticsearchException("tenant must not be null here");
         }
-        
-        return originalKibanaIndex+"_"+tenant.hashCode()+"_"+tenant.toLowerCase().replaceAll("[^a-z0-9]+",EMPTY_STRING);
+
+        return originalKibanaIndex + "_" + tenant.hashCode() + "_" + tenant.toLowerCase().replaceAll("[^a-z0-9]+", EMPTY_STRING);
     }
-    
+
     private boolean resolveToKibanaIndexOrAlias(final Resolved requestedResolved, final String kibanaIndexName) {
-    	return (requestedResolved.getAllIndices().size() == 1 && requestedResolved.getAllIndices().contains(kibanaIndexName))
-    			|| (requestedResolved.getAliases().size() == 1 && requestedResolved.getAliases().contains(kibanaIndexName));
+        return (requestedResolved.getAllIndices().size() == 1 && requestedResolved.getAllIndices().contains(kibanaIndexName))
+                || (requestedResolved.getAliases().size() == 1 && requestedResolved.getAliases().contains(kibanaIndexName));
     }
 }
