@@ -166,8 +166,9 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 return Boolean.TRUE;
             }
 
-            //TODO handle user tenant in that way that this tenant cannot be specified as regular tenant
-            //to avoid security issue
+            // TODO handle user tenant in that way that this tenant cannot be specified as
+            // regular tenant
+            // to avoid security issue
 
             replaceIndex(request, kibanaIndexName, toUserIndexName(kibanaIndexName, requestedTenant), action);
             return Boolean.FALSE;

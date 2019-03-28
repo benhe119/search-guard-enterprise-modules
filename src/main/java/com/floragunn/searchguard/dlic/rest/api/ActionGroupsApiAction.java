@@ -43,46 +43,46 @@ public class ActionGroupsApiAction extends PatchableResourceApiAction {
             final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
 		super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool, auditLog);
 
-		// legacy mapping for backwards compatibility
-		// TODO: remove in SG7
-		controller.registerHandler(Method.GET, "/_searchguard/api/actiongroup/{name}", this);
-		controller.registerHandler(Method.GET, "/_searchguard/api/actiongroup/", this);
-		controller.registerHandler(Method.DELETE, "/_searchguard/api/actiongroup/{name}", this);
-		controller.registerHandler(Method.PUT, "/_searchguard/api/actiongroup/{name}", this);
+        // legacy mapping for backwards compatibility
+        // TODO: remove in SG7
+        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroup/{name}", this);
+        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroup/", this);
+        controller.registerHandler(Method.DELETE, "/_searchguard/api/actiongroup/{name}", this);
+        controller.registerHandler(Method.PUT, "/_searchguard/api/actiongroup/{name}", this);
 
-		// corrected mapping, introduced in SG6
-		controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/{name}", this);
-		controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/", this);
-		controller.registerHandler(Method.DELETE, "/_searchguard/api/actiongroups/{name}", this);
-		controller.registerHandler(Method.PUT, "/_searchguard/api/actiongroups/{name}", this);
-        controller.registerHandler(Method.PATCH, "/_searchguard/api/actiongroups/", this);		
+        // corrected mapping, introduced in SG6
+        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/{name}", this);
+        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/", this);
+        controller.registerHandler(Method.DELETE, "/_searchguard/api/actiongroups/{name}", this);
+        controller.registerHandler(Method.PUT, "/_searchguard/api/actiongroups/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/actiongroups/", this);
         controller.registerHandler(Method.PATCH, "/_searchguard/api/actiongroups/{name}", this);
 
-	}
-	
-	@Override
-	protected Endpoint getEndpoint() {
-		return Endpoint.ACTIONGROUPS;
-	}
+    }
 
-	@Override
-	protected AbstractConfigurationValidator getValidator(final RestRequest request, BytesReference ref, Object... param) {
-		return new ActionGroupValidator(request, ref, this.settings, param);
-	}
+    @Override
+    protected Endpoint getEndpoint() {
+        return Endpoint.ACTIONGROUPS;
+    }
 
-	@Override
-	protected String getResourceName() {
-		return "actiongroup";
-	}
+    @Override
+    protected AbstractConfigurationValidator getValidator(final RestRequest request, BytesReference ref, Object... param) {
+        return new ActionGroupValidator(request, ref, this.settings, param);
+    }
 
 	@Override
 	protected CType getConfigName() {
 		return CType.ACTIONGROUPS;
 	}
 
-	@Override
-	protected void consumeParameters(final RestRequest request) {
-		request.param("name");		
-	}
+    @Override
+    protected String getResourceName() {
+        return "actiongroup";
+    }
+
+    @Override
+    protected void consumeParameters(final RestRequest request) {
+        request.param("name");
+    }
 
 }

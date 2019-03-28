@@ -75,7 +75,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		// -- PUT
 
 		// no username given
-		response = rh.executePutRequest("/_searchguard/api/user/", "{hash: \"123\"}", new Header[0]);
+		response = rh.executePutRequest("/_searchguard/api/user/", "{\"hash\": \"123\"}", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_METHOD_NOT_ALLOWED, response.getStatusCode());
 
 		// Faulty JSON payload
@@ -318,6 +318,10 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		
 		addUserWithPassword("$1aAAAAAAAAC", "$1aAAAAAAAAC", HttpStatus.SC_CREATED);
 		addUserWithPassword("abc", "abc", HttpStatus.SC_CREATED);
+		
+		// check tabs in json
+        response = rh.executePutRequest("/_searchguard/api/user/userwithtabs", "\t{\"hash\": \t \"123\"\t}  ", new Header[0]);
+        Assert.assertEquals(response.getBody(), HttpStatus.SC_CREATED, response.getStatusCode());
 	}
 	
 	@Test

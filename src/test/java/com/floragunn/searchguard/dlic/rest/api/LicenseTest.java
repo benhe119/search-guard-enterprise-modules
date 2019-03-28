@@ -16,6 +16,7 @@ package com.floragunn.searchguard.dlic.rest.api;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
@@ -24,6 +25,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.configuration.SearchGuardLicense;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
@@ -59,11 +61,11 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 		originalConfig = getCurrentConfig();
 		
 		// check license exists - has to be trial license
-		 Settings settingsAsMap = getCurrentLicense();
-		 Assert.assertEquals(SearchGuardLicense.Type.TRIAL.name(), settingsAsMap.get("sg_license.type"));
-		 Assert.assertEquals("unlimited", settingsAsMap.get("sg_license.allowed_node_count_per_cluster"));
-		 Assert.assertEquals("true", settingsAsMap.get("sg_license.is_valid"));
-		 Assert.assertEquals("false", settingsAsMap.get("sg_license.is_expired"));
+		 Map<String, Object> settingsAsMap = getCurrentLicense();
+		 Assert.assertEquals(SearchGuardLicense.Type.TRIAL.name(), settingsAsMap.get("type"));
+		 Assert.assertEquals("unlimited", settingsAsMap.get("allowed_node_count_per_cluster"));
+		 Assert.assertEquals("true", String.valueOf(settingsAsMap.get("is_valid")));
+		 Assert.assertEquals("false", String.valueOf(settingsAsMap.get("is_expired")));
 
 		// upload new licenses - all valid forever
 		uploadAndCheckValidLicense("full_valid_forever.txt", HttpStatus.SC_CREATED); // first license upload, hence 201 return code
@@ -142,14 +144,13 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 		return FileHelper.loadFile("restapi/license/" + filename);
 	}
 	
-	protected final Settings checkCurrentLicenseProperties(SearchGuardLicense.Type type, Boolean isValid, String nodeCount,LocalDate startDate, LocalDate expiryDate ) throws Exception {
-	     Settings settingsAsMap = getCurrentLicense();
-		 Assert.assertEquals(type.name(), settingsAsMap.get("sg_license.type"));
-		 Assert.assertEquals(nodeCount, settingsAsMap.get("sg_license.allowed_node_count_per_cluster"));
-		 Assert.assertEquals(isValid.toString(), settingsAsMap.get("sg_license.is_valid"));
-		 Assert.assertEquals(startDate.format(formatter), settingsAsMap.get("sg_license.start_date"));
-		 Assert.assertEquals(expiryDate.format(formatter), settingsAsMap.get("sg_license.expiry_date"));
-		 return settingsAsMap;
+	protected final void checkCurrentLicenseProperties(SearchGuardLicense.Type type, Boolean isValid, String nodeCount,LocalDate startDate, LocalDate expiryDate ) throws Exception {
+	     Map<String, Object> settingsAsMap = getCurrentLicense();
+		 Assert.assertEquals(type.name(), settingsAsMap.get("type"));
+		 Assert.assertEquals(nodeCount, settingsAsMap.get("allowed_node_count_per_cluster"));
+		 Assert.assertEquals(isValid.toString(), String.valueOf(settingsAsMap.get("is_valid")));
+		 Assert.assertEquals(startDate.format(formatter), settingsAsMap.get("start_date"));
+		 Assert.assertEquals(expiryDate.format(formatter), settingsAsMap.get("expiry_date"));
 	}
 		
 	protected final void uploadAndCheckValidLicense(String licenseFileName) throws Exception {
@@ -175,11 +176,10 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(expectectConfig.build(), config); 
 	}
 	
-	protected final Settings getCurrentLicense() throws Exception {
+	protected final Map<String, Object> getCurrentLicense() throws Exception {
 		HttpResponse response = rh.executeGetRequest("_searchguard/api/license");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		return settings;
+		return (Map)DefaultObjectMapper.objectMapper.readValue(response.getBody(), Map.class).get("sg_license");
 	}
 
 	protected final Settings getCurrentConfig() throws Exception {

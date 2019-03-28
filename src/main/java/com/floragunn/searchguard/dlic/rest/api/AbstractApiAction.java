@@ -248,6 +248,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		        .entrySet()
 		        .stream()
 		        .filter(f->f.getKey() != null && f.getKey().equals(resourcename)) //copy keys
+<<<<<<< HEAD
 		        .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));*/
 
 		if (!settingsBuilder.exists(resourcename)) {
@@ -271,7 +272,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		}
 		return true;
 	}
-	
+
 	protected void filter(SgDynamicConfiguration<?> builder) {
         builder.removeHidden();
 	}

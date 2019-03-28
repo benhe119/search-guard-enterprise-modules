@@ -14,6 +14,9 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.http.Header;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
@@ -35,15 +38,15 @@ public class InvalidLicenseTest extends LicenseTest {
 		HttpResponse response = rh.executePutRequest("/_searchguard/api/license", createLicenseRequestBody(license), new Header[0]);
 		Assert.assertEquals(response.getBody(), 201, response.getStatusCode());
 		
-		 Settings settingsAsMap = getCurrentLicense();
-		 Assert.assertEquals(SearchGuardLicense.Type.SINGLE.name(), settingsAsMap.get("sg_license.type"));
-		 Assert.assertEquals("1", settingsAsMap.get("sg_license.allowed_node_count_per_cluster"));
-		 Assert.assertEquals(Boolean.FALSE.toString(), settingsAsMap.get("sg_license.is_valid"));
-		 Assert.assertEquals(expiredStartDate.format(formatter), settingsAsMap.get("sg_license.start_date"));
-		 Assert.assertEquals(expiredExpiryDate.format(formatter), settingsAsMap.get("sg_license.expiry_date"));
-		 Assert.assertEquals("Purchase a license. Visit docs.search-guard.com/v6/search-guard-enterprise-edition or write to <sales@floragunn.com>", settingsAsMap.get("sg_license.action"));
-		 Assert.assertEquals("License is expired", settingsAsMap.getAsList("sg_license.msgs").get(0));
-		 Assert.assertEquals("Only 1 node(s) allowed but you run 3 node(s)", settingsAsMap.getAsList("sg_license.msgs").get(1));
+		 Map<String, Object> settingsAsMap = getCurrentLicense();
+		 Assert.assertEquals(SearchGuardLicense.Type.SINGLE.name(), settingsAsMap.get("type"));
+		 Assert.assertEquals("1", settingsAsMap.get("allowed_node_count_per_cluster"));
+		 Assert.assertEquals(Boolean.FALSE.toString(), String.valueOf(settingsAsMap.get("is_valid")));
+		 Assert.assertEquals(expiredStartDate.format(formatter), settingsAsMap.get("start_date"));
+		 Assert.assertEquals(expiredExpiryDate.format(formatter), settingsAsMap.get("expiry_date"));
+		 Assert.assertEquals("Purchase a license. Visit docs.search-guard.com/v6/search-guard-enterprise-edition or write to <sales@floragunn.com>", settingsAsMap.get("action"));
+		 Assert.assertEquals("License is expired", ((List)settingsAsMap.get("msgs")).get(0));
+		 Assert.assertEquals("Only 1 node(s) allowed but you run 3 node(s)", ((List)settingsAsMap.get("msgs")).get(1));
 	}
 
 	private final String createLicenseRequestBody(String licenseString) throws Exception {
