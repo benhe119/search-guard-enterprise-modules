@@ -209,7 +209,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
         rh.sendHTTPClientCertificate = true;
         response = rh.executePatchRequest("/_searchguard/api/rolesmapping/sg_role_vulcans", "[{ \"op\": \"add\", \"path\": \"/hidden\", \"value\": true }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
-        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+        Assert.assertTrue(response.getBody(), response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
         
         // PATCH 
         rh.sendHTTPClientCertificate = true;
