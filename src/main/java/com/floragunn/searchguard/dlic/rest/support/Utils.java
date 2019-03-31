@@ -15,6 +15,7 @@
 package com.floragunn.searchguard.dlic.rest.support;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.elasticsearch.ElasticsearchParseException;
@@ -69,9 +70,13 @@ public class Utils {
         }
     }
     
-    public static JsonNode convertJsonToJackson(ToXContent jsonContent) {
+    public static JsonNode convertJsonToJackson(ToXContent jsonContent, boolean omitDefaults) {
         try {
-            final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, false);
+            Map<String, String> pm = new HashMap<>(1);
+            pm.put("omit_defaults", String.valueOf(omitDefaults));
+            ToXContent.MapParams params = new ToXContent.MapParams(pm);
+            
+            final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, params, false);
             return DefaultObjectMapper.objectMapper.readTree(bytes.utf8ToString());
         } catch (IOException e1) {
             throw ExceptionsHelper.convertToElastic(e1);

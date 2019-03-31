@@ -46,9 +46,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 				.executeGetRequest("_searchguard/api/configuration/" + CType.INTERNALUSERS.toLCString());
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(8, settings.size()); //response now contain also empty or null properties
-        //guess its easy to tell jackson to exclude them
-
+		Assert.assertEquals(20, settings.size());
 		// --- GET
 
 		// GET, user admin, exists
@@ -56,7 +54,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(1, settings.size());
+		Assert.assertEquals(4, settings.size());
 		// hash must be filtered
 		Assert.assertEquals("", settings.get("admin.hash"));
 
@@ -124,7 +122,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         rh.sendHTTPClientCertificate = true;
         response = rh.executePatchRequest("/_searchguard/api/internalusers/test", "[{ \"op\": \"add\", \"path\": \"/hidden\", \"value\": true }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
-        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+        Assert.assertTrue(response.getBody(), response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
         		
         // PATCH password
         rh.sendHTTPClientCertificate = true;
@@ -345,8 +343,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(8, settings.size()); //response now contain also empty or null properties
-		                                         //guess its easy to tell jackson to exclude them
+		Assert.assertEquals(20, settings.size());
 
 		addUserWithPassword("tooshoort", "123", HttpStatus.SC_BAD_REQUEST);
 		addUserWithPassword("tooshoort", "1234567", HttpStatus.SC_BAD_REQUEST);
@@ -409,7 +406,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
                 .executeGetRequest("_searchguard/api/configuration/" + CType.INTERNALUSERS.toLCString());
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-        Assert.assertEquals(8, settings.size());
+        Assert.assertEquals(20, settings.size());
         
         addDotUserUserWithHash("my.dotuser0", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
                 HttpStatus.SC_BAD_REQUEST, false);

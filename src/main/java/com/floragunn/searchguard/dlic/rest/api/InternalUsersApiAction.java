@@ -139,7 +139,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         if (userExisted && additionalSettingsBuilder.get("hash") == null) {
             // sanity check, this should usually not happen
             @SuppressWarnings("unchecked")
-            final String hash = ((Hashed)internaluser).getHash();
+            final String hash = ((Hashed)internaluser.getCEntry(username)).getHash();
             if (hash == null || hash.length() == 0) {
                 internalErrorResponse(channel, 
                         "Existing user " + username + " has no password, and no new password or hash was specified.");

@@ -48,7 +48,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();				
-		Assert.assertEquals(8, settings.size());
+		Assert.assertEquals(10, settings.size());
 
 		// GET, role does not exist
 		response = rh.executeGetRequest("/_searchguard/api/roles/nothinghthere", new Header[0]);
@@ -219,8 +219,9 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		System.out.println(response.getBody());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(5, settings.size());
+		Assert.assertEquals(7, settings.size());
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant1"), "RO");
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant2"), "RW");
 
@@ -234,7 +235,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(7, settings.size());
+		Assert.assertEquals(9, settings.size());
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant1"), "RO");
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant2"), "RW");
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant3"), "RO");
@@ -251,7 +252,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(3, settings.size());	
+		Assert.assertEquals(5, settings.size());	
 		Assert.assertNull(settings.get("sg_role_starfleet_captains.tenants.tenant1"));
 		Assert.assertNull(settings.get("sg_role_starfleet_captains.tenants.tenant2"));
 		Assert.assertNull(settings.get("sg_role_starfleet_captains.tenants.tenant3"));
@@ -284,7 +285,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         rh.sendHTTPClientCertificate = true;
         response = rh.executePatchRequest("/_searchguard/api/roles/sg_role_starfleet", "[{ \"op\": \"add\", \"path\": \"/hidden\", \"value\": true }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
-        Assert.assertTrue(response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
+        Assert.assertTrue(response.getBody(), response.getBody().matches(".*\"invalid_keys\"\\s*:\\s*\\{\\s*\"keys\"\\s*:\\s*\"hidden\"\\s*\\}.*"));
                 
         // PATCH 
         rh.sendHTTPClientCertificate = true;

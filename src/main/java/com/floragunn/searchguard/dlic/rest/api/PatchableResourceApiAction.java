@@ -15,6 +15,7 @@
 package com.floragunn.searchguard.dlic.rest.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Iterator;
 
@@ -83,7 +84,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             return;
         }
 
-        JsonNode existingAsJsonNode = Utils.convertJsonToJackson(existingAsSettings);
+        JsonNode existingAsJsonNode = Utils.convertJsonToJackson(existingAsSettings, true);
 
         if (!(existingAsJsonNode instanceof ObjectNode)) {
             internalErrorResponse(channel, "Config " + getConfigName() + " is malformed");
@@ -261,7 +262,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
     private AbstractConfigurationValidator getValidator(RestRequest request, JsonNode patchedResource)
             throws JsonProcessingException {
         BytesReference patchedResourceAsByteReference = new BytesArray(
-                DefaultObjectMapper.objectMapper.writeValueAsString(patchedResource).getBytes());
+                DefaultObjectMapper.objectMapper.writeValueAsString(patchedResource).getBytes(StandardCharsets.UTF_8));
         return getValidator(request, patchedResourceAsByteReference);
     }
 }
