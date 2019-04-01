@@ -26,7 +26,13 @@ jobs:
             TESTFILES="$(circleci tests glob **/*Test*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
             echo "$TESTFILES"
             cd ~/circleci-sg
-            mvn -U -Pcoverage verify -Dtest="$TESTFILES"
+
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              mvn -U -Pcoverage verify -Dtest="$TESTFILES"
+            else
+              #no coverage for non-master branches
+              mvn -U verify -Dtest="$TESTFILES"
+            fi
       - store_test_results:
           path: target/surefire-reports
       - store_artifacts:
@@ -34,12 +40,10 @@ jobs:
       - deploy:
           name: Maybe Sonar and Deploy
           command: |
-            mvn deploy -U  -DskipTests -s settings.xml
-            
-            set +e
             
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              mvn -U -Pcoverage sonar:sonar -Dsonar.organization=floragunncom-github -Dsonar.login=$SONAR_LOGIN -Dsonar.host.url=https://sonarcloud.io
+              mvn deploy -U  -DskipTests -s settings.xml
+              mvn -U -Pcoverage sonar:sonar -Dsonar.organization=floragunncom-github -Dsonar.login=$SONAR_LOGIN -Dsonar.host.url=https://sonarcloud.io || true
             fi
       - save_cache:
           paths:
