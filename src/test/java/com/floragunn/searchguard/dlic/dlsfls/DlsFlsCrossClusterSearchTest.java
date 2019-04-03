@@ -116,7 +116,7 @@ public class DlsFlsCrossClusterSearchTest extends AbstractSGUnitTest{
         Assert.assertEquals(HttpStatus.SC_OK, ccs.getStatusCode());
         Assert.assertFalse(ccs.getBody().contains("crl1"));
         Assert.assertTrue(ccs.getBody().contains("crl2"));
-        Assert.assertTrue(ccs.getBody().contains("\"value\" : 1"));
+        Assert.assertTrue(ccs.getBody().contains("\"value\" : 1,\n      \"relation"));
         Assert.assertFalse(ccs.getBody().contains("CEO"));
         Assert.assertFalse(ccs.getBody().contains("salary0"));
         Assert.assertFalse(ccs.getBody().contains("secret0"));
@@ -174,7 +174,7 @@ public class DlsFlsCrossClusterSearchTest extends AbstractSGUnitTest{
         Assert.assertEquals(HttpStatus.SC_OK, ccs.getStatusCode());
         Assert.assertFalse(ccs.getBody().contains("crl1"));
         Assert.assertTrue(ccs.getBody().contains("crl2"));
-        Assert.assertTrue(ccs.getBody().contains("\"total\" : 1,\n    \"max_score"));
+        Assert.assertTrue(ccs.getBody().contains("\"value\" : 1,\n      \"relation"));
         Assert.assertTrue(ccs.getBody().contains("XXX"));
         Assert.assertTrue(ccs.getBody().contains("xxx"));
         Assert.assertFalse(ccs.getBody().contains("Designation"));
@@ -254,7 +254,7 @@ public class DlsFlsCrossClusterSearchTest extends AbstractSGUnitTest{
         Assert.assertEquals(HttpStatus.SC_OK, ccs.getStatusCode());
         Assert.assertTrue(ccs.getBody().contains("crl1"));
         Assert.assertTrue(ccs.getBody().contains("crl2"));
-        Assert.assertTrue(ccs.getBody().contains("\"total\" : 2,\n    \"max_score"));
+        Assert.assertTrue(ccs.getBody().contains("\"value\" : 2,\n      \"relation"));
         Assert.assertTrue(ccs.getBody().contains("XXX"));
         Assert.assertTrue(ccs.getBody().contains("xxx"));
         Assert.assertTrue(ccs.getBody().contains("Designation"));
