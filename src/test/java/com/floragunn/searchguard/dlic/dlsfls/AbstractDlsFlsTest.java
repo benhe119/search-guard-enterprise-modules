@@ -21,7 +21,7 @@ import org.junit.Assert;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
-import com.floragunn.searchguard.configuration.CType;
+import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.SingleClusterTest;
 import com.floragunn.searchguard.test.helper.rest.RestHelper;
