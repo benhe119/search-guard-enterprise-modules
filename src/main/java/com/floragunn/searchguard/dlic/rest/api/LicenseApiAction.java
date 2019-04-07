@@ -45,8 +45,10 @@ import com.floragunn.searchguard.configuration.SearchGuardLicense;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.LicenseValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
+import com.floragunn.searchguard.sgconf.DynamicConfigFactory;
 import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.sgconf.impl.SgDynamicConfiguration;
+import com.floragunn.searchguard.sgconf.impl.v7.ConfigV7;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 import com.floragunn.searchguard.support.LicenseHelper;
 
@@ -133,17 +135,22 @@ public class LicenseApiAction extends AbstractApiAction {
 		}
 				
 		// load existing configuration into new map
-		final SgDynamicConfiguration<?> existing = load(getConfigName(), false);
+		final SgDynamicConfiguration<ConfigV7> existing = (SgDynamicConfiguration<ConfigV7>) load(getConfigName(), false);
 		
 		if (log.isTraceEnabled()) {
 			log.trace(existing.toString());	
 		}
+				
+		if(existing.getCEntries().get("sg_config") == null) {
+		    badRequestResponse(channel, "Can not operate on configuration version for ES 6. You need to migrate your configuration.");
+		    return;
+		}
 		
 		// license already present?		
-		boolean licenseExists = CType.getConfig(existing).dynamic.license != null;
+		boolean licenseExists = existing.getCEntries().get("sg_config").dynamic.license != null;
 		
 		// license is valid, overwrite old value
-		CType.getConfig(existing).dynamic.license = licenseString;
+		existing.getCEntry("sg_config").dynamic.license = licenseString;
 		
 		saveAnUpdateConfigs(client, request, getConfigName(), existing, new OnSucessActionListener<IndexResponse>(channel) {
 

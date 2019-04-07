@@ -45,7 +45,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import com.floragunn.searchguard.privileges.PrivilegesInterceptor;
 import com.floragunn.searchguard.resolver.IndexResolverReplacer.Resolved;
-import com.floragunn.searchguard.sgconf.impl.v6.Config;
+import com.floragunn.searchguard.sgconf.DynamicConfigModel;
 import com.floragunn.searchguard.user.User;
 
 public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
@@ -110,18 +110,18 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
      *
      */
     @Override
-    public Boolean replaceKibanaIndex(final ActionRequest request, final String action, final User user, final Config config,
+    public Boolean replaceKibanaIndex(final ActionRequest request, final String action, final User user, final DynamicConfigModel config,
             final Resolved requestedResolved, final Map<String, Boolean> tenants) {
 
-        final boolean enabled = config.dynamic.kibana.multitenancy_enabled;
+        final boolean enabled = config.isKibanaMultitenancyEnabled();//config.dynamic.kibana.multitenancy_enabled;
 
         if (!enabled) {
             return null;
         }
 
         //next two lines needs to be retrieved from configuration
-        final String kibanaserverUsername = config.dynamic.kibana.server_username;
-        final String kibanaIndexName = config.dynamic.kibana.index;
+        final String kibanaserverUsername = config.getKibanaServerUsername();//config.dynamic.kibana.server_username;
+        final String kibanaIndexName = config.getKibanaIndexname();//config.dynamic.kibana.index;
 
         String requestedTenant = user.getRequestedTenant();
 
