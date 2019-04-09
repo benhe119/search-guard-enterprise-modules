@@ -303,7 +303,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	        final SgDynamicConfiguration<?> settings, OnSucessActionListener<IndexResponse> actionListener) {
 		final IndexRequest ir = new IndexRequest(this.searchguardIndex);
 
-		final String type = "sg";
+		final String type = "_doc";
 		final String id = cType.toLCString();
 
 		//TODO types removal
