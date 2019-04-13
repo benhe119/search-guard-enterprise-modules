@@ -421,5 +421,23 @@ public class UserApiTest extends AbstractRestApiUnitTest {
                 HttpStatus.SC_CREATED, true);
 
 	}
+	
+	@Test
+    public void testUserApiNoPasswordChange() throws Exception {
+
+        setup();
+
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+
+        // initial configuration, 5 users
+        HttpResponse response;
+        
+        addUserWithHash("user1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_CREATED);
+        
+        response = rh.executePutRequest("/_searchguard/api/user/nagilum", "{\"hash\":\"$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m\",\"password\":\"\",\"roles\":[\"admin\"]}");
+        Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
+    }
 
 }

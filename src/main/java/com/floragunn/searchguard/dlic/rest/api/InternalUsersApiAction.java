@@ -114,10 +114,13 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         }
 
         // if password is set, it takes precedence over hash
-        String plainTextPassword = additionalSettingsBuilder.get("password");
+        final String plainTextPassword = additionalSettingsBuilder.get("password");
+        final String origHash = additionalSettingsBuilder.get("hash");
         if (plainTextPassword != null && plainTextPassword.length() > 0) {
             additionalSettingsBuilder.remove("password");
             additionalSettingsBuilder.put("hash", hash(plainTextPassword.toCharArray()));
+        } else if(origHash != null && origHash.length() > 0) {
+            additionalSettingsBuilder.remove("password");
         }
 
         // check if user exists
