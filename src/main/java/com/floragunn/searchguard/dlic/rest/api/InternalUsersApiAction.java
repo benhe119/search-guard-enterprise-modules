@@ -121,8 +121,10 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
             additionalSettingsBuilder.put("hash", hash(plainTextPassword.toCharArray()));
         } else if(origHash != null && origHash.length() > 0) {
             additionalSettingsBuilder.remove("password");
+        } else if(plainTextPassword != null && plainTextPassword.isEmpty() && origHash == null) {
+            additionalSettingsBuilder.remove("password");
         }
-
+        
         // check if user exists
         final SgDynamicConfiguration<?> internaluser = load(CType.INTERNALUSERS, false);
         //final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(internaluser.build());

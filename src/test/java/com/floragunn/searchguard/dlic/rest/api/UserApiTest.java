@@ -435,8 +435,20 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         addUserWithHash("user1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
                 HttpStatus.SC_CREATED);
         
-        response = rh.executePutRequest("/_searchguard/api/user/nagilum", "{\"hash\":\"$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m\",\"password\":\"\",\"roles\":[\"admin\"]}");
-        Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
+        response = rh.executePutRequest("/_searchguard/api/user/user1", "{\"hash\":\"$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m\",\"password\":\"\",\"roles\":[\"admin\",\"rolea\"]}");
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        
+        response = rh.executeGetRequest("/_searchguard/api/user/user1");
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        
+        addUserWithHash("user2", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_CREATED);
+        
+        response = rh.executePutRequest("/_searchguard/api/user/user2", "{\"password\":\"\",\"roles\":[\"admin\",\"rolex\"]}");
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        
+        response = rh.executeGetRequest("/_searchguard/api/user/user2");
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
     }
 
 }
