@@ -44,11 +44,11 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 
 		// -- GET
 
-		// GET sg_all_access, exists
+		// GET sg_role_starfleet
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();				
-		Assert.assertEquals(10, settings.size());
+		Assert.assertEquals(5, settings.size());
 
 		// GET, role does not exist
 		response = rh.executeGetRequest("/_searchguard/api/roles/nothinghthere", new Header[0]);
@@ -80,11 +80,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		// add user picard, role starfleet, maps to sg_role_starfleet
 		addUserWithPassword("picard", "picard", new String[] { "starfleet", "captains" }, HttpStatus.SC_CREATED);
 		checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		//checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
 		checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		//checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
+
+		// ES7 only supports one doc type, so trying to create a second one leads to 400  BAD REQUEST
+		checkWriteAccess(HttpStatus.SC_BAD_REQUEST, "picard", "picard", "sf", "public", 0);
 
 		
 		// -- DELETE
@@ -108,22 +107,20 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
 		rh.sendHTTPClientCertificate = false;
-		// only starfleet role left, write access to ships is forbidden now
+
+		// user has only role starfleet left, role has READ access only
 		checkWriteAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 1);
-		// TODO: only one doctype allowed for ES6
-		//checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
-		//checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
+
+		// ES7 only supports one doc type, but SG permission checks run first
+		// So we also get a 403 FORBIDDEN when tring to add new document type
+		checkWriteAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "public", 0);
 
 		rh.sendHTTPClientCertificate = true;
 		// remove also starfleet role, nothing is allowed anymore
 		response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		checkReadAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		//checkReadAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "public", 0);
 		checkWriteAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		// checkWriteAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "public", 0);
 
 		// -- PUT
 		// put with empty roles, must fail
@@ -173,11 +170,15 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
 		rh.sendHTTPClientCertificate = false;
 		checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		//checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
-		checkWriteAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		// checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
+
+	    // now picard is only in sg_role_starfleet, which has write access to
+        // all indices. We collapse all document types in SG7 so this permission in the
+        // starfleet role grants all permissions:
+        //   public:  
+        //       - 'indices:*'		
+		checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
+		// ES7 only supports one doc type, so trying to create a second one leads to 400  BAD REQUEST
+		checkWriteAccess(HttpStatus.SC_BAD_REQUEST, "picard", "picard", "sf", "public", 0);
 
 		rh.sendHTTPClientCertificate = true;
 
@@ -187,11 +188,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
 		rh.sendHTTPClientCertificate = false;
 		checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		//checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
 		checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
-		// TODO: only one doctype allowed for ES6
-		//checkWriteAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "public", 0);
+
+		// ES7 only supports one doc type, so trying to create a second one leads to 400  BAD REQUEST
+		checkWriteAccess(HttpStatus.SC_BAD_REQUEST, "picard", "picard", "sf", "public", 0);
 
 		rh.sendHTTPClientCertificate = true;
         response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",

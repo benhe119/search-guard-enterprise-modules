@@ -29,19 +29,10 @@ sg_role_klingons2:
 sg_role_starfleet:
   indices:
     sf:
-       ships:  
-         - READ
-       public:  
-         - 'indices:*'
-       students:  
-         - READ
-       alumni:  
-         - READ
-       'admin*':  
-         - READ
        '*':
-         - '*bulk*'  
-    'pub*':
+         - '*bulk*'
+         - READ  
+    '*':
        '*':  
          - READ
       

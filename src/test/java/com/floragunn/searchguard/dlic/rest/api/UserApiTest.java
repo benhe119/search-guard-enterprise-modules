@@ -291,14 +291,13 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		// check read access to starfleet index and ships type, must fail
 		checkReadAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 0);
 		
-		// overwrite user picard, and give him role "starfleet".
+		// overwrite user picard, and give him role "starfleet". This role has READ access only
 		addUserWithPassword("picard", "picard", new String[] { "starfleet" }, HttpStatus.SC_OK);
-
 		checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
 		checkWriteAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 1);
 
-
-		// overwrite user picard, and give him role "starfleet" plus "captains
+		// overwrite user picard, and give him role "starfleet" plus "captains. Now
+		// document can be created.
 		addUserWithPassword("picard", "picard", new String[] { "starfleet", "captains" }, HttpStatus.SC_OK);
 		checkReadAccess(HttpStatus.SC_OK, "picard", "picard", "sf", "ships", 0);
 		checkWriteAccess(HttpStatus.SC_CREATED, "picard", "picard", "sf", "ships", 1);
