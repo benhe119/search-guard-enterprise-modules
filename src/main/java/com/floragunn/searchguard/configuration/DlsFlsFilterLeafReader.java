@@ -102,6 +102,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     private final ShardId shardId;
     private BitSet bs;
     private final boolean maskFields;
+    private final boolean localHashingEnabled;
     
     
     DlsFlsFilterLeafReader(final LeafReader delegate, final Set<String> includesExcludes,
@@ -111,13 +112,14 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         super(delegate);        
         
         maskFields = (complianceConfig.isEnabled() && maskedFields != null && maskedFields.size() > 0);
+        localHashingEnabled = complianceConfig.isLocalHashingEnabled();
         
         this.indexService = indexService;
         this.threadContext = threadContext;
         this.clusterService = clusterService;
         this.complianceConfig = complianceConfig;
         this.auditlog = auditlog;
-        this.maskedFieldsMap = maskFields?extractMaskedFields(maskedFields):null;
+        this.maskedFieldsMap = maskFields?extractMaskedFields(maskedFields, localHashingEnabled?threadContext:null):null;
         
         if(maskedFieldsMap != null) {
             maskedFieldsKeySet = maskedFieldsMap.keySet();
@@ -216,10 +218,10 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         }
     }
 
-    private Map<String, MaskedField> extractMaskedFields(Set<String> maskedFields) {
+    private Map<String, MaskedField> extractMaskedFields(Set<String> maskedFields, ThreadContext threadContext) {
         Map<String, MaskedField> retVal = new HashMap<>(maskedFields.size());
         for(String mfs: maskedFields) {
-            MaskedField mf = new MaskedField(mfs, complianceConfig.getSalt16());
+            MaskedField mf = new MaskedField(mfs, complianceConfig.getSalt16(), threadContext);
             retVal.put(mf.getName(), mf);
         }
         return retVal;
@@ -909,7 +911,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     private Terms wrapTerms(final String field, Terms terms) {
         Map<String, MaskedField> rtMask = getRuntimeMaskedFieldInfo();
-        if(rtMask != null && WildcardMatcher.matchAny(rtMask.keySet(), handleKeyword(field))) {
+        if(!localHashingEnabled && rtMask != null && WildcardMatcher.matchAny(rtMask.keySet(), handleKeyword(field))) {
             return null;
         } else {
             return terms;
@@ -1032,7 +1034,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         if(maskedEval != null) {
             final Set<String> mf = maskedFieldsMap.get(maskedEval);
             if(mf != null && !mf.isEmpty()) {
-                return extractMaskedFields(mf);
+                return extractMaskedFields(mf, localHashingEnabled?threadContext:null);
             }
             
         } 

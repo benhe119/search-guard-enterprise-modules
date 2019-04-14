@@ -19,13 +19,17 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.util.BytesRef;
 import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.bouncycastle.util.encoders.Hex;
+import org.elasticsearch.common.util.concurrent.ThreadContext;
 
+import com.floragunn.searchguard.support.ConfigConstants;
+import com.floragunn.searchguard.support.HeaderHelper;
 import com.google.common.base.Splitter;
 
 public class MaskedField {
@@ -34,9 +38,11 @@ public class MaskedField {
     private String algo = null;
     private List<RegexReplacement> regexReplacements;
     private final byte[] defaultSalt;
+    private final ThreadContext threadContext;
 
-    public MaskedField(final String value, final byte[] defaultSalt) {
+    public MaskedField(final String value, final byte[] defaultSalt, final ThreadContext threadContext) {
         this.defaultSalt = defaultSalt;
+        this.threadContext = threadContext;
         final List<String> tokens = Splitter.on("::").splitToList(Objects.requireNonNull(value));
         final int tokenCount = tokens.size();
         if (tokenCount == 1) {
@@ -168,7 +174,13 @@ public class MaskedField {
     }
 
     private byte[] blake2bHash(byte[] in) {
-        final Blake2bDigest hash = new Blake2bDigest(null, 32, null, defaultSalt);
+        String salt = null;
+        if(threadContext != null) {
+            salt = HeaderHelper.getSafeFromHeader(threadContext, ConfigConstants.SG_LOCAL_HASH_SALT_HEADER);
+            assert salt != null: "salt must not be null here";
+        }
+
+        final Blake2bDigest hash = new Blake2bDigest(null, 32, salt==null?null:Base64.getDecoder().decode(salt), defaultSalt);
         hash.update(in, 0, in.length);
         final byte[] out = new byte[hash.getDigestSize()];
         hash.doFinal(out, 0);

@@ -18,10 +18,12 @@ import org.apache.http.HttpStatus;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
@@ -142,6 +144,8 @@ public class FieldMaskedTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("100.100.2.2"));
         Assert.assertFalse(res.getBody().contains("87873bdb698e5f0f60e0b02b76dad1ec11b2787c628edbc95b7ff0e82274b140"));
 
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100&q=100.100.1.1", encodeBasicHeader("admin", "admin"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("100.100.1.1"));
         
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100", encodeBasicHeader("user_masked", "password"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("\"total\" : 32,\n    \"max_"));
@@ -151,6 +155,32 @@ public class FieldMaskedTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("100.100.1.1"));
         Assert.assertFalse(res.getBody().contains("100.100.2.2"));
         Assert.assertTrue(res.getBody().contains("87873bdb698e5f0f60e0b02b76dad1ec11b2787c628edbc95b7ff0e82274b140"));
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100&q=100.100.1.1", encodeBasicHeader("user_masked", "password"))).getStatusCode());
+        Assert.assertFalse(res.getBody(), res.getBody().contains("100.100.1.1"));
+        Assert.assertFalse(res.getBody(), res.getBody().contains("ip_source"));
+
+    }
+    
+    @Test
+    public void testMaskedSearchLocalHash() throws Exception {
+        
+        Settings settings = Settings.builder().put(ConfigConstants.SEARCHGUARD_COMPLIANCE_LOCAL_HASHING_ENABLED, true).build();
+        setup(settings);
+
+        HttpResponse res;
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100", encodeBasicHeader("user_masked", "password"))).getStatusCode());
+        Assert.assertTrue(res.getBody().contains("\"total\" : 32,\n    \"max_"));
+        Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
+        Assert.assertTrue(res.getBody().contains("cust1"));
+        Assert.assertTrue(res.getBody().contains("cust2"));
+        Assert.assertFalse(res.getBody().contains("100.100.1.1"));
+        Assert.assertFalse(res.getBody().contains("100.100.2.2"));
+        
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100&q=100.100.1.1", encodeBasicHeader("user_masked", "password"))).getStatusCode());
+        Assert.assertFalse(res.getBody(), res.getBody().contains("100.100.1.1"));
+        Assert.assertTrue(res.getBody(), res.getBody().contains("ip_source"));
 
     }
     
