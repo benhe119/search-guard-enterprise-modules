@@ -14,6 +14,10 @@
 
 package com.floragunn.searchguard.dlic.dlsfls;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
 import org.apache.http.HttpStatus;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
@@ -44,18 +48,23 @@ public class DlsDateMathTest extends AbstractDlsFlsTest{
         tc.index(new IndexRequest("searchguard").type("sg").setRefreshPolicy(RefreshPolicy.IMMEDIATE).id("actiongroups")
                 .source("actiongroups", FileHelper.readYamlContent("dlsfls/sg_action_groups.yml"))).actionGet();
 
+        LocalDateTime yesterday = LocalDateTime.now(ZoneId.of("UTC")).minusDays(1);
+        LocalDateTime today = LocalDateTime.now(ZoneId.of("UTC"));
+        LocalDateTime tomorrow = LocalDateTime.now(ZoneId.of("UTC")).plusDays(1);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        
         tc.index(new IndexRequest("logstash").type("_doc").id("1").setRefreshPolicy(RefreshPolicy.IMMEDIATE)
-                .source("{\"@timestamp\": \"2019/04/02\"}", XContentType.JSON)).actionGet();
+                .source("{\"@timestamp\": \""+formatter.format(yesterday)+"\"}", XContentType.JSON)).actionGet();
         tc.index(new IndexRequest("logstash").type("_doc").id("2").setRefreshPolicy(RefreshPolicy.IMMEDIATE)
-                .source("{\"@timestamp\": \"2019/04/03\"}", XContentType.JSON)).actionGet();
+                .source("{\"@timestamp\": \""+formatter.format(today)+"\"}", XContentType.JSON)).actionGet();
         tc.index(new IndexRequest("logstash").type("_doc").id("3").setRefreshPolicy(RefreshPolicy.IMMEDIATE)
-                .source("{\"@timestamp\": \"2019/04/04\"}", XContentType.JSON)).actionGet();
+                .source("{\"@timestamp\": \""+formatter.format(tomorrow)+"\"}", XContentType.JSON)).actionGet();
     }
 
     
     @Test
     public void testDlsDateMathQuery() throws Exception {
-        final Settings settings = Settings.builder()/*.put(ConfigConstants.SEARCHGUARD_UNSUPPORTED_ALLOW_NOW_IN_DLS,true)*/.build();
+        final Settings settings = Settings.builder().put(ConfigConstants.SEARCHGUARD_UNSUPPORTED_ALLOW_NOW_IN_DLS,true).build();
         setup(settings);
 
         HttpResponse res;
