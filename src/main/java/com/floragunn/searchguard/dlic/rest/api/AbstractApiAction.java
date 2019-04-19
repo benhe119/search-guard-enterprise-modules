@@ -140,7 +140,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
             return;
 		}
 		
-		if (isReadOnly(existingAsSettings, name)) {
+		if (isReserved(existingAsSettings, name)) {
 			forbidden(channel, "Resource '"+ name +"' is read-only.");
 			return;
 		}
@@ -184,7 +184,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
             return;
 		}
 		
-		if (isReadOnly(existingAsSettings, name)) {
+		if (isReserved(existingAsSettings, name)) {
 			forbidden(channel, "Resource '"+ name +"' is read-only.");
 			return;
 		}
@@ -506,9 +506,9 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 				"Method " + method.name() + " not supported for this action.");
 	}
 	
-	protected boolean isReadOnly(SgDynamicConfiguration<?> settings, String resourceName) {
+	protected boolean isReserved(SgDynamicConfiguration<?> settings, String resourceName) {
 	    final Object o = settings.getCEntry(resourceName);
-	    return o != null && o instanceof Hideable && ((Hideable) o).isReadonly();
+	    return o != null && o instanceof Hideable && ((Hideable) o).isReserved();
 	}
 
     protected boolean isHidden(SgDynamicConfiguration<?> settings, String resourceName) {
