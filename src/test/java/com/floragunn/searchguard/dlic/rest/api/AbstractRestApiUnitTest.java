@@ -151,7 +151,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 	protected void addUserWithPassword(String username, String password, String[] roles, int status) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
 		rh.sendHTTPClientCertificate = true;
-		String payload = "{" + "\"password\": \"" + password + "\"," + "\"roles\": [";
+		String payload = "{" + "\"password\": \"" + password + "\"," + "\"backend_roles\": [";
 		for (int i = 0; i < roles.length; i++) {
 			payload += "\"" + roles[i] + "\"";
 			if (i + 1 < roles.length) {

@@ -32,7 +32,7 @@ import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
 public class LicenseTest extends AbstractRestApiUnitTest {
 
-	protected final static String CONFIG_LICENSE_KEY = "searchguard.dynamic.license";
+	protected final static String CONFIG_LICENSE_KEY = "sg_config.dynamic.license";
 	protected final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	private Settings originalConfig;
 	
@@ -187,7 +187,7 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		// sanity
-		Assert.assertEquals(settings.getAsBoolean("searchguard.dynamic.authc.authentication_domain_basic_internal.enabled", false), true);
+		Assert.assertEquals(settings.getAsBoolean("sg_config.dynamic.authc.authentication_domain_basic_internal.http_enabled", false), true);
 		return settings;
 	}
 }

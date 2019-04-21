@@ -1,70 +1,134 @@
-# NO mixed mode
+---
+_sg_meta:
+  type: "actiongroups"
+  config_version: 2
+CLUSTER_ALL:
+  reserved: false
+  hidden: false
+  permissions:
+  - "cluster:*"
+  type: "cluster"
+  description: "Migrated from v6"
 ALL:
+  reserved: false
+  hidden: false
   permissions:
   - "indices:*"
-MANAGE:
-  permissions:
-  - "indices:monitor/*"
-  - "indices:admin/*"
-CREATE_INDEX:
-  permissions:
-  - "indices:admin/create"
-  - indices:admin/mapping/put
-MANAGE_ALIASES:
-  permissions:
-  - "indices:admin/aliases*"
-MONITOR:
-  permissions:
-  - "indices:monitor/*"
-DATA_ACCESS:
-  permissions:
-  - "indices:data/*"
-  - indices:admin/mapping/put
-WRITE:
-  permissions:
-    - "indices:data/write*"
-    - indices:admin/mapping/put
-READ:
-  permissions:
-  - "indices:data/read*"
-DELETE:
-  permissions:
-  - "indices:data/write/delete*"
+  type: "index"
+  description: "Migrated from v6"
 CRUD:
+  reserved: false
+  hidden: false
   permissions:
-    - READ
-    - WRITE
+  - "READ"
+  - "WRITE"
+  type: "index"
+  description: "Migrated from v6"
 SEARCH:
+  reserved: false
+  hidden: false
   permissions:
   - "indices:data/read/search*"
   - "indices:data/read/msearch*"
-  - SUGGEST
-SUGGEST:
+  - "SUGGEST"
+  type: "index"
+  description: "Migrated from v6"
+MONITOR:
+  reserved: false
+  hidden: false
   permissions:
-  - "indices:data/read/suggest*"
+  - "indices:monitor/*"
+  type: "index"
+  description: "Migrated from v6"
+DATA_ACCESS:
+  reserved: false
+  hidden: false
+  permissions:
+  - "indices:data/*"
+  - "indices:admin/mapping/put"
+  type: "index"
+  description: "Migrated from v6"
+CREATE_INDEX:
+  reserved: false
+  hidden: false
+  permissions:
+  - "indices:admin/create"
+  - "indices:admin/mapping/put"
+  type: "index"
+  description: "Migrated from v6"
+WRITE:
+  reserved: false
+  hidden: false
+  permissions:
+  - "indices:data/write*"
+  - "indices:admin/mapping/put"
+  type: "index"
+  description: "Migrated from v6"
+MANAGE_ALIASES:
+  reserved: false
+  hidden: false
+  permissions:
+  - "indices:admin/aliases*"
+  type: "index"
+  description: "Migrated from v6"
+READ:
+  reserved: false
+  hidden: false
+  permissions:
+  - "indices:data/read*"
+  type: "index"
+  description: "Migrated from v6"
+DELETE:
+  reserved: false
+  hidden: false
+  permissions:
+  - "indices:data/write/delete*"
+  type: "index"
+  description: "Migrated from v6"
+GET:
+  reserved: true
+  hidden: false
+  permissions:
+  - "indices:data/read/get*"
+  - "indices:data/read/mget*"
+  type: "index"
+  description: "Migrated from v6"
+MANAGE:
+  reserved: false
+  hidden: false
+  permissions:
+  - "indices:monitor/*"
+  - "indices:admin/*"
+  type: "index"
+  description: "Migrated from v6"
+INTERNAL:
+  reserved: false
+  hidden: true
+  permissions:
+  - "indices:data/read/get*"
+  - "indices:data/read/mget*"
+  type: "index"
+  description: "Migrated from v6"
+CLUSTER_MONITOR:
+  reserved: false
+  hidden: false
+  permissions:
+  - "cluster:monitor/*"
+  type: "cluster"
+  description: "Migrated from v6"
 INDEX:
+  reserved: false
+  hidden: false
   permissions:
   - "indices:data/write/index*"
   - "indices:data/write/update*"
-  - indices:admin/mapping/put
-GET:
-  readonly: true
+  - "indices:admin/mapping/put"
+  type: "index"
+  description: "Migrated from v6"
+SUGGEST:
+  reserved: false
+  hidden: false
   permissions:
-    - "indices:data/read/get*"
-    - "indices:data/read/mget*"
-INTERNAL:
-  hidden: true
-  permissions:
-    - "indices:data/read/get*"
-    - "indices:data/read/mget*"  
-
-# CLUSTER
-CLUSTER_ALL:
-  permissions:
-  - cluster:*
-CLUSTER_MONITOR:
-  permissions:
-  - cluster:monitor/*
-  
-# HEALTH_AND_STATS = n"cluster:monitor/health*", "cluster:monitor/stats*", "indices:monitor/stats*", "cluster:monitor/nodes/stats*"
-# ALL = cluster:*", "indices:admin/template/*
+  - "indices:data/read/suggest*"
+  type: "index"
+  description: "Migrated from v6"

@@ -23,6 +23,8 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator.ErrorType;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
@@ -47,7 +49,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		// GET sg_role_starfleet
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();				
+		JsonNode settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(5, settings.size());
 
 		// GET, role does not exist
@@ -126,30 +128,30 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		// put with empty roles, must fail
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet", "", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.PAYLOAD_MANDATORY.getMessage(), settings.get("reason"));
 
 		// put new configuration with invalid payload, must fail
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet",
 				FileHelper.loadFile("restapi/roles_not_parseable.json"), new Header[0]);
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.BODY_NOT_PARSEABLE.getMessage(), settings.get("reason"));
 
 		// put new configuration with invalid keys, must fail
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet",
 				FileHelper.loadFile("restapi/roles_invalid_keys.json"), new Header[0]);
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.INVALID_CONFIGURATION.getMessage(), settings.get("reason"));
-		Assert.assertTrue(settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY + ".keys").contains("indizes"));
+		Assert.assertTrue(settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY).get("keys").asText().contains("indizes"));
 		Assert.assertTrue(
-				settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY + ".keys").contains("kluster"));
+				settings.get(AbstractConfigurationValidator.INVALID_KEYS_KEY).get("keys").asText().contains("kluster"));
 
 		// put new configuration with wrong datatypes, must fail
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet",
 				FileHelper.loadFile("restapi/roles_wrong_datatype.json"), new Header[0]);
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));		
 		Assert.assertTrue(settings.get("cluster").equals("Array expected"));
@@ -212,7 +214,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",
 				FileHelper.loadFile("restapi/roles_captains_tenants.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(2, settings.size());
 		Assert.assertEquals(settings.get("status"), "OK");
 		
@@ -220,7 +222,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(7, settings.size());
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant1"), "RO");
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant2"), "RW");
@@ -228,13 +230,13 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",
 				FileHelper.loadFile("restapi/roles_captains_tenants2.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(2, settings.size());
 		Assert.assertEquals(settings.get("status"), "OK");
 
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(9, settings.size());
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant1"), "RO");
 		Assert.assertEquals(settings.get("sg_role_starfleet_captains.tenants.tenant2"), "RW");
@@ -245,13 +247,13 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",
 				FileHelper.loadFile("restapi/roles_captains_no_tenants.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(2, settings.size());
 		Assert.assertEquals(settings.get("status"), "OK");
 
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(5, settings.size());	
 		Assert.assertNull(settings.get("sg_role_starfleet_captains.tenants.tenant1"));
 		Assert.assertNull(settings.get("sg_role_starfleet_captains.tenants.tenant2"));
@@ -261,7 +263,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",
 				FileHelper.loadFile("restapi/roles_captains_tenants_malformed.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(settings.get("status"), "error");
 		Assert.assertEquals(settings.get("reason"), ErrorType.INVALID_CONFIGURATION.getMessage());
 		
@@ -293,8 +295,8 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
-        List<String> permissions = settings.getAsList("sg_role_starfleet.indices.sf.ships");
+        settings = DefaultObjectMapper.readTree(response.getBody());       
+        List<String> permissions = DefaultObjectMapper.objectMapper.convertValue(settings.get("sg_role_starfleet").get("indices").get("sf").get("ships"), List.class);
         Assert.assertNotNull(permissions);
         Assert.assertEquals(2, permissions.size());
         Assert.assertTrue(permissions.contains("READ"));
@@ -338,8 +340,8 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rh.executeGetRequest("/_searchguard/api/roles/bulknew1", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-        settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
-        permissions = settings.getAsList("bulknew1.indices.sf.ships");
+        settings = DefaultObjectMapper.readTree(response.getBody());       
+        permissions =  DefaultObjectMapper.objectMapper.convertValue(settings.get("bulknew1").get("indices").get("sf").get("ships"), List.class);
         Assert.assertNotNull(permissions);
         Assert.assertEquals(1, permissions.size());
         Assert.assertTrue(permissions.contains("READ"));

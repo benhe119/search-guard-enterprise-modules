@@ -88,7 +88,7 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("", settings.getAsList("sg_all_access.users").get(0), "nagilum");
-		Assert.assertEquals("", settings.getAsList("sg_role_starfleet_library.backendroles").get(0), "starfleet*");
+		Assert.assertEquals("", settings.getAsList("sg_role_starfleet_library.backend_roles").get(0), "starfleet*");
 		Assert.assertEquals("", settings.getAsList("sg_zdummy_all.users").get(0), "bug108");
 		
 		

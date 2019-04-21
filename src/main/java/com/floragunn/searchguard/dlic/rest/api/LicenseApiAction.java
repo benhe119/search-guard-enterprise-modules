@@ -138,7 +138,7 @@ public class LicenseApiAction extends AbstractApiAction {
 		final SgDynamicConfiguration<?> existing;
 		final boolean licenseExists;
 		
-		if(!SearchGuardPlugin.FORCE_CONFIG_V6) {
+		//if(!SearchGuardPlugin.FORCE_CONFIG_V6) {
 		    // load existing configuration into new map
 	        final SgDynamicConfiguration<ConfigV7> existingV7 = (SgDynamicConfiguration<ConfigV7>) load(getConfigName(), false);
 	        
@@ -157,26 +157,26 @@ public class LicenseApiAction extends AbstractApiAction {
 	        // license is valid, overwrite old value
 	        existingV7.getCEntry("sg_config").dynamic.license = licenseString;
 	        existing = existingV7;
-		} else {
-		 // load existing configuration into new map
-            final SgDynamicConfiguration<ConfigV6> existingV6 = (SgDynamicConfiguration<ConfigV6>) load(getConfigName(), false);
-            
-            if (log.isTraceEnabled()) {
-                log.trace(existingV6.toString()); 
-            }
-                    
-            if(existingV6.getCEntries().get("sg_config") != null) {
-                badRequestResponse(channel, "Can not operate on configuration version for ES 7");
-                return;
-            }
-            
-            // license already present?     
-            licenseExists = existingV6.getCEntries().get("searchguard").dynamic.license != null;
-            
-            // license is valid, overwrite old value
-            existingV6.getCEntry("searchguard").dynamic.license = licenseString;
-            existing = existingV6;
-		}
+//		} else {
+//		 // load existing configuration into new map
+//            final SgDynamicConfiguration<ConfigV6> existingV6 = (SgDynamicConfiguration<ConfigV6>) load(getConfigName(), false);
+//            
+//            if (log.isTraceEnabled()) {
+//                log.trace(existingV6.toString()); 
+//            }
+//                    
+//            if(existingV6.getCEntries().get("sg_config") != null) {
+//                badRequestResponse(channel, "Can not operate on configuration version for ES 7");
+//                return;
+//            }
+//            
+//            // license already present?     
+//            licenseExists = existingV6.getCEntries().get("searchguard").dynamic.license != null;
+//            
+//            // license is valid, overwrite old value
+//            existingV6.getCEntry("searchguard").dynamic.license = licenseString;
+//            existing = existingV6;
+//		}
 
 		saveAnUpdateConfigs(client, request, getConfigName(), existing, new OnSucessActionListener<IndexResponse>(channel) {
 

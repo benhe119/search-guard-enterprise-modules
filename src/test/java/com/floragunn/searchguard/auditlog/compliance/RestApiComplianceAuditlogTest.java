@@ -45,7 +45,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
 
         setup(additionalSettings);
         TestAuditlogImpl.clear();
-        String body = "{ \"password\":\"test\",\"roles\":[\"role1\",\"role2\"] }";
+        String body = "{ \"password\":\"test\",\"backend_roles\":[\"role1\",\"role2\"] }";
         HttpResponse response = rh.executePutRequest("_searchguard/api/user/compuser?pretty", body, encodeBasicHeader("admin", "admin"));
         Thread.sleep(1500);
         System.out.println(TestAuditlogImpl.sb.toString());
@@ -75,7 +75,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
 
         setup(additionalSettings);
         TestAuditlogImpl.clear();
-        String body = "{ \"password\":\"test\",\"roles\":[\"role1\",\"role2\"] }";
+        String body = "{ \"password\":\"test\",\"backend_roles\":[\"role1\",\"role2\"] }";
         
         rh.enableHTTPClientSSL = true;
         rh.trustHTTPServerCertificate = true;
@@ -177,7 +177,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
 
         setup(additionalSettings);
         TestAuditlogImpl.clear();
-        String body = "{ \"password\":\"test\",\"roles\":[\"role1\",\"role2\"] }";
+        String body = "{ \"password\":\"test\",\"backend_roles\":[\"role1\",\"role2\"] }";
         System.out.println("exec");
         HttpResponse response = rh.executePutRequest("_searchguard/api/user/compuser?pretty", body, encodeBasicHeader("admin", "admin"));
         Thread.sleep(1500);

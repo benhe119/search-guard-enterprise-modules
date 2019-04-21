@@ -21,6 +21,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestRequest;
 
 import com.floragunn.searchguard.configuration.MaskedField;
+import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator.DataType;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
 
@@ -32,6 +33,7 @@ public class RolesValidator extends AbstractConfigurationValidator {
 		allowedKeys.put("indices", DataType.OBJECT);
 		allowedKeys.put("cluster", DataType.ARRAY);
 		allowedKeys.put("tenants", DataType.OBJECT);
+		allowedKeys.put("description", DataType.STRING);
 		
 		mandatoryOrKeys.add("indices");
 		mandatoryOrKeys.add("cluster");

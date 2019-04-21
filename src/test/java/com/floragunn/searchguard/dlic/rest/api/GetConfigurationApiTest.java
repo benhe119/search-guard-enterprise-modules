@@ -20,6 +20,8 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
 public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
@@ -41,7 +43,7 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(
-				settings.getAsBoolean("searchguard.dynamic.authc.authentication_domain_basic_internal.enabled", false),
+				settings.getAsBoolean("sg_config.dynamic.authc.authentication_domain_basic_internal.http_enabled", false),
 				true);
 
 		// internalusers
@@ -54,14 +56,14 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		// roles
 		response = rh.executeGetRequest("_searchguard/api/configuration/roles");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(settings.getAsList("sg_all_access.cluster").get(0), "cluster:*");
+		JsonNode jnode = DefaultObjectMapper.readTree(response.getBody());
+		Assert.assertEquals(jnode.get("sg_all_access").get("cluster_permissions").get(0).asText(), "cluster:*");
 
 		// roles
 		response = rh.executeGetRequest("_searchguard/api/configuration/rolesmapping");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(settings.getAsList("sg_role_starfleet.backendroles").get(0), "starfleet");
+		Assert.assertEquals(settings.getAsList("sg_role_starfleet.backend_roles").get(0), "starfleet");
 
 		// action groups
 		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups");
