@@ -16,13 +16,9 @@ package com.floragunn.searchguard.dlic.dlsfls;
 
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Assert;
 
-import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
-import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
-import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
-import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.support.ConfigConstants;
+import com.floragunn.searchguard.test.DynamicSgConfig;
 import com.floragunn.searchguard.test.SingleClusterTest;
 import com.floragunn.searchguard.test.helper.rest.RestHelper;
 
@@ -36,19 +32,27 @@ public abstract class AbstractDlsFlsTest extends SingleClusterTest {
     }
     
     protected final void setup() throws Exception {
-        Settings settings = Settings.builder().put(ConfigConstants.SEARCHGUARD_AUDIT_TYPE_DEFAULT, "debug").build();
-        setup(Settings.EMPTY, null, settings, false);
+        setup(Settings.EMPTY);
+    }
+    
+    protected final void setup(Settings override) throws Exception {
+        setup(override, new DynamicSgConfig());
+    }
+    
+    protected final void setup(DynamicSgConfig dynamicSgConfig) throws Exception {
+        setup(Settings.EMPTY, dynamicSgConfig);
+    }
+    
+    protected final void setup(Settings override, DynamicSgConfig dynamicSgConfig) throws Exception {
+        Settings settings = Settings.builder().put(ConfigConstants.SEARCHGUARD_AUDIT_TYPE_DEFAULT, "debug").put(override).build();
+        setup(Settings.EMPTY, dynamicSgConfig, settings, true);
         
         try(TransportClient tc = getInternalTransportClient(this.clusterInfo, Settings.EMPTY)) {
-            populate(tc);
-            ConfigUpdateResponse cur = tc
-                    .execute(ConfigUpdateAction.INSTANCE, new ConfigUpdateRequest(CType.lcStringValues().toArray(new String[0])))
-                    .actionGet();
-            Assert.assertEquals(this.clusterInfo.numNodes, cur.getNodes().size());
+            populateData(tc);
         }
         
         rh = nonSslRestHelper();
     }
     
-    abstract void populate(TransportClient tc);
+    abstract void populateData(TransportClient tc);
 }

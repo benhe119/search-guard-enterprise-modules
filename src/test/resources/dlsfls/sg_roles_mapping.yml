@@ -228,3 +228,6 @@ sg_combined:
   - "user_combined"
   and_backend_roles: []
   description: "Migrated from v6"
+sg_date_math:
+  users:
+    - date_math

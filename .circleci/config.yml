@@ -19,7 +19,6 @@ jobs:
             - maven-repo-v3-{{ .Branch }}-{{ checksum "pom.xml" }}
             - maven-repo-v3-{{ .Branch }}-
             - maven-repo-v3-
-      - run: mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:resolve -DincludeParents=true -s settings.xml
       - run:
           command: |
             set -x

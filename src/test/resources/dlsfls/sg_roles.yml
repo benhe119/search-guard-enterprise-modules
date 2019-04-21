@@ -2,6 +2,13 @@
 _sg_meta:
   type: "roles"
   config_version: 2
+sg_date_math:
+  index_permissions:
+    - index_patterns:
+      - 'logstash'
+      dls: '{"range":{"@timestamp":{"from":"now-1d","to":"now","format":"strict_date_optional_time","include_lower":true,"include_upper":true,"boost":1.0}}}'
+      allowed_actions:
+      - "*"
 sg_bbb:
   reserved: false
   hidden: false
