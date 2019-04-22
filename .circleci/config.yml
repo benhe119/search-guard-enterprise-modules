@@ -28,10 +28,10 @@ jobs:
             cd ~/circleci-sg
 
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              mvn -U -Pcoverage verify -Dtest="$TESTFILES -s settings.xml"
+              mvn -U -Pcoverage verify -Dtest="$TESTFILES" -s settings.xml
             else
               #no coverage for non-master branches
-              mvn -U verify -Dtest="$TESTFILES -s settings.xml"
+              mvn -U verify -Dtest="$TESTFILES" -s settings.xml
             fi
       - store_test_results:
           path: target/surefire-reports
