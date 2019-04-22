@@ -30,13 +30,14 @@ public class RolesValidator extends AbstractConfigurationValidator {
 	public RolesValidator(final RestRequest request, final BytesReference ref, final Settings esSettings, Object... param) {
 		super(request, ref, esSettings, param);
 		this.payloadMandatory = true;
-		allowedKeys.put("indices", DataType.OBJECT);
-		allowedKeys.put("cluster", DataType.ARRAY);
-		allowedKeys.put("tenants", DataType.OBJECT);
+		allowedKeys.put("cluster_permissions", DataType.ARRAY);
+		allowedKeys.put("tenant_permissions", DataType.ARRAY);
+		allowedKeys.put("index_permissions", DataType.ARRAY);
 		allowedKeys.put("description", DataType.STRING);
 		
-		mandatoryOrKeys.add("indices");
-		mandatoryOrKeys.add("cluster");
+		//Allow empty role
+		//mandatoryOrKeys.add("cluster_permissions");
+		//mandatoryOrKeys.add("index_permissions");
 	}
 
     @Override
@@ -51,7 +52,7 @@ public class RolesValidator extends AbstractConfigurationValidator {
         if (this.content != null && this.content.length() > 0) {
 
             final ReadContext ctx = JsonPath.parse(this.content.utf8ToString());
-            final List<String> maskedFields = ctx.read("$.._masked_fields_[*]");
+            final List<String> maskedFields = ctx.read("$..masked_fields[*]");
 
             if (maskedFields != null) {
                 

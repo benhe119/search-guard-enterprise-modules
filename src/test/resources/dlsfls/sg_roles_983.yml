@@ -42,3 +42,7 @@ sg_human_resources_trainee:
     - "performance_data"
     allowed_actions:
     - "kibana:saved_objects/*/read"
+  - tenant_patterns:
+    - "GL*AL_TE*ANT"
+    allowed_actions:
+    - "kibana:saved_objects/*"

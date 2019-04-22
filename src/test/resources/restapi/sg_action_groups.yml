@@ -5,29 +5,29 @@ _sg_meta:
 CLUSTER_ALL:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "cluster:*"
   type: "cluster"
   description: "Migrated from v6"
 ALL:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:*"
   type: "index"
   description: "Migrated from v6"
-CRUD:
+CRUD_UT:
   reserved: false
   hidden: false
-  permissions:
-  - "READ"
+  allowed_actions:
+  - "READ_UT"
   - "WRITE"
   type: "index"
   description: "Migrated from v6"
 SEARCH:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read/search*"
   - "indices:data/read/msearch*"
   - "SUGGEST"
@@ -36,14 +36,14 @@ SEARCH:
 MONITOR:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:monitor/*"
   type: "index"
   description: "Migrated from v6"
 DATA_ACCESS:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/*"
   - "indices:admin/mapping/put"
   type: "index"
@@ -51,7 +51,7 @@ DATA_ACCESS:
 CREATE_INDEX:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:admin/create"
   - "indices:admin/mapping/put"
   type: "index"
@@ -59,7 +59,7 @@ CREATE_INDEX:
 WRITE:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/write*"
   - "indices:admin/mapping/put"
   type: "index"
@@ -67,28 +67,28 @@ WRITE:
 MANAGE_ALIASES:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:admin/aliases*"
   type: "index"
   description: "Migrated from v6"
-READ:
+READ_UT:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read*"
   type: "index"
   description: "Migrated from v6"
 DELETE:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/write/delete*"
   type: "index"
   description: "Migrated from v6"
-GET:
+GET_UT:
   reserved: true
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read/get*"
   - "indices:data/read/mget*"
   type: "index"
@@ -96,7 +96,7 @@ GET:
 MANAGE:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:monitor/*"
   - "indices:admin/*"
   type: "index"
@@ -104,7 +104,7 @@ MANAGE:
 INTERNAL:
   reserved: false
   hidden: true
-  permissions:
+  allowed_actions:
   - "indices:data/read/get*"
   - "indices:data/read/mget*"
   type: "index"
@@ -112,14 +112,14 @@ INTERNAL:
 CLUSTER_MONITOR:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "cluster:monitor/*"
   type: "cluster"
   description: "Migrated from v6"
 INDEX:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/write/index*"
   - "indices:data/write/update*"
   - "indices:admin/mapping/put"
@@ -128,7 +128,7 @@ INDEX:
 SUGGEST:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read/suggest*"
   type: "index"
   description: "Migrated from v6"

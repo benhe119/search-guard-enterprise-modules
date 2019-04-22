@@ -14,6 +14,7 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.elasticsearch.client.Client;
@@ -29,6 +30,7 @@ import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
@@ -51,8 +53,7 @@ public class AuthTokenProcessorAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected void handlePost(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) {
+	protected void handlePost(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException {
 
 		// Just do nothing here. Eligible authenticators will intercept calls and
 		// provide own responses.

@@ -37,6 +37,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
@@ -48,6 +49,7 @@ import com.floragunn.searchguard.sgconf.Hashed;
 import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.sgconf.impl.SgDynamicConfiguration;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
+import com.floragunn.searchguard.support.SgJsonNode;
 
 public class InternalUsersApiAction extends PatchableResourceApiAction {
 
@@ -82,18 +84,12 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
     }
 
     @Override
-    protected void handlePut(RestChannel channel, final RestRequest request, final Client client,
-            final Settings.Builder additionalSettingsBuilder) {
+    protected void handlePut(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException {
 
         final String username = request.param("name");
 
         if (username == null || username.length() == 0) {
             badRequestResponse(channel, "No " + getResourceName() + " specified.");
-            return;
-        }
-
-        if(username.contains(".")) {
-            badRequestResponse(channel, "No dots are allowed in the name. User the username attribute: https://docs.search-guard.com/latest/internal-users-database.");
             return;
         }
 
@@ -112,17 +108,20 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
             forbidden(channel, "Resource '" + username + "' is read-only.");
             return;
         }
-
+        
+        final ObjectNode contentAsNode = (ObjectNode) content;
+        final SgJsonNode sgJsonNode = new SgJsonNode(contentAsNode);
+        
         // if password is set, it takes precedence over hash
-        final String plainTextPassword = additionalSettingsBuilder.get("password");
-        final String origHash = additionalSettingsBuilder.get("hash");
+        final String plainTextPassword = sgJsonNode.get("password").asString();
+        final String origHash = sgJsonNode.get("hash").asString();
         if (plainTextPassword != null && plainTextPassword.length() > 0) {
-            additionalSettingsBuilder.remove("password");
-            additionalSettingsBuilder.put("hash", hash(plainTextPassword.toCharArray()));
+            contentAsNode.remove("password");
+            contentAsNode.put("hash", hash(plainTextPassword.toCharArray()));
         } else if(origHash != null && origHash.length() > 0) {
-            additionalSettingsBuilder.remove("password");
+            contentAsNode.remove("password");
         } else if(plainTextPassword != null && plainTextPassword.isEmpty() && origHash == null) {
-            additionalSettingsBuilder.remove("password");
+            contentAsNode.remove("password");
         }
         
         // check if user exists
@@ -135,13 +134,13 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         // changes
 
         // sanity checks, hash is mandatory for newly created users
-        if (!userExisted && additionalSettingsBuilder.get("hash") == null) {
+        if (!userExisted && sgJsonNode.get("hash").asString() == null) {
             badRequestResponse(channel, "Please specify either 'hash' or 'password' when creating a new internal user.");
             return;
         }
 
         // for existing users, hash is optional
-        if (userExisted && additionalSettingsBuilder.get("hash") == null) {
+        if (userExisted && sgJsonNode.get("hash").asString() == null) {
             // sanity check, this should usually not happen
             @SuppressWarnings("unchecked")
             final String hash = ((Hashed)internaluser.getCEntry(username)).getHash();
@@ -150,13 +149,13 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
                         "Existing user " + username + " has no password, and no new password or hash was specified.");
                 return;
             }
-            additionalSettingsBuilder.put("hash", hash);
+            contentAsNode.put("hash", hash);
         }
 
         internaluser.remove(username);
 
         // checks complete, create or update the user
-        internaluser.putCObject(username, Utils.serializeToXContentToPojo(additionalSettingsBuilder.build(), internaluser.getImplementingClass()));
+        internaluser.putCObject(username, DefaultObjectMapper.readTree(contentAsNode, internaluser.getImplementingClass()));
 
         saveAnUpdateConfigs(client, request, CType.INTERNALUSERS, internaluser, new OnSucessActionListener<IndexResponse>(channel) {
             

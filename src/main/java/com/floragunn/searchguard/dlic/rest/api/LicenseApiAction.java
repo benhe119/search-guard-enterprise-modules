@@ -35,6 +35,7 @@ import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.floragunn.searchguard.SearchGuardPlugin;
 import com.floragunn.searchguard.action.licenseinfo.LicenseInfoAction;
 import com.floragunn.searchguard.action.licenseinfo.LicenseInfoRequest;
@@ -43,6 +44,7 @@ import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.configuration.SearchGuardLicense;
+import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.LicenseValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
@@ -52,6 +54,7 @@ import com.floragunn.searchguard.sgconf.impl.v6.ConfigV6;
 import com.floragunn.searchguard.sgconf.impl.v7.ConfigV7;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 import com.floragunn.searchguard.support.LicenseHelper;
+import com.floragunn.searchguard.support.SgJsonNode;
 
 public class LicenseApiAction extends AbstractApiAction {
 	
@@ -74,7 +77,7 @@ public class LicenseApiAction extends AbstractApiAction {
 	}
 
 	@Override
-	protected void handleGet(RestChannel channel, RestRequest request, Client client, Builder additionalSettings) {
+	protected void handleGet(RestChannel channel, RestRequest request, Client client, final JsonNode content) throws IOException{
 
 		client.execute(LicenseInfoAction.INSTANCE, new LicenseInfoRequest(), new ActionListener<LicenseInfoResponse>() {
 
@@ -106,11 +109,10 @@ public class LicenseApiAction extends AbstractApiAction {
 	}
 	
 	@Override
-	protected void handlePut(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder licenseBuilder) {
-		
-		String licenseString = licenseBuilder.get("sg_license");
-		
+	protected void handlePut(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException{
+
+		String licenseString = new SgJsonNode(content).get("sg_license").asString();
+
 		if (licenseString == null || licenseString.length() == 0) {
 			badRequestResponse(channel, "License must not be null.");
 			return;
@@ -196,7 +198,7 @@ public class LicenseApiAction extends AbstractApiAction {
 	}
 
 	protected void handlePost(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) {
+			final Settings.Builder additionalSettings) throws IOException{
 		notImplemented(channel, Method.POST);
 	}
 

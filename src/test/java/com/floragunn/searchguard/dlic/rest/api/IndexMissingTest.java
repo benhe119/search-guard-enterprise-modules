@@ -22,6 +22,8 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.floragunn.searchguard.DefaultObjectMapper;
+import com.floragunn.searchguard.support.SgJsonNode;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
@@ -88,8 +90,8 @@ public class IndexMissingTest extends AbstractRestApiUnitTest {
 		// GET configuration
 		response = rh.executeGetRequest("_searchguard/api/configuration/roles");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals("CLUSTER_ALL", settings.getAsList("sg_admin.cluster").get(0));
+		SgJsonNode sgJsonNode = new SgJsonNode(DefaultObjectMapper.readTree(response.getBody()));
+		Assert.assertEquals("CLUSTER_ALL", sgJsonNode.get("sg_admin").get("cluster_permissions").get(0).asString());
 
 	}
 }

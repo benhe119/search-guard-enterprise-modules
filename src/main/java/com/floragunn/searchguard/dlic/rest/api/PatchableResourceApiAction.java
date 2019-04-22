@@ -77,7 +77,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         JsonNode jsonPatch;
 
         try {
-            jsonPatch = DefaultObjectMapper.objectMapper.readTree(request.content().utf8ToString());
+            jsonPatch = DefaultObjectMapper.readTree(request.content().utf8ToString());
         } catch (IOException e) {
             log.debug("Error while parsing JSON patch", e);
             badRequestResponse(channel, "Error in JSON patch: " + e.getMessage());

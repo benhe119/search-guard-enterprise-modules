@@ -14,6 +14,7 @@
 
 package com.floragunn.searchguard.dlic.rest.api;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.elasticsearch.client.Client;
@@ -29,6 +30,7 @@ import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
@@ -52,8 +54,7 @@ public class SgConfigAction extends AbstractApiAction {
 
 
 	@Override
-	protected void handleGet(RestChannel channel, RestRequest request, Client client,
-			final Settings.Builder additionalSettingsBuilder) {
+	protected void handleGet(RestChannel channel, RestRequest request, Client client, final JsonNode content) throws IOException{
 
 		final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), true);
 
@@ -62,14 +63,12 @@ public class SgConfigAction extends AbstractApiAction {
 	}
 	
 	@Override
-	protected void handlePut(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) {
+	protected void handlePut(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException{
 		notImplemented(channel, Method.PUT);
 	}
 
 	@Override
-	protected void handleDelete(RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) {
+	protected void handleDelete(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException{
 		notImplemented(channel, Method.DELETE);
 	}
 

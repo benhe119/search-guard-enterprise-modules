@@ -29,6 +29,7 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
@@ -46,6 +47,8 @@ import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateNodeResponse;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
@@ -112,20 +115,19 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		}
 		switch (request.method()) {
 		case DELETE:
-			handleDelete(channel,request, client, validator.settingsBuilder()); break;
+			handleDelete(channel,request, client, validator.getContentAsNode()); break;
 		case POST:
-			handlePost(channel,request, client, validator.settingsBuilder());break;
+			handlePost(channel,request, client, validator.getContentAsNode());break;
 		case PUT:
-			handlePut(channel,request, client, validator.settingsBuilder());break;
+			handlePut(channel,request, client, validator.getContentAsNode());break;
 		case GET:
-             handleGet(channel,request, client, validator.settingsBuilder());break;
+             handleGet(channel,request, client, validator.getContentAsNode());break;
 		default:
 			throw new IllegalArgumentException(request.method() + " not supported");
 		}
 	}
 
-	protected void handleDelete(final RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettingsBuilder) throws IOException {
+	protected void handleDelete(final RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException {
 		final String name = request.param("name");
 
 		if (name == null || name.length() == 0) {
@@ -167,8 +169,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		}
 	}
 
-	protected void handlePut(final RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettingsBuilder) throws IOException {
+	protected void handlePut(final RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException {
 		
 		final String name = request.param("name");
 
@@ -189,12 +190,12 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return;
 		}
 		
-		if (log.isTraceEnabled()) {
-			log.trace(additionalSettingsBuilder.build());
+		if (log.isTraceEnabled() && content != null) {
+			log.trace(content.toString());
 		}
 		
 		boolean existed = existingAsSettings.exists(name);
-		existingAsSettings.putCObject(name, Utils.serializeToXContentToPojo(additionalSettingsBuilder.build(), existingAsSettings.getImplementingClass()));
+		existingAsSettings.putCObject(name, DefaultObjectMapper.readTree(content, existingAsSettings.getImplementingClass()));
 		
 		//final Map<String, Object> con = Utils.convertJsonToxToStructuredMap(existingAsSettings); 
 		
@@ -217,12 +218,11 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		
 	}
 
-	protected void handlePost(final RestChannel channel, final RestRequest request, final Client client,
-			final Settings.Builder additionalSettings) throws IOException {
+	protected void handlePost(final RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException {
 		notImplemented(channel, Method.POST);
 	}
 
-	protected void handleGet(final RestChannel channel, RestRequest request, Client client, Builder additionalSettings)
+	protected void handleGet(final RestChannel channel, RestRequest request, Client client, final JsonNode content)
 	        throws IOException{
 	    
 		final String resourcename = request.param("name");

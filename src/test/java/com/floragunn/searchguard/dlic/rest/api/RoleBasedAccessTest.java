@@ -20,6 +20,8 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.floragunn.searchguard.DefaultObjectMapper;
+import com.floragunn.searchguard.support.SgJsonNode;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
@@ -105,11 +107,11 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		System.out.println(response.getBody());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Assert.assertEquals("", settings.getAsList("ALL.permissions").get(0), "indices:*"); //mixed action groups not supported
+		Assert.assertEquals("", settings.getAsList("ALL.allowed_actions").get(0), "indices:*"); //mixed action groups not supported
 		//because jackson can not serialize it. Old format is supported but not a mixture of both
-		Assert.assertEquals("", settings.getAsList("CLUSTER_MONITOR.permissions").get(0), "cluster:monitor/*");
+		Assert.assertEquals("", settings.getAsList("CLUSTER_MONITOR.allowed_actions").get(0), "cluster:monitor/*");
 		// new format for action groups
-		Assert.assertEquals("", settings.getAsList("CRUD.permissions").get(0), "READ");
+		Assert.assertEquals("", settings.getAsList("CRUD_UT.allowed_actions").get(0), "READ_UT");
 		
 		// --- Forbidden ---
 				
@@ -172,9 +174,8 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 
 		// Worf, has access to roles API, get captains role
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", encodeBasicHeader("worf", "worf"));
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Assert.assertEquals(settings.getAsList("sg_role_starfleet_captains.cluster").get(0), "cluster:monitor*");
+		Assert.assertEquals(new SgJsonNode(DefaultObjectMapper.readTree(response.getBody())).getDotted("sg_role_starfleet_captains.cluster_permissions").get(0).asString(), "cluster:monitor*");
 
 		// Worf, has access to roles API, able to delete 
 		response = rh.executeDeleteRequest("/_searchguard/api/roles/sg_role_starfleet_captains", encodeBasicHeader("worf", "worf"));
@@ -209,9 +210,8 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 
 		// starfleet role present again
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", encodeBasicHeader("worf", "worf"));
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Assert.assertEquals(settings.getAsList("sg_role_starfleet_captains.indices.hulla.dulla").get(0), "blafasel");
+		Assert.assertEquals(new SgJsonNode(DefaultObjectMapper.readTree(response.getBody())).getDotted("sg_role_starfleet_captains.index_permissions").get(0).get("allowed_actions").get(0).asString(), "blafasel");
 
 		// Try the same, but now with admin certificate
 		rh.sendHTTPClientCertificate = true;

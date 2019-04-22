@@ -26,10 +26,11 @@ public class ActionGroupValidator extends AbstractConfigurationValidator {
 	public ActionGroupValidator(final RestRequest request, BytesReference ref, final Settings esSettings, Object... param) {
 		super(request, ref, esSettings, param);
 		this.payloadMandatory = true;
-		allowedKeys.put("permissions", DataType.ARRAY);
-	      allowedKeys.put("description", DataType.STRING);
+		allowedKeys.put("allowed_actions", DataType.ARRAY);
+	    allowedKeys.put("description", DataType.STRING);
+	    allowedKeys.put("type", DataType.STRING);
 
-		mandatoryKeys.add("permissions");
+		mandatoryKeys.add("allowed_actions");
 	}
 
 }

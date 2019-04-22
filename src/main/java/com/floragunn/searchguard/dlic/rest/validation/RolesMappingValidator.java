@@ -25,11 +25,13 @@ public class RolesMappingValidator extends AbstractConfigurationValidator {
 		super(request, ref, esSettings, param);
 		this.payloadMandatory = true;
 		allowedKeys.put("backend_roles", DataType.ARRAY);
+		allowedKeys.put("and_backend_roles", DataType.ARRAY);
 		allowedKeys.put("hosts", DataType.ARRAY);
 		allowedKeys.put("users", DataType.ARRAY);
 		allowedKeys.put("description", DataType.STRING);
 
 		mandatoryOrKeys.add("backend_roles");
+		mandatoryOrKeys.add("and_backend_roles");
 		mandatoryOrKeys.add("hosts");
 		mandatoryOrKeys.add("users");
 	}

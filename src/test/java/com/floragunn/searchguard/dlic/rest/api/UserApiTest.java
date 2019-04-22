@@ -46,7 +46,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 				.executeGetRequest("_searchguard/api/configuration/" + CType.INTERNALUSERS.toLCString());
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(20, settings.size());
+		Assert.assertEquals(27, settings.size());
 		// --- GET
 
 		// GET, user admin, exists
@@ -54,7 +54,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(4, settings.size());
+		Assert.assertEquals(7, settings.size());
 		// hash must be filtered
 		Assert.assertEquals("", settings.get("admin.hash"));
 
@@ -158,14 +158,14 @@ public class UserApiTest extends AbstractRestApiUnitTest {
  
         // PATCH
         rh.sendHTTPClientCertificate = true;
-        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {\"password\": \"bla\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {\"password\": \"bla\", \"backend_roles\": [\"vulcan\"] } }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rh.executeGetRequest("/_searchguard/api/internalusers/bulknew1", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
         Assert.assertFalse(settings.hasValue("bulknew1.password"));
         Assert.assertTrue(settings.hasValue("bulknew1.hash"));        
-        List<String> roles = settings.getAsList("bulknew1.roles");
+        List<String> roles = settings.getAsList("bulknew1.backend_roles");
         Assert.assertEquals(1, roles.size());
         Assert.assertTrue(roles.contains("vulcan"));
         
@@ -253,7 +253,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));
-		Assert.assertTrue(settings.get("roles").equals("Array expected"));
+		Assert.assertTrue(settings.get("backend_roles").equals("Array expected"));
 		rh.sendHTTPClientCertificate = false;
 
 		rh.sendHTTPClientCertificate = true;
@@ -261,7 +261,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));
-		Assert.assertTrue(settings.get("roles").equals("Array expected"));
+		Assert.assertTrue(settings.get("backend_roles").equals("Array expected"));
 		rh.sendHTTPClientCertificate = false;
 		
 		rh.sendHTTPClientCertificate = true;
@@ -270,7 +270,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));
 		Assert.assertTrue(settings.get("password").equals("String expected"));
-		Assert.assertTrue(settings.get("roles") == null);
+		Assert.assertTrue(settings.get("backend_roles") == null);
 		rh.sendHTTPClientCertificate = false;		
 
 		rh.sendHTTPClientCertificate = true;
@@ -278,7 +278,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));
-		Assert.assertTrue(settings.get("roles").equals("Array expected"));
+		Assert.assertTrue(settings.get("backend_roles").equals("Array expected"));
 		rh.sendHTTPClientCertificate = false;	
 		
 		// use backendroles when creating user. User picard does not exist in
@@ -307,7 +307,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("", settings.get("picard.hash"));
-		roles = settings.getAsList("picard.roles");
+		roles = settings.getAsList("picard.backend_roles");
 		Assert.assertNotNull(roles);
 		Assert.assertEquals(2, roles.size());
 		Assert.assertTrue(roles.contains("starfleet"));
@@ -342,7 +342,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(20, settings.size());
+		Assert.assertEquals(27, settings.size());
 
 		addUserWithPassword("tooshoort", "123", HttpStatus.SC_BAD_REQUEST);
 		addUserWithPassword("tooshoort", "1234567", HttpStatus.SC_BAD_REQUEST);
@@ -355,21 +355,21 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		addUserWithPassword("ok3", "$Aa123456789", HttpStatus.SC_CREATED);
 		addUserWithPassword("ok4", "$1aAAAAAAAAA", HttpStatus.SC_CREATED);
 		
-        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/ok4\", \"value\": {\"password\": \"bla\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/ok4\", \"value\": {\"password\": \"bla\", \"backend_roles\": [\"vulcan\"] } }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
         
-        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"replace\", \"path\": \"/ok4\", \"value\": {\"password\": \"bla\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"replace\", \"path\": \"/ok4\", \"value\": {\"password\": \"bla\", \"backend_roles\": [\"vulcan\"] } }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
         
         addUserWithPassword("ok4", "123", HttpStatus.SC_BAD_REQUEST);
         
-        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/ok4\", \"value\": {\"password\": \"$1aAAAAAAAAB\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/ok4\", \"value\": {\"password\": \"$1aAAAAAAAAB\", \"backend_roles\": [\"vulcan\"] } }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         
         addUserWithPassword("ok4", "$1aAAAAAAAAC", HttpStatus.SC_OK);
 		
         //its not allowed to use the username as password (case insensitive)
-        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/$1aAAAAAAAAB\", \"value\": {\"password\": \"$1aAAAAAAAAB\", \"roles\": [\"vulcan\"] } }]", new Header[0]);
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/$1aAAAAAAAAB\", \"value\": {\"password\": \"$1aAAAAAAAAB\", \"backend_roles\": [\"vulcan\"] } }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
         addUserWithPassword("$1aAAAAAAAAC", "$1aAAAAAAAAC", HttpStatus.SC_BAD_REQUEST);
         addUserWithPassword("$1aAAAAAAAac", "$1aAAAAAAAAC", HttpStatus.SC_BAD_REQUEST);
@@ -382,8 +382,8 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         Assert.assertTrue(response.getBody().contains("NOT_FOUND"));
         
         String patchPayload="[ "+
-            "{ \"op\": \"add\", \"path\": \"/testuser1\",  \"value\": { \"password\": \"$aA123456789\", \"roles\": [\"testrole1\"] } },"+
-            "{ \"op\": \"add\", \"path\": \"/testuser2\",  \"value\": { \"password\": \"testpassword2\", \"roles\": [\"testrole2\"] } }"+
+            "{ \"op\": \"add\", \"path\": \"/testuser1\",  \"value\": { \"password\": \"$aA123456789\", \"backend_roles\": [\"testrole1\"] } },"+
+            "{ \"op\": \"add\", \"path\": \"/testuser2\",  \"value\": { \"password\": \"testpassword2\", \"backend_roles\": [\"testrole2\"] } }"+
          "]";
         
         response = rh.executePatchRequest("/_searchguard/api/internalusers", patchPayload, new BasicHeader("Content-Type", "application/json"));
@@ -405,19 +405,19 @@ public class UserApiTest extends AbstractRestApiUnitTest {
                 .executeGetRequest("_searchguard/api/configuration/" + CType.INTERNALUSERS.toLCString());
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-        Assert.assertEquals(20, settings.size());
+        Assert.assertEquals(27, settings.size());
         
-        addDotUserUserWithHash("my.dotuser0", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
-                HttpStatus.SC_BAD_REQUEST, false);
+        addUserWithPassword(".my.dotuser0", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_CREATED);
         
-        addDotUserWithPassword("my.dot.user0", "12345678",
-                HttpStatus.SC_BAD_REQUEST, false);
+        addUserWithPassword(".my.dot.user0", "12345678",
+                HttpStatus.SC_CREATED);
         
-        addDotUserUserWithHash("my.dotuser1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
-                HttpStatus.SC_CREATED, true);
+        addUserWithHash(".my.dotuser1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+                HttpStatus.SC_CREATED);
         
-        addDotUserWithPassword("my.dot.user2", "12345678",
-                HttpStatus.SC_CREATED, true);
+        addUserWithPassword(".my.dot.user2", "12345678",
+                HttpStatus.SC_CREATED);
 
 	}
 	
@@ -435,7 +435,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         addUserWithHash("user1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
                 HttpStatus.SC_CREATED);
         
-        response = rh.executePutRequest("/_searchguard/api/user/user1", "{\"hash\":\"$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m\",\"password\":\"\",\"roles\":[\"admin\",\"rolea\"]}");
+        response = rh.executePutRequest("/_searchguard/api/user/user1", "{\"hash\":\"$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m\",\"password\":\"\",\"backend_roles\":[\"admin\",\"rolea\"]}");
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         
         response = rh.executeGetRequest("/_searchguard/api/user/user1");
@@ -444,7 +444,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         addUserWithHash("user2", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
                 HttpStatus.SC_CREATED);
         
-        response = rh.executePutRequest("/_searchguard/api/user/user2", "{\"password\":\"\",\"roles\":[\"admin\",\"rolex\"]}");
+        response = rh.executePutRequest("/_searchguard/api/user/user2", "{\"password\":\"\",\"backend_roles\":[\"admin\",\"rolex\"]}");
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         
         response = rh.executeGetRequest("/_searchguard/api/user/user2");

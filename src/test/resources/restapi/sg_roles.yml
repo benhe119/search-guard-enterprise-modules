@@ -44,7 +44,7 @@ sg_role_klingons1:
     fls: null
     masked_fields: null
     allowed_actions:
-    - "READ"
+    - "READ_UT"
   tenant_permissions: []
 sg_role_klingons2:
   reserved: false
@@ -58,7 +58,7 @@ sg_role_klingons2:
     fls: null
     masked_fields: null
     allowed_actions:
-    - "READ"
+    - "READ_UT"
   tenant_permissions: []
 sg_kibana4:
   reserved: false
@@ -207,7 +207,7 @@ sg_marvel_user:
     fls: null
     masked_fields: null
     allowed_actions:
-    - "READ"
+    - "READ_UT"
   - index_patterns:
     - "?kibana"
     dls: null
@@ -272,7 +272,7 @@ sg_user:
     fls: null
     masked_fields: null
     allowed_actions:
-    - "READ"
+    - "READ_UT"
   tenant_permissions: []
 sg_kibana4_server:
   reserved: false
@@ -316,7 +316,7 @@ sg_role_starfleet:
     fls: null
     masked_fields: null
     allowed_actions:
-    - "READ"
+    - "READ_UT"
     - "*bulk*"
   - index_patterns:
     - "*"
@@ -324,7 +324,7 @@ sg_role_starfleet:
     fls: null
     masked_fields: null
     allowed_actions:
-    - "READ"
+    - "READ_UT"
   tenant_permissions: []
 sg_role_starfleet_captains:
   reserved: false
@@ -340,12 +340,12 @@ sg_role_starfleet_captains:
     fls: null
     masked_fields: null
     allowed_actions:
-    - "CRUD"
+    - "CRUD_UT"
   - index_patterns:
     - "public"
     dls: null
     fls: null
     masked_fields: null
     allowed_actions:
-    - "CRUD"
+    - "CRUD_UT"
   tenant_permissions: []

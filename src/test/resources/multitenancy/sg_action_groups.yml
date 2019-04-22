@@ -5,21 +5,21 @@ _sg_meta:
 CLUSTER_ALL:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "cluster:*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 ALL:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "INDICES_ALL"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 CRUD:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "READ"
   - "WRITE"
   - "DELETE"
@@ -28,7 +28,7 @@ CRUD:
 SEARCH:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read/search*"
   - "indices:data/read/msearch*"
   - "SUGGEST"
@@ -37,14 +37,14 @@ SEARCH:
 MONITOR:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "INDICES_MONITOR"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 DATA_ACCESS:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/*"
   - "CRUD"
   type: "unknown"
@@ -52,7 +52,7 @@ DATA_ACCESS:
 CREATE_INDEX:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:admin/create"
   - "indices:admin/mapping/put"
   type: "unknown"
@@ -60,7 +60,7 @@ CREATE_INDEX:
 WRITE:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/write*"
   - "indices:admin/mapping/put"
   type: "unknown"
@@ -68,14 +68,14 @@ WRITE:
 MANAGE_ALIASES:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:admin/aliases*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 READ:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read*"
   - "indices:admin/mappings/fields/get*"
   type: "unknown"
@@ -83,21 +83,21 @@ READ:
 INDICES_ALL:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 DELETE:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/write/delete*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 CLUSTER_COMPOSITE_OPS:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/write/bulk"
   - "indices:admin/aliases*"
   - "CLUSTER_COMPOSITE_OPS_RO"
@@ -106,7 +106,7 @@ CLUSTER_COMPOSITE_OPS:
 CLUSTER_COMPOSITE_OPS_RO:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read/mget"
   - "indices:data/read/msearch"
   - "indices:data/read/mtv"
@@ -118,7 +118,7 @@ CLUSTER_COMPOSITE_OPS_RO:
 GET:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read/get*"
   - "indices:data/read/mget*"
   type: "unknown"
@@ -126,7 +126,7 @@ GET:
 MANAGE:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:monitor/*"
   - "indices:admin/*"
   type: "unknown"
@@ -134,14 +134,14 @@ MANAGE:
 CLUSTER_MONITOR:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "cluster:monitor/*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 MANAGE_SNAPSHOTS:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "cluster:admin/snapshot/*"
   - "cluster:admin/repository/*"
   type: "unknown"
@@ -149,7 +149,7 @@ MANAGE_SNAPSHOTS:
 INDEX:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/write/index*"
   - "indices:data/write/update*"
   - "indices:admin/mapping/put"
@@ -159,21 +159,21 @@ INDEX:
 UNLIMITED:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 INDICES_MONITOR:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:monitor/*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
 SUGGEST:
   reserved: false
   hidden: false
-  permissions:
+  allowed_actions:
   - "indices:data/read/suggest*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
