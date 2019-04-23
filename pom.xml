@@ -24,7 +24,7 @@
   <inceptionYear>2016</inceptionYear>
 
   <properties>
-    <sg2.version>6.7.1-25.0-SNAPSHOT</sg2.version>
+    <sg2.version>6.7.1-25.0-api</sg2.version>
     <elasticsearch.version>6.7.1</elasticsearch.version>
 
     <!-- deps -->
