@@ -43,6 +43,14 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         HttpResponse response = rh.executePutRequest("_searchguard/api/roles/admin", FileHelper.loadFile("restapi/simple_role.json"));
         System.out.println(response.getBody());
         Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
+        
+        response = rh.executePutRequest("_searchguard/api/roles/lala", "{ \"cluster_permissions\": [\"*\"] }");
+        System.out.println(response.getBody());
+        Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
+        
+        response = rh.executePutRequest("_searchguard/api/roles/empty", "{ \"cluster_permissions\": [] }");
+        System.out.println(response.getBody());
+        Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
     }
     
 	@Test
