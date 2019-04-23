@@ -104,7 +104,7 @@ public abstract class AbstractHTTPJwtAuthenticator implements HTTPAuthenticator 
             log.info(e);
             throw new ElasticsearchSecurityException(e.getMessage(), RestStatus.SERVICE_UNAVAILABLE);
         } catch (BadCredentialsException e) {
-            log.info("Extracting JWT token from " + jwtString + " failed", e);
+            log.info("Extracting JWT token from " + jwtString + " failed", e);            
             return null;
         }
 
