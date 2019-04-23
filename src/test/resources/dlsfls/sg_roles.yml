@@ -294,6 +294,13 @@ sg_bbb:
         - f1
         - f2
         - type
+        
+sg_date_math:
+  indices:
+    'logstash':
+       '*':  
+         - '*'
+       _dls_: '{"range":{"@timestamp":{"from":"now-1d","to":"now","format":"strict_date_optional_time","include_lower":true,"include_upper":true,"boost":1.0}}}'
 
 sg_fls_fields_wc:
   cluster:
