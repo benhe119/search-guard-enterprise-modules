@@ -120,7 +120,8 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
                 AccessController.doPrivileged(new PrivilegedExceptionAction<Response<Void>>() {
                     @Override
                     public Response<Void> run() throws LdapException {
-                        return _con.reopen(br);
+                        Utils.unbindAndCloseSilently(_con);
+                        return _con.open(br);
                     }
                 });
             } catch (PrivilegedActionException e) {
