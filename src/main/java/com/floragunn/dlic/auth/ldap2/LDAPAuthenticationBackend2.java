@@ -56,6 +56,8 @@ public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destro
     private ConnectionFactory connectionFactory;
     private ConnectionFactory authConnectionFactory;
     private LDAPUserSearcher userSearcher;
+    private final int customAttrMaxValueLen;
+    private final List<String> whitelistedAttributes;
 
     public LDAPAuthenticationBackend2(final Settings settings, final Path configPath) throws SSLConfigException {
         this.settings = settings;
@@ -73,6 +75,9 @@ public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destro
         }
 
         this.userSearcher = new LDAPUserSearcher(settings);
+        customAttrMaxValueLen = settings.getAsInt(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 36);
+        whitelistedAttributes = settings.getAsList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST,
+                null);
     }
 
     @Override
@@ -125,10 +130,6 @@ public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destro
                 log.debug("Authenticated username {}", username);
             }
 
-            final int customAttrMaxValueLen = settings.getAsInt(ConfigConstants.LDAP_CUSTOM_ATTR_MAXVAL_LEN, 36);
-            final List<String> whitelistedAttributes = settings.getAsList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST,
-                    null);
-
             // by default all ldap attributes which are not binary and with a max value
             // length of 36 are included in the user object
             // if the whitelist contains at least one value then all attributes will be
@@ -165,7 +166,15 @@ public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destro
         try {
             ldapConnection = this.connectionFactory.getConnection();
             ldapConnection.open();
-            return this.userSearcher.exists(ldapConnection, userName) != null;
+            LdapEntry userEntry = this.userSearcher.exists(ldapConnection, userName);
+            
+            boolean exists = userEntry != null;
+            
+            if(exists) {
+                user.addAttributes(LdapUser.extractLdapAttributes(userName, userEntry, customAttrMaxValueLen, whitelistedAttributes));
+            }
+            
+            return exists;
         } catch (final Exception e) {
             log.warn("User {} does not exist due to " + e, userName);
             if (log.isDebugEnabled()) {
