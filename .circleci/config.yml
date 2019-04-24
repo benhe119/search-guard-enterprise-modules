@@ -23,7 +23,7 @@ jobs:
           command: |
             set -x
             cd src/test/java         
-            TESTFILES="$(circleci tests glob **/*Test*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
+            TESTFILES="$(circleci tests glob **/*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
             echo "$TESTFILES"
             cd ~/circleci-sg
 
