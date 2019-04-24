@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 by floragunn GmbH - All rights reserved
+ * Copyright 2016-2019 by floragunn GmbH - All rights reserved
  * 
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -30,47 +30,47 @@ import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
-import com.floragunn.searchguard.dlic.rest.validation.ActionGroupValidator;
+import com.floragunn.searchguard.dlic.rest.validation.TenantValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
 
-public class ActionGroupsApiAction extends PatchableResourceApiAction {
+public class TenantsApiAction extends PatchableResourceApiAction {
 
 	@Inject
-	public ActionGroupsApiAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
+	public TenantsApiAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
 			final AdminDNs adminDNs, final ConfigurationRepository cl, final ClusterService cs,
             final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
 		super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool, auditLog);
 
         // corrected mapping, introduced in SG6
-        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/{name}", this);
-        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/", this);
-        controller.registerHandler(Method.DELETE, "/_searchguard/api/actiongroups/{name}", this);
-        controller.registerHandler(Method.PUT, "/_searchguard/api/actiongroups/{name}", this);
-        controller.registerHandler(Method.PATCH, "/_searchguard/api/actiongroups/", this);
-        controller.registerHandler(Method.PATCH, "/_searchguard/api/actiongroups/{name}", this);
+        controller.registerHandler(Method.GET, "/_searchguard/api/tenants/{name}", this);
+        controller.registerHandler(Method.GET, "/_searchguard/api/tenants/", this);
+        controller.registerHandler(Method.DELETE, "/_searchguard/api/tenants/{name}", this);
+        controller.registerHandler(Method.PUT, "/_searchguard/api/tenants/{name}", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/tenants/", this);
+        controller.registerHandler(Method.PATCH, "/_searchguard/api/tenants/{name}", this);
 
     }
 
     @Override
     protected Endpoint getEndpoint() {
-        return Endpoint.ACTIONGROUPS;
+        return Endpoint.TENANTS;
     }
 
     @Override
     protected AbstractConfigurationValidator getValidator(final RestRequest request, BytesReference ref, Object... param) {
-        return new ActionGroupValidator(request, ref, this.settings, param);
+        return new TenantValidator(request, ref, this.settings, param);
     }
 
 	@Override
 	protected CType getConfigName() {
-		return CType.ACTIONGROUPS;
+		return CType.TENANTS;
 	}
 
     @Override
     protected String getResourceName() {
-        return "actiongroup";
+        return "tenant";
     }
 
     @Override

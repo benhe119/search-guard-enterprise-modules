@@ -27,9 +27,9 @@ public class SearchGuardApiAccessTest extends AbstractRestApiUnitTest {
 
 		// test with no cert, must fail
 		Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED,
-				rh.executeGetRequest("_searchguard/api/configuration/internalusers").getStatusCode());
+				rh.executeGetRequest("_searchguard/api/internalusers").getStatusCode());
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN,
-				rh.executeGetRequest("_searchguard/api/configuration/internalusers",
+				rh.executeGetRequest("_searchguard/api/internalusers",
 						encodeBasicHeader("admin", "admin"))
 						.getStatusCode());
 
@@ -37,9 +37,9 @@ public class SearchGuardApiAccessTest extends AbstractRestApiUnitTest {
 		rh.keystore = "restapi/node-0-keystore.jks";
 		rh.sendHTTPClientCertificate = true;
 		Assert.assertEquals(HttpStatus.SC_UNAUTHORIZED,
-				rh.executeGetRequest("_searchguard/api/configuration/internalusers").getStatusCode());
+				rh.executeGetRequest("_searchguard/api/internalusers").getStatusCode());
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN,
-				rh.executeGetRequest("_searchguard/api/configuration/internalusers",
+				rh.executeGetRequest("_searchguard/api/internalusers",
 						encodeBasicHeader("admin", "admin"))
 						.getStatusCode());
 

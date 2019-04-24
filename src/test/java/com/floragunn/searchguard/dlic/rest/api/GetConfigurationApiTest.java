@@ -34,12 +34,11 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		rh.sendHTTPClientCertificate = true;
 
 		// wrong config name -> bad request
-		HttpResponse response = rh.executeGetRequest("_searchguard/api/configuration/doesnotexists");
-		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+		HttpResponse response = null;
 
 		// test that every config is accessible
 		// sg_config
-		response = rh.executeGetRequest("_searchguard/api/configuration/config");
+		response = rh.executeGetRequest("_searchguard/api/sgconfig");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(
@@ -47,26 +46,26 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 				true);
 
 		// internalusers
-		response = rh.executeGetRequest("_searchguard/api/configuration/internalusers");
+		response = rh.executeGetRequest("_searchguard/api/internalusers");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("", settings.get("admin.hash"));
 		Assert.assertEquals("", settings.get("other.hash"));
 
 		// roles
-		response = rh.executeGetRequest("_searchguard/api/configuration/roles");
+		response = rh.executeGetRequest("_searchguard/api/roles");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		JsonNode jnode = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(jnode.get("sg_all_access").get("cluster_permissions").get(0).asText(), "cluster:*");
 
 		// roles
-		response = rh.executeGetRequest("_searchguard/api/configuration/rolesmapping");
+		response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(settings.getAsList("sg_role_starfleet.backend_roles").get(0), "starfleet");
 
 		// action groups
-		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups");
+		response = rh.executeGetRequest("_searchguard/api/actiongroups");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(settings.getAsList("ALL.allowed_actions").get(0), "indices:*");

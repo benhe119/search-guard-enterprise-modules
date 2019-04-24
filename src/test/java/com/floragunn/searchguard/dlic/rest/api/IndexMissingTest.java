@@ -47,7 +47,7 @@ public class IndexMissingTest extends AbstractRestApiUnitTest {
 		rh.sendHTTPClientCertificate = true;
 
 		// GET configuration
-		HttpResponse response = rh.executeGetRequest("_searchguard/api/configuration/roles");
+		HttpResponse response = rh.executeGetRequest("_searchguard/api/roles");
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		String errorString = response.getBody();
 		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
@@ -65,19 +65,19 @@ public class IndexMissingTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
 		
 		// GET actiongroups
-		response = rh.executeGetRequest("_searchguard/api/actiongroup/READ");
+		response = rh.executeGetRequest("_searchguard/api/actiongroups/READ");
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		errorString = response.getBody();
 		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
 
 		// GET internalusers
-		response = rh.executeGetRequest("_searchguard/api/user/picard");
+		response = rh.executeGetRequest("_searchguard/api/internalusers/picard");
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		errorString = response.getBody();
 		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
 		
 		// PUT request
-		response = rh.executePutRequest("/_searchguard/api/actiongroup/READ", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
+		response = rh.executePutRequest("/_searchguard/api/actiongroups/READ", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		
 		// DELETE request
@@ -88,7 +88,7 @@ public class IndexMissingTest extends AbstractRestApiUnitTest {
 		initialize(this.clusterInfo);
 		
 		// GET configuration
-		response = rh.executeGetRequest("_searchguard/api/configuration/roles");
+		response = rh.executeGetRequest("_searchguard/api/roles");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		SgJsonNode sgJsonNode = new SgJsonNode(DefaultObjectMapper.readTree(response.getBody()));
 		Assert.assertEquals("CLUSTER_ALL", sgJsonNode.get("sg_admin").get("cluster_permissions").get(0).asString());

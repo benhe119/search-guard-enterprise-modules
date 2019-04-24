@@ -44,7 +44,6 @@ public class RestApInfoEndpointTest extends AbstractRestApiUnitTest {
 
 		Assert.assertEquals(disabled.getAsList(Endpoint.CACHE.name()).size(), Method.values().length);
 		Assert.assertEquals(disabled.getAsList(Endpoint.LICENSE.name()).size(), Method.values().length);
-		Assert.assertEquals(disabled.getAsList(Endpoint.CONFIGURATION.name()).size(), Method.values().length);
 		Assert.assertEquals(disabled.getAsList(Endpoint.ROLESMAPPING.name()).size(), 2);
 
 		

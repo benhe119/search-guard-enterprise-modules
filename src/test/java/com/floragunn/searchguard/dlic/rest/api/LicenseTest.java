@@ -183,7 +183,7 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 	}
 
 	protected final Settings getCurrentConfig() throws Exception {
-		HttpResponse response = rh.executeGetRequest("_searchguard/api/configuration/config");
+		HttpResponse response = rh.executeGetRequest("_searchguard/api/sgconfig");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		// sanity

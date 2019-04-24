@@ -62,7 +62,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		rh.sendHTTPClientCertificate = true;
 
 		// check roles exists
-		HttpResponse response = rh.executeGetRequest("_searchguard/api/configuration/roles");
+		HttpResponse response = rh.executeGetRequest("_searchguard/api/roles");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
 		// -- GET
