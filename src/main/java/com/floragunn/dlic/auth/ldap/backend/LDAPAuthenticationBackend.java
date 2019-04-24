@@ -125,6 +125,8 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
                 });
             } catch (PrivilegedActionException e) {
                 throw e.getException();
+            } finally {
+                Utils.unbindAndCloseSilently(_con);
             }
 
             final String usernameAttribute = settings.get(ConfigConstants.LDAP_AUTHC_USERNAME_ATTRIBUTE, null);
