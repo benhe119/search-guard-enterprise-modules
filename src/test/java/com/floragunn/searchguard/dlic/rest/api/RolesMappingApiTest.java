@@ -38,7 +38,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		rh.sendHTTPClientCertificate = true;
 
 		// check rolesmapping exists, old config api
-		HttpResponse response = rh.executeGetRequest("_searchguard/api/configuration/rolesmapping");
+		HttpResponse response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
 		// check rolesmapping exists, new API
@@ -102,7 +102,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		// remove complete role mapping for sg_role_starfleet_captains.
 		response = rh.executeDeleteRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		response = rh.executeGetRequest("_searchguard/api/configuration/rolesmapping");
+		response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		rh.sendHTTPClientCertificate = false;
 
 		// User has now only role starfleet which has READ access only

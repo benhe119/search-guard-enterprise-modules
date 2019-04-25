@@ -48,13 +48,13 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals("", settings.get("admin.hash"));
 		
 		// new user API, accessible for worf, single user
-		response = rh.executeGetRequest("/_searchguard/api/user/admin", encodeBasicHeader("worf", "worf"));
+		response = rh.executeGetRequest("/_searchguard/api/internalusers/admin", encodeBasicHeader("worf", "worf"));
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		 settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertTrue(settings.get("admin.hash") != null);
 
 		// legacy user API, accessible for worf, get complete config
-		response = rh.executeGetRequest("/_searchguard/api/user/", encodeBasicHeader("worf", "worf"));
+		response = rh.executeGetRequest("/_searchguard/api/internalusers/", encodeBasicHeader("worf", "worf"));
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("", settings.get("admin.hash"));
@@ -70,7 +70,7 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals("", settings.get("worf.hash"));
 
 		// legacy user API, accessible for worf, get complete config, no trailing slash
-		response = rh.executeGetRequest("/_searchguard/api/user", encodeBasicHeader("worf", "worf"));
+		response = rh.executeGetRequest("/_searchguard/api/internalusers", encodeBasicHeader("worf", "worf"));
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("", settings.get("admin.hash"));
@@ -94,24 +94,24 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals("", settings.getAsList("sg_zdummy_all.users").get(0), "bug108");
 		
 		
-		// Deprecated get configuration API, acessible for sarek
-		response = rh.executeGetRequest("_searchguard/api/configuration/internalusers", encodeBasicHeader("sarek", "sarek"));
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Assert.assertEquals("", settings.get("admin.hash"));
-		Assert.assertEquals("", settings.get("sarek.hash"));
-		Assert.assertEquals("", settings.get("worf.hash"));
-
-		// Deprecated get configuration API, acessible for sarek
-		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("sarek", "sarek"));
-		System.out.println(response.getBody());
-		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		Assert.assertEquals("", settings.getAsList("ALL.allowed_actions").get(0), "indices:*"); //mixed action groups not supported
-		//because jackson can not serialize it. Old format is supported but not a mixture of both
-		Assert.assertEquals("", settings.getAsList("CLUSTER_MONITOR.allowed_actions").get(0), "cluster:monitor/*");
-		// new format for action groups
-		Assert.assertEquals("", settings.getAsList("CRUD_UT.allowed_actions").get(0), "READ_UT");
+//		// Deprecated get configuration API, acessible for sarek
+//		response = rh.executeGetRequest("_searchguard/api/configuration/internalusers", encodeBasicHeader("sarek", "sarek"));
+//		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+//		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+//		Assert.assertEquals("", settings.get("admin.hash"));
+//		Assert.assertEquals("", settings.get("sarek.hash"));
+//		Assert.assertEquals("", settings.get("worf.hash"));
+//
+//		// Deprecated get configuration API, acessible for sarek
+//		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("sarek", "sarek"));
+//		System.out.println(response.getBody());
+//		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+//		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+//		Assert.assertEquals("", settings.getAsList("ALL.allowed_actions").get(0), "indices:*"); //mixed action groups not supported
+//		//because jackson can not serialize it. Old format is supported but not a mixture of both
+//		Assert.assertEquals("", settings.getAsList("CLUSTER_MONITOR.allowed_actions").get(0), "cluster:monitor/*");
+//		// new format for action groups
+//		Assert.assertEquals("", settings.getAsList("CRUD_UT.allowed_actions").get(0), "READ_UT");
 		
 		// --- Forbidden ---
 				
@@ -121,9 +121,9 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		Assert.assertTrue(response.getBody().contains("does not have any access to endpoint LICENSE"));
 
 		// configuration API, not accessible for worf
-		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("worf", "worf"));
-		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
-		Assert.assertTrue(response.getBody().contains("does not have any access to endpoint CONFIGURATION"));
+//		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("worf", "worf"));
+//		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
+//		Assert.assertTrue(response.getBody().contains("does not have any access to endpoint CONFIGURATION"));
 
 		// cache API, not accessible for worf since it's disabled globally
 		response = rh.executeDeleteRequest("_searchguard/api/cache", encodeBasicHeader("worf", "worf"));
@@ -136,7 +136,7 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		Assert.assertTrue(response.getBody().contains("does not have any access to endpoint CACHE"));
 		
 		// Admin user has no eligible role at all
-		response = rh.executeGetRequest("/_searchguard/api/user/admin", encodeBasicHeader("admin", "admin"));
+		response = rh.executeGetRequest("/_searchguard/api/internalusers/admin", encodeBasicHeader("admin", "admin"));
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 		Assert.assertTrue(response.getBody().contains("does not have any role privileged for admin access"));
 
@@ -217,15 +217,15 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		rh.sendHTTPClientCertificate = true;
 		
 		// admin
-		response = rh.executeGetRequest("/_searchguard/api/user/admin", encodeBasicHeader("la", "lu"));
+		response = rh.executeGetRequest("/_searchguard/api/internalusers/admin", encodeBasicHeader("la", "lu"));
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertTrue(settings.get("admin.hash") != null);
 		Assert.assertEquals("", settings.get("admin.hash"));
 		
-		// worf and config
-		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("bla", "fasel"));
-		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+//		// worf and config
+//		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("bla", "fasel"));
+//		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		
 		// cache
 		response = rh.executeDeleteRequest("_searchguard/api/cache", encodeBasicHeader("wrong", "wrong"));
@@ -235,9 +235,9 @@ public class RoleBasedAccessTest extends AbstractRestApiUnitTest {
 		
 		rh.sendHTTPClientCertificate = false;
 		
-		// GET actiongroups
-		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("test", "test"));
-		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+//		// GET actiongroups
+//		response = rh.executeGetRequest("_searchguard/api/configuration/actiongroups", encodeBasicHeader("test", "test"));
+//		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
 		response = rh.executeGetRequest("_searchguard/api/actiongroups", encodeBasicHeader("test", "test"));
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());

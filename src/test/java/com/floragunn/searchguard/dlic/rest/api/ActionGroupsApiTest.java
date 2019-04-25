@@ -40,7 +40,7 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 		// --- GET_UT
 
 		// GET_UT, actiongroup exists
-		HttpResponse response = rh.executeGetRequest("/_searchguard/api/actiongroup/CRUD_UT", new Header[0]);
+		HttpResponse response = rh.executeGetRequest("/_searchguard/api/actiongroups/CRUD_UT", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();		
 		List<String> permissions = settings.getAsList("CRUD_UT.allowed_actions");
@@ -50,15 +50,15 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 		Assert.assertTrue(permissions.contains("WRITE"));
 
 		// GET_UT, actiongroup does not exist
-		response = rh.executeGetRequest("/_searchguard/api/actiongroup/nothinghthere", new Header[0]);
+		response = rh.executeGetRequest("/_searchguard/api/actiongroups/nothinghthere", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
 
 		// GET_UT, old endpoint
-		response = rh.executeGetRequest("/_searchguard/api/actiongroup/", new Header[0]);
+		response = rh.executeGetRequest("/_searchguard/api/actiongroups/", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
 		// GET_UT, old endpoint
-		response = rh.executeGetRequest("/_searchguard/api/actiongroup", new Header[0]);
+		response = rh.executeGetRequest("/_searchguard/api/actiongroups", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		
 		// GET_UT, new endpoint which replaces configuration endpoint
@@ -85,13 +85,13 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 		// Non-existing role
 		rh.sendHTTPClientCertificate = true;
 
-		response = rh.executeDeleteRequest("/_searchguard/api/actiongroup/idonotexist", new Header[0]);
+		response = rh.executeDeleteRequest("/_searchguard/api/actiongroups/idonotexist", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
 
 		// remove action group READ_UT, read access not possible since
 		// sg_role_starfleet
 		// uses this action group.
-		response = rh.executeDeleteRequest("/_searchguard/api/actiongroup/READ_UT", new Header[0]);
+		response = rh.executeDeleteRequest("/_searchguard/api/actiongroups/READ_UT", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
 		rh.sendHTTPClientCertificate = false;
@@ -107,7 +107,7 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 
 		// now remove also CRUD_UT groups, write also not possible anymore
 		rh.sendHTTPClientCertificate = true;
-		response = rh.executeDeleteRequest("/_searchguard/api/actiongroup/CRUD_UT", new Header[0]);
+		response = rh.executeDeleteRequest("/_searchguard/api/actiongroups/CRUD_UT", new Header[0]);
 		rh.sendHTTPClientCertificate = false;
 		checkWriteAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 0);
 		checkReadAccess(HttpStatus.SC_FORBIDDEN, "picard", "picard", "sf", "ships", 0);
@@ -116,19 +116,19 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 
 		// put with empty payload, must fail
 		rh.sendHTTPClientCertificate = true;
-		response = rh.executePutRequest("/_searchguard/api/actiongroup/SOMEGROUP", "", new Header[0]);
+		response = rh.executePutRequest("/_searchguard/api/actiongroups/SOMEGROUP", "", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.PAYLOAD_MANDATORY.getMessage(), settings.get("reason"));
 
 		// put new configuration with invalid payload, must fail
-		response = rh.executePutRequest("/_searchguard/api/actiongroup/SOMEGROUP", FileHelper.loadFile("restapi/actiongroup_not_parseable.json"),
+		response = rh.executePutRequest("/_searchguard/api/actiongroups/SOMEGROUP", FileHelper.loadFile("restapi/actiongroup_not_parseable.json"),
 				new Header[0]);
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.BODY_NOT_PARSEABLE.getMessage(), settings.get("reason"));
 
-		response = rh.executePutRequest("/_searchguard/api/actiongroup/CRUD_UT", FileHelper.loadFile("restapi/actiongroup_crud.json"), new Header[0]);
+		response = rh.executePutRequest("/_searchguard/api/actiongroups/CRUD_UT", FileHelper.loadFile("restapi/actiongroup_crud.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
 
 		rh.sendHTTPClientCertificate = false;
@@ -139,7 +139,7 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 
 		// restore READ_UT action groups
 		rh.sendHTTPClientCertificate = true;
-		response = rh.executePutRequest("/_searchguard/api/actiongroup/READ_UT", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
+		response = rh.executePutRequest("/_searchguard/api/actiongroups/READ_UT", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
 
 		rh.sendHTTPClientCertificate = false;
@@ -149,33 +149,33 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 		
 		// -- PUT, new JSON format including readonly flag, disallowed in REST API
 		rh.sendHTTPClientCertificate = true;
-		response = rh.executePutRequest("/_searchguard/api/actiongroup/CRUD_UT", FileHelper.loadFile("restapi/actiongroup_readonly.json"), new Header[0]);
+		response = rh.executePutRequest("/_searchguard/api/actiongroups/CRUD_UT", FileHelper.loadFile("restapi/actiongroup_readonly.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 
 		// -- DELETE read only resource, must be forbidden
 		rh.sendHTTPClientCertificate = true;
-		response = rh.executeDeleteRequest("/_searchguard/api/actiongroup/GET_UT", new Header[0]);
+		response = rh.executeDeleteRequest("/_searchguard/api/actiongroups/GET_UT", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 
 		// -- PUT read only resource, must be forbidden
 		rh.sendHTTPClientCertificate = true;
-		response = rh.executePutRequest("/_searchguard/api/actiongroup/GET_UT", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
+		response = rh.executePutRequest("/_searchguard/api/actiongroups/GET_UT", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
 		Assert.assertTrue(response.getBody().contains("Resource 'GET_UT' is read-only."));
 		
 		// -- GET_UT hidden resource, must be 404
         rh.sendHTTPClientCertificate = true;
-        response = rh.executeGetRequest("/_searchguard/api/actiongroup/INTERNAL", new Header[0]);
+        response = rh.executeGetRequest("/_searchguard/api/actiongroups/INTERNAL", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());		
 		
 		// -- DELETE hidden resource, must be 404
         rh.sendHTTPClientCertificate = true;
-        response = rh.executeDeleteRequest("/_searchguard/api/actiongroup/INTERNAL", new Header[0]);
+        response = rh.executeDeleteRequest("/_searchguard/api/actiongroups/INTERNAL", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getStatusCode());
 
         // -- PUT hidden resource, must be forbidden
         rh.sendHTTPClientCertificate = true;
-        response = rh.executePutRequest("/_searchguard/api/actiongroup/INTERNAL", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
+        response = rh.executePutRequest("/_searchguard/api/actiongroups/INTERNAL", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);
         Assert.assertEquals(HttpStatus.SC_FORBIDDEN, response.getStatusCode());
         
         // -- PATCH

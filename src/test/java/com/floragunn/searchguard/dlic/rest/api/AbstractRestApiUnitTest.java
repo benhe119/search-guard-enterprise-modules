@@ -124,7 +124,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 	protected void deleteUser(String username) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
 		rh.sendHTTPClientCertificate = true;
-		HttpResponse response = rh.executeDeleteRequest("/_searchguard/api/user/" + username, new Header[0]);
+		HttpResponse response = rh.executeDeleteRequest("/_searchguard/api/internalusers/" + username, new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
@@ -132,7 +132,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 	protected void addUserWithPassword(String username, String password, int status) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
 		rh.sendHTTPClientCertificate = true;
-		HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + username,
+		HttpResponse response = rh.executePutRequest("/_searchguard/api/internalusers/" + username,
 				"{\"password\": \"" + password + "\"}", new Header[0]);
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
@@ -149,7 +149,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 			}
 		}
 		payload += "]}";
-		HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + username, payload, new Header[0]);
+		HttpResponse response = rh.executePutRequest("/_searchguard/api/internalusers/" + username, payload, new Header[0]);
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
@@ -165,7 +165,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 			}
 		}
 		payload += "]}";
-		HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + username, payload, new Header[0]);
+		HttpResponse response = rh.executePutRequest("/_searchguard/api/internalusers/" + username, payload, new Header[0]);
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
@@ -177,7 +177,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 	protected void addUserWithHash(String username, String hash, int status) throws Exception {
 		boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
 		rh.sendHTTPClientCertificate = true;
-		HttpResponse response = rh.executePutRequest("/_searchguard/api/user/" + username, "{\"hash\": \"" + hash + "\"}",
+		HttpResponse response = rh.executePutRequest("/_searchguard/api/internalusers/" + username, "{\"hash\": \"" + hash + "\"}",
 				new Header[0]);
 		Assert.assertEquals(status, response.getStatusCode());
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;

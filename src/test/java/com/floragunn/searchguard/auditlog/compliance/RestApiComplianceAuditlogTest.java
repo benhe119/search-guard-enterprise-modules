@@ -46,7 +46,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         setup(additionalSettings);
         TestAuditlogImpl.clear();
         String body = "{ \"password\":\"test\",\"backend_roles\":[\"role1\",\"role2\"] }";
-        HttpResponse response = rh.executePutRequest("_searchguard/api/user/compuser?pretty", body, encodeBasicHeader("admin", "admin"));
+        HttpResponse response = rh.executePutRequest("_searchguard/api/internalusers/compuser?pretty", body, encodeBasicHeader("admin", "admin"));
         Thread.sleep(1500);
         System.out.println(TestAuditlogImpl.sb.toString());
         Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
@@ -82,7 +82,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         rh.sendHTTPClientCertificate = true;
         rh.keystore = "kirk-keystore.jks";
         
-        HttpResponse response = rh.executePutRequest("_searchguard/api/user/compuser?pretty", body);
+        HttpResponse response = rh.executePutRequest("_searchguard/api/internalusers/compuser?pretty", body);
         Thread.sleep(1500);
         System.out.println(TestAuditlogImpl.sb.toString());
         Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
@@ -179,7 +179,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         TestAuditlogImpl.clear();
         String body = "{ \"password\":\"test\",\"backend_roles\":[\"role1\",\"role2\"] }";
         System.out.println("exec");
-        HttpResponse response = rh.executePutRequest("_searchguard/api/user/compuser?pretty", body, encodeBasicHeader("admin", "admin"));
+        HttpResponse response = rh.executePutRequest("_searchguard/api/internalusers/compuser?pretty", body, encodeBasicHeader("admin", "admin"));
         Thread.sleep(1500);
         System.out.println(TestAuditlogImpl.sb.toString());
         Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());

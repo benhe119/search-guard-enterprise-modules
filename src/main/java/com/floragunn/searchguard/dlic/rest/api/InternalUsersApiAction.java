@@ -61,13 +61,6 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool,
                 auditLog);
 
-        // legacy mapping for backwards compatibility
-        // TODO: remove in SG7
-        controller.registerHandler(Method.GET, "/_searchguard/api/user/{name}", this);
-        controller.registerHandler(Method.GET, "/_searchguard/api/user/", this);
-        controller.registerHandler(Method.DELETE, "/_searchguard/api/user/{name}", this);
-        controller.registerHandler(Method.PUT, "/_searchguard/api/user/{name}", this);
-
         // corrected mapping, introduced in SG6
         controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/{name}", this);
         controller.registerHandler(Method.GET, "/_searchguard/api/internalusers/", this);
