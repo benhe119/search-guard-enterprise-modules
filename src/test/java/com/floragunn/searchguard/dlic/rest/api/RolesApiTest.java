@@ -83,7 +83,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		JsonNode settings = DefaultObjectMapper.readTree(response.getBody());
-		Assert.assertEquals(2, settings.size());
+		Assert.assertEquals(1, settings.size());
 
 		// GET, role does not exist
 		response = rh.executeGetRequest("/_searchguard/api/roles/nothinghthere", new Header[0]);
@@ -256,7 +256,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
 		settings = DefaultObjectMapper.readTree(response.getBody());
-		Assert.assertEquals(2, settings.size());
+		Assert.assertEquals(1, settings.size());
 		Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("tenant_patterns").get(0).asString(), "tenant1");
 	    Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("allowed_actions").get(0).asString(), "kibana:saved_objects/*/read");
 
@@ -274,7 +274,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = DefaultObjectMapper.readTree(response.getBody());
-		Assert.assertEquals(2, settings.size());
+		Assert.assertEquals(1, settings.size());
 		
 		Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("tenant_patterns").get(0).asString(), "tenant2");
         Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("tenant_patterns").get(1).asString(), "tenant4");
@@ -296,7 +296,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = DefaultObjectMapper.readTree(response.getBody());
-		Assert.assertEquals(2, settings.size());
+		Assert.assertEquals(1, settings.size());
 		Assert.assertFalse(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.cluster_permissions").get(0).isNull());
 		Assert.assertTrue(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).isNull());
 

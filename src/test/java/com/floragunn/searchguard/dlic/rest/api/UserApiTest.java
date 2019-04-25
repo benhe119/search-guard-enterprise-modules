@@ -46,7 +46,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 				.executeGetRequest("_searchguard/api/" + CType.INTERNALUSERS.toLCString());
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(27, settings.size());
+		Assert.assertEquals(25, settings.size());
 		// --- GET
 
 		// GET, user admin, exists
@@ -54,7 +54,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(7, settings.size());
+		Assert.assertEquals(5, settings.size());
 		// hash must be filtered
 		Assert.assertEquals("", settings.get("admin.hash"));
 
@@ -342,7 +342,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		System.out.println(response.getBody());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals(27, settings.size());
+		Assert.assertEquals(25, settings.size());
 
 		addUserWithPassword("tooshoort", "123", HttpStatus.SC_BAD_REQUEST);
 		addUserWithPassword("tooshoort", "1234567", HttpStatus.SC_BAD_REQUEST);
@@ -405,7 +405,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
                 .executeGetRequest("_searchguard/api/" + CType.INTERNALUSERS.toLCString());
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-        Assert.assertEquals(27, settings.size());
+        Assert.assertEquals(25, settings.size());
         
         addUserWithPassword(".my.dotuser0", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
                 HttpStatus.SC_CREATED);

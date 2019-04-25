@@ -35,20 +35,31 @@ import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
-import com.floragunn.searchguard.dlic.rest.validation.NoOpValidator;
+import com.floragunn.searchguard.dlic.rest.validation.SgConfigValidator;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
 import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.sgconf.impl.SgDynamicConfiguration;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
+import com.floragunn.searchguard.support.ConfigConstants;
 
-public class SgConfigAction extends AbstractApiAction {
+public class SgConfigAction extends PatchableResourceApiAction {
+    
+    private final boolean allowPutOrPatch;
 
 	@Inject
 	public SgConfigAction(final Settings settings, final Path configPath, final RestController controller, final Client client,
 			final AdminDNs adminDNs, final ConfigurationRepository cl, final ClusterService cs,
 			final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
 		super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool, auditLog);
+		
+		allowPutOrPatch = settings.getAsBoolean(ConfigConstants.SEARCHGUARD_UNSUPPORTED_RESTAPI_ALLOW_SGCONFIG_MODIFICATION, false);
+		
 		controller.registerHandler(Method.GET, "/_searchguard/api/sgconfig/", this);
+		
+		if(allowPutOrPatch) {
+		    controller.registerHandler(Method.PUT, "/_searchguard/api/sgconfig/{name}", this);
+		    controller.registerHandler(Method.PATCH, "/_searchguard/api/sgconfig/", this);
+		}
 	}
 
 
@@ -57,15 +68,43 @@ public class SgConfigAction extends AbstractApiAction {
 	protected void handleGet(RestChannel channel, RestRequest request, Client client, final JsonNode content) throws IOException{
 
 		final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), true);
+		
+		filter(configurationSettings);
 
 		channel.sendResponse(
 				new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
 	}
 	
+	
+	
 	@Override
+    protected void handleApiRequest(RestChannel channel, RestRequest request, Client client) throws IOException {
+	    if (request.method() == Method.PATCH && !allowPutOrPatch) {
+	        notImplemented(channel, Method.PATCH);
+        } else {
+            super.handleApiRequest(channel, request, client);
+        }
+    }
+
+    @Override
 	protected void handlePut(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException{
-		notImplemented(channel, Method.PUT);
+        if (allowPutOrPatch) {
+            
+            if(!"sg_config".equals(request.param("name"))) {
+                badRequestResponse(channel, "name must be sg_config");
+                return;
+            }
+            
+            super.handlePut(channel, request, client, content);
+        } else {
+            notImplemented(channel, Method.PUT);
+        }
 	}
+	
+	@Override
+    protected void handlePost(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException{
+        notImplemented(channel, Method.POST);
+    }
 
 	@Override
 	protected void handleDelete(RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException{
@@ -74,7 +113,7 @@ public class SgConfigAction extends AbstractApiAction {
 
 	@Override
 	protected AbstractConfigurationValidator getValidator(RestRequest request, BytesReference ref, Object... param) {
-		return new NoOpValidator(request, ref, this.settings, param);
+		return new SgConfigValidator(request, ref, this.settings, param);
 	}
 
     @Override

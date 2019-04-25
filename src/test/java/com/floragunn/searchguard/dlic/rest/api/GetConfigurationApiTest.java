@@ -44,6 +44,7 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(
 				settings.getAsBoolean("sg_config.dynamic.authc.authentication_domain_basic_internal.http_enabled", false),
 				true);
+		Assert.assertNull(settings.get("_sg_meta.type"));
 
 		// internalusers
 		response = rh.executeGetRequest("_searchguard/api/internalusers");
@@ -51,18 +52,21 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("", settings.get("admin.hash"));
 		Assert.assertEquals("", settings.get("other.hash"));
+		Assert.assertNull(settings.get("_sg_meta.type"));
 
 		// roles
 		response = rh.executeGetRequest("_searchguard/api/roles");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		JsonNode jnode = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(jnode.get("sg_all_access").get("cluster_permissions").get(0).asText(), "cluster:*");
+		Assert.assertNull(settings.get("_sg_meta.type"));
 
 		// roles
 		response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(settings.getAsList("sg_role_starfleet.backend_roles").get(0), "starfleet");
+		Assert.assertNull(settings.get("_sg_meta.type"));
 
 		// action groups
 		response = rh.executeGetRequest("_searchguard/api/actiongroups");
@@ -70,6 +74,7 @@ public class GetConfigurationApiTest extends AbstractRestApiUnitTest {
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(settings.getAsList("ALL.allowed_actions").get(0), "indices:*");
 		Assert.assertFalse(settings.hasValue("INTERNAL.allowed_actions"));
+		Assert.assertNull(settings.get("_sg_meta.type"));
 	}
 
 }

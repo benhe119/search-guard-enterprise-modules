@@ -32,9 +32,6 @@ public class TenantsApiTest extends AbstractRestApiUnitTest {
 		rh.keystore = "restapi/kirk-keystore.jks";
 		rh.sendHTTPClientCertificate = true;
 
-		// --- GET_UT
-
-		// GET_UT, actiongroup exists
 		HttpResponse response = rh.executeGetRequest("/_searchguard/api/tenants", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Assert.assertEquals(response.getBody(), "mytenantdesc", SgJsonNode.fromJson(response.getBody()).getDotted("mytenant.description").asString());

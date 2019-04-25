@@ -29,10 +29,8 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.cluster.service.ClusterService;
-import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.util.concurrent.ThreadContext.StoredContext;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -56,7 +54,6 @@ import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
-import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator.ErrorType;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
@@ -228,36 +225,25 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		final String resourcename = request.param("name");
 
 		final SgDynamicConfiguration<?> settingsBuilder = load(getConfigName(), true);
-
-		// filter hidden resources and sensitive settings
 		filter(settingsBuilder);
 		
-		//final DynamicConfiguration configurationSettings = settingsBuilder.toDynamicConfiguration();
 
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
+		     
 			channel.sendResponse(
 					new BytesRestResponse(RestStatus.OK, convertToJson(channel, settingsBuilder)));
 			return;
 		}
-		
-		
-		
-		/*final Map<String, Object> con = 
-		        new HashMap<>(Utils.convertJsonToxToStructuredMap(Settings.builder().put(configurationSettings).build()))
-		        .entrySet()
-		        .stream()
-		        .filter(f->f.getKey() != null && f.getKey().equals(resourcename)) //copy keys
-<<<<<<< HEAD
-		        .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));*/
 
 		if (!settingsBuilder.exists(resourcename)) {
 			notFound(channel, "Resource '" + resourcename + "' not found.");
 			return;
-		}
-		
+		}	
+
+		settingsBuilder.removeOthers(resourcename);
 		channel.sendResponse(
-            		new BytesRestResponse(RestStatus.OK, convertToJson(channel, settingsBuilder.getCEntryFull(resourcename))));
+            		new BytesRestResponse(RestStatus.OK, convertToJson(channel, settingsBuilder)));
 
 		return;
 	}
