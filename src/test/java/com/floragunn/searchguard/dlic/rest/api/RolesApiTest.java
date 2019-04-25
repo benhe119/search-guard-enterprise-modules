@@ -53,6 +53,18 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         Assert.assertEquals(HttpStatus.SC_CREATED, response.getStatusCode());
     }
     
+    @Test
+    public void testAllRolesNotContainMetaHeader() throws Exception {
+
+        setup();
+        
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executeGetRequest("_searchguard/api/roles");
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertFalse(response.getBody().contains("_sg_meta"));
+    }
+    
 	@Test
 	public void testRolesApi() throws Exception {
 

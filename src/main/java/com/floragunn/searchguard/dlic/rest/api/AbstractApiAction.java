@@ -275,6 +275,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 	protected void filter(SgDynamicConfiguration<?> builder) {
         builder.removeHidden();
+        builder.set_sg_meta(null);
 	}
 	
 	abstract class OnSucessActionListener<Response> implements ActionListener<Response> {
