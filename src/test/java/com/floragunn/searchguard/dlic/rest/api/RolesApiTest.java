@@ -258,10 +258,10 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		settings = DefaultObjectMapper.readTree(response.getBody());
 		Assert.assertEquals(1, settings.size());
 		Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("tenant_patterns").get(0).asString(), "tenant1");
-	    Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("allowed_actions").get(0).asString(), "kibana:saved_objects/*/read");
+	    Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("allowed_actions").get(0).asString(), "SGS_KIBANA_ALL_READ");
 
 	    Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("tenant_patterns").get(0).asString(), "tenant2");
-        Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("allowed_actions").get(0).asString(), "kibana:saved_objects/*");
+        Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("allowed_actions").get(0).asString(), "SGS_KIBANA_ALL_WRITE");
 
 
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",
@@ -279,11 +279,11 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("tenant_patterns").get(0).asString(), "tenant2");
         Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("tenant_patterns").get(1).asString(), "tenant4");
 
-		Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("allowed_actions").get(0).asString(), "kibana:saved_objects/*");
+		Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(0).get("allowed_actions").get(0).asString(), "SGS_KIBANA_ALL_WRITE");
 
         Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("tenant_patterns").get(0).asString(), "tenant1");
         Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("tenant_patterns").get(1).asString(), "tenant3");
-        Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("allowed_actions").get(0).asString(), "kibana:saved_objects/*/read");
+        Assert.assertEquals(new SgJsonNode(settings).getDotted("sg_role_starfleet_captains.tenant_permissions").get(1).get("allowed_actions").get(0).asString(), "SGS_KIBANA_ALL_READ");
 		
 		// remove tenants from role
 		response = rh.executePutRequest("/_searchguard/api/roles/sg_role_starfleet_captains",

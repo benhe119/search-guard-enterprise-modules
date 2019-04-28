@@ -36,7 +36,7 @@ sg_role_klingons1:
   - "worf"
   and_backend_roles: []
   description: "Migrated from v6"
-sg_kibana_user:
+SGS_KIBANA_USER:
   reserved: false
   hidden: false
   backend_roles: []

@@ -114,7 +114,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 log.trace("No tenant, will resolve to " + kibanaIndexName);
             }
             
-            if (kibanaIndexOnly && !isTenantAllowed(request, action, user, tenants, "GLOBAL_TENANT")) {
+            if (kibanaIndexOnly && !isTenantAllowed(request, action, user, tenants, "SGS_GLOBAL_TENANT")) {
                 return Boolean.TRUE;
             }
 

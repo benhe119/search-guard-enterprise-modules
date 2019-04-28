@@ -9,9 +9,9 @@
   } ],
   "tenantz_permissions" : [ {
     "tenant_patterns" : [ "tenant2", "tenant4" ],
-    "allowed_actions" : [ "kibana:saved_objects/*" ]
+    "allowed_actions" : [ "SGS_KIBANA_ALL_WRITE" ]
   }, {
     "tenant_patterns" : [ "tenant1", "tenant3" ],
-    "allowed_actions" : [ "kibana:saved_objects/*/read" ]
+    "allowed_actions" : [ "SGS_KIBANA_ALL_READ" ]
   } ]
 }

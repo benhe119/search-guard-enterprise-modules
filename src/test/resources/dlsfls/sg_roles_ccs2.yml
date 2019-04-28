@@ -41,4 +41,4 @@ sg_human_resources_trainee:
     - "human_resources"
     - "performance_data"
     allowed_actions:
-    - "kibana:saved_objects/*/read"
+    - "SGS_KIBANA_ALL_READ"

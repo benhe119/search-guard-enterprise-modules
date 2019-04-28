@@ -43,11 +43,11 @@ sg_kibana_testindex:
   - tenant_patterns:
     - "test_tenant_rw"
     allowed_actions:
-    - "kibana:saved_objects/*"
+    - "SGS_KIBANA_ALL_WRITE"
   - tenant_patterns:
     - "test_tenant_ro"
     allowed_actions:
-    - "kibana:saved_objects/*/read"
+    - "SGS_KIBANA_ALL_READ"
 sg_human_resources:
   reserved: false
   hidden: false
@@ -77,11 +77,11 @@ sg_human_resources:
     - "PerFormance    ___Reviews/&%%/&&/"
     - "PerFormance ___Reviews%%%!!!"
     allowed_actions:
-    - "kibana:saved_objects/*"
+    - "SGS_KIBANA_ALL_WRITE"
   - tenant_patterns:
     - "business_intelligence"
     allowed_actions:
-    - "kibana:saved_objects/*/read"
+    - "SGS_KIBANA_ALL_READ"
 sg_human_resources_trainee:
   reserved: false
   hidden: false
@@ -113,7 +113,7 @@ sg_human_resources_trainee:
     - "performance_data"
     - "business_intelligence"
     allowed_actions:
-    - "kibana:saved_objects/*/read"
+    - "SGS_KIBANA_ALL_READ"
 sg_readonly_and_monitor:
   reserved: false
   hidden: false
@@ -246,7 +246,7 @@ sg_all_access:
     - "adm_tenant"
     - "test_tenant_ro"
     allowed_actions:
-    - "kibana:saved_objects/*"
+    - "SGS_KIBANA_ALL_WRITE"
 sg_logstash:
   reserved: false
   hidden: false
@@ -350,11 +350,11 @@ sg_finance:
     - "management"
     - "business_intelligence"
     allowed_actions:
-    - "kibana:saved_objects/*"
+    - "SGS_KIBANA_ALL_WRITE"
   - tenant_patterns:
     - "human_resources"
     allowed_actions:
-    - "kibana:saved_objects/*/read"
+    - "SGS_KIBANA_ALL_READ"
 sg_readonly_dlsfls:
   reserved: false
   hidden: false
@@ -397,7 +397,7 @@ sg_finance_trainee:
   - tenant_patterns:
     - "finance"
     allowed_actions:
-    - "kibana:saved_objects/*/read"
+    - "SGS_KIBANA_ALL_READ"
 sg_role_starfleet:
   reserved: false
   hidden: false
@@ -425,7 +425,7 @@ sg_role_starfleet:
     - "enterprise_tenant"
     - "test_tenant_ro"
     allowed_actions:
-    - "kibana:saved_objects/*"
+    - "SGS_KIBANA_ALL_WRITE"
 sg_readall:
   reserved: false
   hidden: false
@@ -482,4 +482,4 @@ sg_role_starfleet_captains:
   - tenant_patterns:
     - "command_tenant"
     allowed_actions:
-    - "kibana:saved_objects/*"
+    - "SGS_KIBANA_ALL_WRITE"

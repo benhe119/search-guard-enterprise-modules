@@ -57,7 +57,9 @@ import com.floragunn.searchguard.configuration.ConfigurationRepository;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator.ErrorType;
 import com.floragunn.searchguard.privileges.PrivilegesEvaluator;
+import com.floragunn.searchguard.sgconf.DynamicConfigFactory;
 import com.floragunn.searchguard.sgconf.Hideable;
+import com.floragunn.searchguard.sgconf.StaticDefinable;
 import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.sgconf.impl.SgDynamicConfiguration;
 import com.floragunn.searchguard.ssl.transport.PrincipalExtractor;
@@ -249,7 +251,8 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	}
 
 	protected final SgDynamicConfiguration<?> load(final CType config, boolean logComplianceEvent) {
-	    return cl.getConfigurationsFromIndex(Collections.singleton(config), logComplianceEvent).get(config).deepClone();
+	    SgDynamicConfiguration<?> loaded = cl.getConfigurationsFromIndex(Collections.singleton(config), logComplianceEvent).get(config).deepClone();
+	    return DynamicConfigFactory.addStatics(loaded);
 	}
 
 	protected boolean ensureIndexExists() {
@@ -299,6 +302,8 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		//	id = "0";
 		//}
 
+		settings.removeStatic();
+		
 		try {
             client.index(ir.type(type).id(id)
                     .setRefreshPolicy(RefreshPolicy.IMMEDIATE)
@@ -497,14 +502,23 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 				"Method " + method.name() + " not supported for this action.");
 	}
 	
-	protected boolean isReserved(SgDynamicConfiguration<?> settings, String resourceName) {
+	protected final boolean isReserved(SgDynamicConfiguration<?> settings, String resourceName) {
+	    if(isStatic(settings, resourceName)) { //static is also always reserved
+	        return true;
+	    }
+	    
 	    final Object o = settings.getCEntry(resourceName);
 	    return o != null && o instanceof Hideable && ((Hideable) o).isReserved();
 	}
 
-    protected boolean isHidden(SgDynamicConfiguration<?> settings, String resourceName) {
+    protected final boolean isHidden(SgDynamicConfiguration<?> settings, String resourceName) {
         final Object o = settings.getCEntry(resourceName);
         return o != null && o instanceof Hideable && ((Hideable) o).isHidden();
+    }
+    
+    protected final boolean isStatic(SgDynamicConfiguration<?> settings, String resourceName) {
+        final Object o = settings.getCEntry(resourceName);
+        return o != null && o instanceof StaticDefinable && ((StaticDefinable) o).isStatic();
     }
 	
 	/**
