@@ -119,7 +119,6 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         
         // check if user exists
         final SgDynamicConfiguration<?> internaluser = load(CType.INTERNALUSERS, false);
-        //final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(internaluser.build());
 
         final boolean userExisted = internaluser.exists(username);
 

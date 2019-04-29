@@ -63,10 +63,6 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
     private static final String EMPTY_STRING = "";
     private static final Oid[] KRB_OIDS = new Oid[] {KrbConstants.SPNEGO, KrbConstants.KRB5MECH};
 
-    static {
-        //printLicenseInfo();
-    }
-
     protected final Logger log = LogManager.getLogger(this.getClass());
 
     private boolean stripRealmFromPrincipalName;
@@ -448,14 +444,5 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
             buffer.append("]");
             return buffer.toString();
         }
-    }
-
-    public static void printLicenseInfo() {
-        System.out.println("***********************************************");
-        System.out.println("Searchguard Kerberos/SPNEGO is not free software");
-        System.out.println("for commercial use in production.");
-        System.out.println("You have to obtain a license if you ");
-        System.out.println("use it in production.");
-        System.out.println("***********************************************"+System.lineSeparator());
     }
 }

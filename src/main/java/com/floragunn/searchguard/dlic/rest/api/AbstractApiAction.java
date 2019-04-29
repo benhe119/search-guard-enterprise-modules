@@ -149,11 +149,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
         boolean existed = existingAsSettings.exists(name);
         existingAsSettings.remove(name);
 		
-		//final Map<String, Object> config = Utils.convertJsonToxToStructuredMap(Settings.builder().put(existingAsSettings).build()); 
-
-		//boolean resourceExisted = config.containsKey(name);
-		//config.remove(name);
-		
 		if (existed) {
 			saveAnUpdateConfigs(client, request, getConfigName(), existingAsSettings, new OnSucessActionListener<IndexResponse>(channel) {
                 
@@ -195,12 +190,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		
 		boolean existed = existingAsSettings.exists(name);
 		existingAsSettings.putCObject(name, DefaultObjectMapper.readTree(content, existingAsSettings.getImplementingClass()));
-		
-		//final Map<String, Object> con = Utils.convertJsonToxToStructuredMap(existingAsSettings); 
-		
-		//boolean existed = con.containsKey(name);
-
-		//con.put(name, Utils.convertJsonToxToStructuredMap(additionalSettingsBuilder.build()));
 		
 		saveAnUpdateConfigs(client, request, getConfigName(), existingAsSettings, new OnSucessActionListener<IndexResponse>(channel) {
 
@@ -282,12 +271,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
         }
 	    
 	}
-	
-	/*protected void saveAnUpdateConfigs(final RestChannel channel, final Client client, final RestRequest request, final String config,
-            final MutableDynamicConfiguration settings, OnSucessActionListener<IndexResponse> actionListener, long version) {
-	    saveAnUpdateConfigs(client, request, config, nulltoSource(channel, settings), actionListener, version);
-	}*/
-
 
 	protected void saveAnUpdateConfigs(final Client client, final RestRequest request, final CType cType,
 	        final SgDynamicConfiguration<?> settings, OnSucessActionListener<IndexResponse> actionListener) {
@@ -295,12 +278,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		final String type = "_doc";
 		final String id = cType.toLCString();
-
-		//TODO types removal
-		//if (cs.state().metaData().index(this.searchguardIndex).mapping("config") != null) {
-		//	type = config;
-		//	id = "0";
-		//}
 
 		settings.removeStatic();
 		
@@ -403,19 +380,6 @@ public abstract class AbstractApiAction extends BaseRestHandler {
         };
     }
 
-	/*protected static BytesReference toSource(RestChannel channel, final Settings.Builder settingsBuilder) { //not throws
-        try {
-            final XContentBuilder builder = channel.newBuilder();
-            builder.startObject(); // 1
-            settingsBuilder.build().toXContent(builder, ToXContent.EMPTY_PARAMS);
-            builder.endObject(); // 2
-            return BytesReference.bytes(builder);
-        } catch (IOException e) {
-            throw ExceptionsHelper.convertToElastic(e);
-        }
-        
-	}*/
-
 	protected boolean checkConfigUpdateResponse(final ConfigUpdateResponse response) {
 
 		final int nodeCount = cs.state().getNodes().getNodes().size();
@@ -446,9 +410,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	protected static XContentBuilder convertToJson(RestChannel channel, ToXContent settings) {
 		try {
             XContentBuilder builder = channel.newBuilder();
-            //builder.startObject();
             settings.toXContent(builder, ToXContent.EMPTY_PARAMS);
-            //builder.endObject();
             return builder;
         } catch (IOException e) {
             throw ExceptionsHelper.convertToElastic(e);

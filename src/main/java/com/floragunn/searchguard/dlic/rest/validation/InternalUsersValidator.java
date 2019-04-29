@@ -25,7 +25,6 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestRequest.Method;
 
-import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator.DataType;
 import com.floragunn.searchguard.ssl.util.Utils;
 import com.floragunn.searchguard.support.ConfigConstants;
 
@@ -40,7 +39,6 @@ public class InternalUsersValidator extends AbstractConfigurationValidator {
         allowedKeys.put("backend_roles", DataType.ARRAY);
         allowedKeys.put("attributes", DataType.OBJECT);
         allowedKeys.put("description", DataType.STRING);
-        //allowedKeys.put("username", DataType.STRING);
     }
 
     @Override

@@ -21,7 +21,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestRequest;
 
 import com.floragunn.searchguard.configuration.MaskedField;
-import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator.DataType;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
 
@@ -34,10 +33,6 @@ public class RolesValidator extends AbstractConfigurationValidator {
 		allowedKeys.put("tenant_permissions", DataType.ARRAY);
 		allowedKeys.put("index_permissions", DataType.ARRAY);
 		allowedKeys.put("description", DataType.STRING);
-		
-		//Allow empty role
-		//mandatoryOrKeys.add("cluster_permissions");
-		//mandatoryOrKeys.add("index_permissions");
 	}
 
     @Override

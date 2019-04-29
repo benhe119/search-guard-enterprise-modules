@@ -14,13 +14,6 @@
 
 package com.floragunn.dlic.auth.http.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.WeakKeyException;
-
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.Key;
@@ -47,11 +40,14 @@ import org.elasticsearch.rest.RestStatus;
 import com.floragunn.searchguard.auth.HTTPAuthenticator;
 import com.floragunn.searchguard.user.AuthCredentials;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.WeakKeyException;
+
 public class HTTPJwtAuthenticator implements HTTPAuthenticator {
 
-    static {
-        //printLicenseInfo();
-    }
     
     protected final Logger log = LogManager.getLogger(this.getClass());
     
@@ -255,31 +251,5 @@ public class HTTPJwtAuthenticator implements HTTPAuthenticator {
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
         KeyFactory kf = KeyFactory.getInstance(algo);
         return kf.generatePublic(spec);
-    }
-    
-    private static void printLicenseInfo() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("******************************************************"+System.lineSeparator());
-        sb.append("Search Guard JWT (JSON Web Token) is not free software"+System.lineSeparator());
-        sb.append("for commercial use in production."+System.lineSeparator());
-        sb.append("You have to obtain a license if you "+System.lineSeparator());
-        sb.append("use it in production."+System.lineSeparator());
-        sb.append(System.lineSeparator());
-        sb.append("See https://floragunn.com/searchguard-validate-license"+System.lineSeparator());
-        sb.append("In case of any doubt mail to <sales@floragunn.com>"+System.lineSeparator());
-        sb.append("*****************************************************"+System.lineSeparator());
-        
-        final String licenseInfo = sb.toString();
-        
-        if(!Boolean.getBoolean("sg.display_lic_none")) {
-            
-            if(!Boolean.getBoolean("sg.display_lic_only_stdout")) {
-                LogManager.getLogger(HTTPJwtAuthenticator.class).warn(licenseInfo);
-                System.err.println(licenseInfo);
-            }
-    
-            System.out.println(licenseInfo);
-        }
-        
     }
 }
