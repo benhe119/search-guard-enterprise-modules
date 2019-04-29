@@ -43,6 +43,6 @@ sg_human_resources_trainee:
     allowed_actions:
     - "SGS_KIBANA_ALL_READ"
   - tenant_patterns:
-    - "GL*AL_TE*ANT"
+    - "SGS_GL*AL_TE*ANT"
     allowed_actions:
     - "SGS_KIBANA_ALL_WRITE"
