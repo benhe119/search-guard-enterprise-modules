@@ -43,13 +43,6 @@ public class ActionGroupsApiAction extends PatchableResourceApiAction {
             final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator, ThreadPool threadPool, AuditLog auditLog) {
 		super(settings, configPath, controller, client, adminDNs, cl, cs, principalExtractor, evaluator, threadPool, auditLog);
 
-        // legacy mapping for backwards compatibility
-        // TODO: remove in SG7
-        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroup/{name}", this);
-        controller.registerHandler(Method.GET, "/_searchguard/api/actiongroup/", this);
-        controller.registerHandler(Method.DELETE, "/_searchguard/api/actiongroup/{name}", this);
-        controller.registerHandler(Method.PUT, "/_searchguard/api/actiongroup/{name}", this);
-
         // corrected mapping, introduced in SG6
         controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/{name}", this);
         controller.registerHandler(Method.GET, "/_searchguard/api/actiongroups/", this);

@@ -33,6 +33,7 @@ import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.support.SearchGuardDeprecationHandler;
 
 public class Utils {
+
     
     public static Map<String, Object> convertJsonToxToStructuredMap(ToXContent jsonContent) {
         Map<String, Object> map = null;
@@ -61,13 +62,21 @@ public class Utils {
             throw new ElasticsearchParseException("Failed to convert map", e);
         }
     }
-    
     public static String convertStructuredMapToJson(Map<String, Object> structuredMap) {
         try {
             return XContentHelper.convertToJson(convertStructuredMapToBytes(structuredMap), false, XContentType.JSON);
         } catch (IOException e) {
             throw new ElasticsearchParseException("Failed to convert map", e);
         }
+    }
+    
+    public static JsonNode convertJsonToJackson(BytesReference jsonContent) {
+        try {
+            return DefaultObjectMapper.readTree(jsonContent.utf8ToString());
+        } catch (IOException e1) {
+            throw ExceptionsHelper.convertToElastic(e1);
+        }
+        
     }
     
     public static JsonNode convertJsonToJackson(ToXContent jsonContent, boolean omitDefaults) {
@@ -77,7 +86,7 @@ public class Utils {
             ToXContent.MapParams params = new ToXContent.MapParams(pm);
             
             final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, params, false);
-            return DefaultObjectMapper.objectMapper.readTree(bytes.utf8ToString());
+            return DefaultObjectMapper.readTree(bytes.utf8ToString());
         } catch (IOException e1) {
             throw ExceptionsHelper.convertToElastic(e1);
         }
@@ -86,8 +95,22 @@ public class Utils {
     
     public static <T> T serializeToXContentToPojo(ToXContent jsonContent, Class<T> clazz) {
         try {
+            
+            if(jsonContent instanceof BytesReference) {
+                return serializeToXContentToPojo(((BytesReference)jsonContent).utf8ToString(), clazz);
+            }
+            
             final BytesReference bytes = XContentHelper.toXContent(jsonContent, XContentType.JSON, false);
             return DefaultObjectMapper.readValue(bytes.utf8ToString(), clazz);
+        } catch (IOException e1) {
+            throw ExceptionsHelper.convertToElastic(e1);
+        }
+        
+    }
+    
+    public static <T> T serializeToXContentToPojo(String jsonContent, Class<T> clazz) {
+        try {
+            return DefaultObjectMapper.readValue(jsonContent, clazz);
         } catch (IOException e1) {
             throw ExceptionsHelper.convertToElastic(e1);
         }

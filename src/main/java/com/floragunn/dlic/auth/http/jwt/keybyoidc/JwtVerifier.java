@@ -14,6 +14,7 @@
 
 package com.floragunn.dlic.auth.http.jwt.keybyoidc;
 
+import org.apache.cxf.rs.security.jose.jwa.SignatureAlgorithm;
 import org.apache.cxf.rs.security.jose.jwk.JsonWebKey;
 import org.apache.cxf.rs.security.jose.jws.JwsJwtCompactConsumer;
 import org.apache.cxf.rs.security.jose.jws.JwsSignatureVerifier;
@@ -38,13 +39,13 @@ public class JwtVerifier {
 			JwsJwtCompactConsumer jwtConsumer = new JwsJwtCompactConsumer(encodedJwt);
 			JwtToken jwt = jwtConsumer.getJwtToken();
 			JsonWebKey key = keyProvider.getKey(jwt.getJwsHeaders().getKeyId());
-			JwsSignatureVerifier signatureVerifier = getInitializedSignatureVerifier(key);
+			JwsSignatureVerifier signatureVerifier = getInitializedSignatureVerifier(key, jwt);
 
 			boolean signatureValid = jwtConsumer.verifySignatureWith(signatureVerifier);
 
 			if (!signatureValid && Strings.isNullOrEmpty(jwt.getJwsHeaders().getKeyId())) {
 				key = keyProvider.getKeyAfterRefresh(null);
-				signatureVerifier = getInitializedSignatureVerifier(key);
+				signatureVerifier = getInitializedSignatureVerifier(key, jwt);
 				signatureValid = jwtConsumer.verifySignatureWith(signatureVerifier);
 			}
 
@@ -59,10 +60,26 @@ public class JwtVerifier {
 			throw new BadCredentialsException(e.getMessage(), e);
 		}
 	}
+	
+	private void validateSignatureAlgorithm(JsonWebKey key, JwtToken jwt) throws BadCredentialsException {
+	    if (Strings.isNullOrEmpty(key.getAlgorithm())) {
+	        return;
+	    }
+	    
+	    SignatureAlgorithm keyAlgorithm =SignatureAlgorithm.getAlgorithm(key.getAlgorithm());
+	    SignatureAlgorithm tokenAlgorithm = SignatureAlgorithm.getAlgorithm(jwt.getJwsHeaders().getAlgorithm());
+	    
+	    if (!keyAlgorithm.equals(tokenAlgorithm)) {
+	        throw new BadCredentialsException("Algorithm of JWT does not match algorithm of JWK (" + keyAlgorithm + " != " + tokenAlgorithm + ")");
+	    }
+	}
 
-	private JwsSignatureVerifier getInitializedSignatureVerifier(JsonWebKey key)
+	private JwsSignatureVerifier getInitializedSignatureVerifier(JsonWebKey key, JwtToken jwt)
 			throws BadCredentialsException, JwtException {
-		JwsSignatureVerifier result = JwsUtils.getSignatureVerifier(key);
+	    
+	    validateSignatureAlgorithm(key, jwt);
+	    
+		JwsSignatureVerifier result = JwsUtils.getSignatureVerifier(key, jwt.getJwsHeaders().getSignatureAlgorithm());
 
 		if (result == null) {
 			throw new BadCredentialsException("Cannot verify JWT");

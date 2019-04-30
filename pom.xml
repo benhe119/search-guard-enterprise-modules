@@ -11,7 +11,7 @@
   <parent>
     <groupId>com.floragunn</groupId>
     <artifactId>search-guard-parent</artifactId>
-    <version>6.22.1</version>
+    <version>7.35.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>dlic-search-guard-enterprise-modules</artifactId>
@@ -367,7 +367,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M3</version>
+
         <configuration>
           <argLine>-Xmx3072m</argLine>
           <rerunFailingTestsCount>3</rerunFailingTestsCount>

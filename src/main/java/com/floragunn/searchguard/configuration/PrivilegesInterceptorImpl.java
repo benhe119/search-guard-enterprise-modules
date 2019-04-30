@@ -71,29 +71,6 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
                 log.debug("request " + request.getClass());
             }
 
-            if (request instanceof IndexRequest) {
-
-                final IndexRequest ir = ((IndexRequest) request);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("type " + ir.type());
-                    log.debug("id " + ir.id());
-                    log.debug("source " + (ir.source() == null ? null : ir.source().utf8ToString()));
-                }
-
-            }
-
-            if (request instanceof UpdateRequest) {
-
-                final UpdateRequest ir = ((UpdateRequest) request);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("type " + ir.type());
-                    log.debug("id " + ir.id());
-                    log.debug("source " + (ir.doc() == null ? null : ir.doc().source() == null ? null : ir.doc().source().utf8ToString()));
-                }
-            }
-
             if (tenants.get(requestedTenant) == Boolean.FALSE && action.startsWith("indices:data/write")) {
                 log.warn("Tenant {} is not allowed to write (user: {})", requestedTenant, user.getName());
                 return false;
@@ -128,10 +105,17 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
         if (log.isDebugEnabled()) {
             log.debug("raw requestedTenant: '" + requestedTenant + "'");
         }
+        
+        //intercept when requests are not made by the kibana server and if the kibana index/alias (.kibana) is the only index/alias involved
+        final boolean kibanaIndexOnly = !user.getName().equals(kibanaserverUsername) && resolveToKibanaIndexOrAlias(requestedResolved, kibanaIndexName);
 
         if (requestedTenant == null || requestedTenant.length() == 0) {
             if (log.isTraceEnabled()) {
                 log.trace("No tenant, will resolve to " + kibanaIndexName);
+            }
+            
+            if (kibanaIndexOnly && !isTenantAllowed(request, action, user, tenants, "SGS_GLOBAL_TENANT")) {
+                return Boolean.TRUE;
             }
 
             return null;
@@ -146,6 +130,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             log.debug("requestedResolved: " + requestedResolved);
         }
 
+        //request not made by the kibana server and user index is the only index/alias involved
         if (!user.getName().equals(kibanaserverUsername) && requestedResolved.getAllIndices().size() == 1
                 && requestedResolved.getAllIndices().contains(toUserIndexName(kibanaIndexName, requestedTenant))) {
 
@@ -156,7 +141,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
         }
 
         //intercept when requests are not made by the kibana server and if the kibana index/alias (.kibana) is the only index/alias involved
-        if (!user.getName().equals(kibanaserverUsername) && resolveToKibanaIndexOrAlias(requestedResolved, kibanaIndexName)) {
+        if (kibanaIndexOnly) {
 
             if (log.isDebugEnabled()) {
                 log.debug("requestedTenant: " + requestedTenant);

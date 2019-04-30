@@ -1,7 +1,7 @@
 version: 2
 jobs:
   build:
-    parallelism: 6
+    parallelism: 8
     working_directory: ~/circleci-sg
     resource_class: xlarge
     docker:
@@ -23,15 +23,15 @@ jobs:
           command: |
             set -x
             cd src/test/java         
-            TESTFILES="$(circleci tests glob **/*Test*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
+            TESTFILES="$(circleci tests glob **/*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
             echo "$TESTFILES"
             cd ~/circleci-sg
 
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              mvn -U -Pcoverage verify -Dtest="$TESTFILES"
+              mvn -U -Pcoverage verify -Dtest="$TESTFILES" -s settings.xml
             else
               #no coverage for non-master branches
-              mvn -U verify -Dtest="$TESTFILES"
+              mvn -U verify -Dtest="$TESTFILES" -s settings.xml
             fi
       - store_test_results:
           path: target/surefire-reports

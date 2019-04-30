@@ -38,7 +38,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		rh.sendHTTPClientCertificate = true;
 
 		// check rolesmapping exists, old config api
-		HttpResponse response = rh.executeGetRequest("_searchguard/api/configuration/rolesmapping");
+		HttpResponse response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
 		// check rolesmapping exists, new API
@@ -51,8 +51,8 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		response = rh.executeGetRequest("/_searchguard/api/rolesmapping/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
-		Assert.assertEquals("starfleet", settings.getAsList("sg_role_starfleet.backendroles").get(0));
-		Assert.assertEquals("captains", settings.getAsList("sg_role_starfleet.backendroles").get(1));
+		Assert.assertEquals("starfleet", settings.getAsList("sg_role_starfleet.backend_roles").get(0));
+		Assert.assertEquals("captains", settings.getAsList("sg_role_starfleet.backend_roles").get(1));
 		Assert.assertEquals("*.starfleetintranet.com", settings.getAsList("sg_role_starfleet.hosts").get(0));
 		Assert.assertEquals("nagilum", settings.getAsList("sg_role_starfleet.users").get(0));
 
@@ -102,7 +102,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		// remove complete role mapping for sg_role_starfleet_captains.
 		response = rh.executeDeleteRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		response = rh.executeGetRequest("_searchguard/api/configuration/rolesmapping");
+		response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		rh.sendHTTPClientCertificate = false;
 
 		// User has now only role starfleet which has READ access only
@@ -153,7 +153,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));
-		Assert.assertTrue(settings.get("backendroles").equals("Array expected"));		
+		Assert.assertTrue(settings.get("backend_roles").equals("Array expected"));		
 		Assert.assertTrue(settings.get("hosts") == null);
 		Assert.assertTrue(settings.get("users") == null);
 
@@ -163,7 +163,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));
 		Assert.assertTrue(settings.get("hosts").equals("Array expected"));		
-		Assert.assertTrue(settings.get("backendroles") == null);
+		Assert.assertTrue(settings.get("backend_roles") == null);
 		Assert.assertTrue(settings.get("users") == null);		
 
 		response = rh.executePutRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_captains",
@@ -173,7 +173,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(AbstractConfigurationValidator.ErrorType.WRONG_DATATYPE.getMessage(), settings.get("reason"));
 		Assert.assertTrue(settings.get("hosts").equals("Array expected"));		
 		Assert.assertTrue(settings.get("users").equals("Array expected"));	
-		Assert.assertTrue(settings.get("backendroles").equals("Array expected"));	
+		Assert.assertTrue(settings.get("backend_roles").equals("Array expected"));	
 
 		// Read only role mapping
 		response = rh.executePutRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_library",
@@ -213,12 +213,12 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
         
         // PATCH 
         rh.sendHTTPClientCertificate = true;
-        response = rh.executePatchRequest("/_searchguard/api/rolesmapping/sg_role_vulcans", "[{ \"op\": \"add\", \"path\": \"/backendroles/-\", \"value\": \"spring\" }]", new Header[0]);
+        response = rh.executePatchRequest("/_searchguard/api/rolesmapping/sg_role_vulcans", "[{ \"op\": \"add\", \"path\": \"/backend_roles/-\", \"value\": \"spring\" }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rh.executeGetRequest("/_searchguard/api/rolesmapping/sg_role_vulcans", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
-        List<String> permissions = settings.getAsList("sg_role_vulcans.backendroles");
+        List<String> permissions = settings.getAsList("sg_role_vulcans.backend_roles");
         Assert.assertNotNull(permissions);
         Assert.assertTrue(permissions.contains("spring"));
         
@@ -246,12 +246,12 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 
         // PATCH 
         rh.sendHTTPClientCertificate = true;
-        response = rh.executePatchRequest("/_searchguard/api/rolesmapping", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {  \"backendroles\":[\"vulcanadmin\"]} }]", new Header[0]);
+        response = rh.executePatchRequest("/_searchguard/api/rolesmapping", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {  \"backend_roles\":[\"vulcanadmin\"]} }]", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         response = rh.executeGetRequest("/_searchguard/api/rolesmapping/bulknew1", new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();       
-        permissions = settings.getAsList("bulknew1.backendroles");
+        permissions = settings.getAsList("bulknew1.backend_roles");
         Assert.assertNotNull(permissions);
         Assert.assertTrue(permissions.contains("vulcanadmin"));
         

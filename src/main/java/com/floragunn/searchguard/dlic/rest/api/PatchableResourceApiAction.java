@@ -77,7 +77,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         JsonNode jsonPatch;
 
         try {
-            jsonPatch = DefaultObjectMapper.objectMapper.readTree(request.content().utf8ToString());
+            jsonPatch = DefaultObjectMapper.readTree(request.content().utf8ToString());
         } catch (IOException e) {
             log.debug("Error while parsing JSON patch", e);
             badRequestResponse(channel, "Error in JSON patch: " + e.getMessage());
@@ -107,7 +107,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
             return;
         }
 
-        if (isReadOnly(existingAsSettings, name)) {
+        if (isReserved(existingAsSettings, name)) {
             forbidden(channel, "Resource '" + name + "' is read-only.");
             return;
         }
@@ -184,7 +184,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
 
             if (oldResource != null && !oldResource.equals(patchedResource)) {
 
-                if (isReadOnly(existingAsSettings, resourceName)) {
+                if (isReserved(existingAsSettings, resourceName)) {
                     forbidden(channel, "Resource '" + resourceName + "' is read-only.");
                     return;
                 }

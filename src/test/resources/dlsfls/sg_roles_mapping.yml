@@ -1,99 +1,233 @@
-sg_all_access:
-  users:
-    - admin
-    - user_combined
-    
-sg_public:
-  users:
-    - '*'
-
-sg_midsized_deals:
-  users:
-    - dept_manager
-    
-sg_deals_without_amount:
-  users:
-    - dept_manager_fls
-    
-sg_deals_without_amount_reversed_fields:
-  users:
-    - dept_manager_fls_reversed_fields
-    
-sg_dls_without_field_perm:
-  users:
-    - dept_manager_fls_dls
-
-sg_dls_multi1:
-  users:
-    - dept_manager_multi
-
-sg_dls_multi2:
-  users:
-    - dept_manager_multi
-    
-sg_fls_fields:
-  users:
-    - fls_fields
-    
-sg_logstash:
-  users:
-    - logstash
-    
-sg_fls_fields_wc:
-  users:
-    - fls_fields_wc
-    
-sg_regex:
-  users:
-    - regex
-    
-sg_perf_named_only:
-  users:
-    - perf_named_only
-    
+---
+_sg_meta:
+  type: "rolesmapping"
+  config_version: 2
 sg_perf_wc_in:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - perf_wc_in
-    
-sg_perf_named_ex:
-  users:
-    - perf_named_ex
-    
-sg_perf_wc_ex:
-  users:
-    - perf_wc_ex
-    
-sg_human_resources_trainee:
-  users:
-    - human_resources_trainee
-
+  - "perf_wc_in"
+  and_backend_roles: []
+  description: "Migrated from v6"
 sg_aaa:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - user_aaa
-sg_bbb:
+  - "user_aaa"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_dls_multi2:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - user_bbb
-
-sg_combined:
-  users:
-    - user_combined
-
+  - "dept_manager_multi"
+  and_backend_roles: []
+  description: "Migrated from v6"
 sg_masked:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - user_masked
-    
+  - "user_masked"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_regex:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "regex"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_midsized_deals:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "dept_manager"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_dls_multi1:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "dept_manager_multi"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_deals_without_amount:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "dept_manager_fls"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_perf_wc_ex:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "perf_wc_ex"
+  and_backend_roles: []
+  description: "Migrated from v6"
 sg_masked_custom:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - user_masked_custom
-    
+  - "user_masked_custom"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_perf_named_only:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "perf_named_only"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_fls_fields_wc:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "fls_fields_wc"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_bbb:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "user_bbb"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_fls_fields:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "fls_fields"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_dls_without_field_perm:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "dept_manager_fls_dls"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_perf_named_ex:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "perf_named_ex"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_deals_without_amount_reversed_fields:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "dept_manager_fls_reversed_fields"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_human_resources_trainee:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "human_resources_trainee"
+  and_backend_roles: []
+  description: "Migrated from v6"
 sg_masked_nowc:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - user_masked_nowc
-    
+  - "user_masked_nowc"
+  and_backend_roles: []
+  description: "Migrated from v6"
 sg_masked_nowc1:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - user_masked_nowc1
-    
+  - "user_masked_nowc1"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_all_access:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "admin"
+  - "user_combined"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_public:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "*"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_logstash:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "logstash"
+  and_backend_roles: []
+  description: "Migrated from v6"
 sg_prop_replace:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
   users:
-    - prop_replace
+  - "prop_replace"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_combined:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "user_combined"
+  and_backend_roles: []
+  description: "Migrated from v6"
+sg_date_math:
+  users:
+    - date_math
