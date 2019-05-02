@@ -56,7 +56,7 @@ public final class ExternalESSink extends AuditLogSink {
 			servers = Collections.singletonList("localhost:9200");
 		}
 		
-		this.index = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_INDEX, "'sg6-auditlog-'YYYY.MM.dd");
+		this.index = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_INDEX, "'sg7-auditlog-'YYYY.MM.dd");
 		
 		try {
             this.indexPattern = DateTimeFormat.forPattern(index);
