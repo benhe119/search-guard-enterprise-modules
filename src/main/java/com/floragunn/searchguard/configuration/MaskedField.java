@@ -15,7 +15,6 @@
 package com.floragunn.searchguard.configuration;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,9 +22,8 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.util.BytesRef;
-import org.bouncycastle.crypto.digests.Blake2bDigest;
-import org.bouncycastle.util.encoders.Hex;
 
+import com.floragunn.searchguard.FipsManager;
 import com.google.common.base.Splitter;
 
 public class MaskedField {
@@ -141,8 +139,7 @@ public class MaskedField {
     private byte[] customHash(byte[] in) {
         if (algo != null) {
             try {
-                MessageDigest digest = MessageDigest.getInstance(algo);
-                return Hex.encode(digest.digest(in));
+                return FipsManager.hash(in, algo);
             } catch (NoSuchAlgorithmException e) {
                 throw new IllegalArgumentException(e);
             }
@@ -168,11 +165,12 @@ public class MaskedField {
     }
 
     private byte[] blake2bHash(byte[] in) {
-        final Blake2bDigest hash = new Blake2bDigest(null, 32, null, defaultSalt);
-        hash.update(in, 0, in.length);
-        final byte[] out = new byte[hash.getDigestSize()];
-        hash.doFinal(out, 0);
-        return Hex.encode(out);
+        return FipsManager.fastHash(in);
+        //final Blake2bDigest hash = new Blake2bDigest(null, 32, null, defaultSalt);
+        //hash.update(in, 0, in.length);
+        //final byte[] out = new byte[hash.getDigestSize()];
+        //hash.doFinal(out, 0);
+        //return Hex.encode(out);
     }
 
     private BytesRef blake2bHash(BytesRef in) {

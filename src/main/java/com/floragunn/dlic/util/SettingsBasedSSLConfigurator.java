@@ -17,7 +17,7 @@ package com.floragunn.dlic.util;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
+
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;

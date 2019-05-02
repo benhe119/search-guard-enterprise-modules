@@ -16,7 +16,7 @@ package com.floragunn.searchguard.auditlog.sink;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.security.KeyStore;
+
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;

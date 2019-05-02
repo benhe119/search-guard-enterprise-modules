@@ -24,7 +24,7 @@ import java.net.Socket;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.security.GeneralSecurityException;
-import java.security.KeyStore;
+
 import java.security.cert.Certificate;
 
 import javax.net.ssl.KeyManagerFactory;

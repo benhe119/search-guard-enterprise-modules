@@ -20,7 +20,6 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.bouncycastle.crypto.generators.OpenBSDBCrypt;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
@@ -38,6 +37,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.floragunn.searchguard.DefaultObjectMapper;
+import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
@@ -204,7 +204,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
     public static String hash(final char[] clearTextPassword) {
         final byte[] salt = new byte[16];
         new SecureRandom().nextBytes(salt);
-        final String hash = OpenBSDBCrypt.generate((Objects.requireNonNull(clearTextPassword)), salt, 12);
+        final String hash = FipsManager.generateHash((Objects.requireNonNull(clearTextPassword)), salt, 12);
         Arrays.fill(salt, (byte) 0);
         Arrays.fill(clearTextPassword, '\0');
         return hash;
