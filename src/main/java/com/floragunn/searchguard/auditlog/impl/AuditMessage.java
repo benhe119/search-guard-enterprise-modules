@@ -80,7 +80,7 @@ public final class AuditMessage {
     public static final String TRANSPORT_REQUEST_HEADERS = "audit_transport_headers";
 
     public static final String ID = "audit_trace_doc_id";
-    public static final String TYPES = "audit_trace_doc_types";
+    //public static final String TYPES = "audit_trace_doc_types";
     //public static final String SOURCE = "audit_trace_doc_source";
     public static final String INDICES = "audit_trace_indices";
     public static final String SHARD_ID = "audit_trace_shard_id";
@@ -228,7 +228,7 @@ public final class AuditMessage {
         }
     }
 
-    public void addTypes(String[] types) {
+    /*public void addTypes(String[] types) {
         if (types != null && types.length > 0) {
             auditInfo.put(TYPES, types);
         }
@@ -238,7 +238,7 @@ public final class AuditMessage {
         if (type != null) {
             auditInfo.put(TYPES, new String[] { type });
         }
-    }
+    }*/
 
     public void addFileInfos(Map<String, Path> paths) {
         if (paths != null && !paths.isEmpty()) {

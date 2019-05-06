@@ -533,7 +533,6 @@ public abstract class AbstractAuditLog implements AuditLog {
         msg.addIndices(new String[]{shardId.getIndexName()});
         msg.addResolvedIndices(new String[]{shardId.getIndexName()});
         msg.addId(currentIndex.id());
-        msg.addType(currentIndex.type());
         msg.addShardId(shardId);
         msg.addComplianceDocVersion(result.getVersion());
         msg.addComplianceOperation(result.isCreated()?Operation.CREATE:Operation.UPDATE);
@@ -623,7 +622,6 @@ public abstract class AbstractAuditLog implements AuditLog {
         msg.addIndices(new String[]{shardId.getIndexName()});
         msg.addResolvedIndices(new String[]{shardId.getIndexName()});
         msg.addId(delete.id());
-        msg.addType(delete.type());
         msg.addShardId(shardId);
         msg.addComplianceDocVersion(result.getVersion());
         msg.addComplianceOperation(Operation.DELETE);

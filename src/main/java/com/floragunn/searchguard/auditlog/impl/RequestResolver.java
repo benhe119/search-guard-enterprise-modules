@@ -204,9 +204,7 @@ public final class RequestResolver {
         if (request instanceof MultiGetRequest.Item) {
             final MultiGetRequest.Item item = (MultiGetRequest.Item) request;
             final String[] indices = arrayOrEmpty(item.indices());
-            final String type = item.type();
             final String id = item.id();
-            msg.addType(type);
             msg.addId(id);
             addIndicesSourceSafe(msg, indices, resolver, cs, null, null, settings, resolveIndices, logRequestBody, false, searchguardIndex);
         } else if (request instanceof CreateIndexRequest) {
@@ -221,27 +219,21 @@ public final class RequestResolver {
         } else if (request instanceof IndexRequest) {
             final IndexRequest ir = (IndexRequest) request;
             final String[] indices = arrayOrEmpty(ir.indices());
-            final String type = ir.type();
             final String id = ir.id();
             msg.addShardId(ir.shardId());
-            msg.addType(type);
             msg.addId(id);
             addIndicesSourceSafe(msg, indices, resolver, cs, ir.getContentType(), ir.source(), settings, resolveIndices, logRequestBody, true, searchguardIndex);
         } else if (request instanceof DeleteRequest) {
             final DeleteRequest dr = (DeleteRequest) request;
             final String[] indices = arrayOrEmpty(dr.indices());
-            final String type = dr.type();
             final String id = dr.id();
             msg.addShardId(dr.shardId());
-            msg.addType(type);
             msg.addId(id);
             addIndicesSourceSafe(msg, indices, resolver, cs, null, null, settings, resolveIndices, logRequestBody, false, searchguardIndex);
         } else if (request instanceof UpdateRequest) {
             final UpdateRequest ur = (UpdateRequest) request;
             final String[] indices = arrayOrEmpty(ur.indices());
-            final String type = ur.type();
             final String id = ur.id();
-            msg.addType(type);
             msg.addId(id);
             addIndicesSourceSafe(msg, indices, resolver, cs, null, null, settings, resolveIndices, logRequestBody, false, searchguardIndex);
             if(logRequestBody) {
@@ -257,17 +249,13 @@ public final class RequestResolver {
         } else if (request instanceof GetRequest) {
             final GetRequest gr = (GetRequest) request;
             final String[] indices = arrayOrEmpty(gr.indices());
-            final String type = gr.type();
             final String id = gr.id();
-            msg.addType(type);
             msg.addId(id);
             addIndicesSourceSafe(msg, indices, resolver, cs, null, null, settings, resolveIndices, logRequestBody, false, searchguardIndex);
         } else if (request instanceof SearchRequest) {
             final SearchRequest sr = (SearchRequest) request;
             final String[] indices = arrayOrEmpty(sr.indices());
-            final String[] types = arrayOrEmpty(sr.types());
-
-            msg.addTypes(types);            
+            
             Map<String, Object> sourceAsMap = sr.source() == null? null:Utils.convertJsonToxToStructuredMap(sr.source());
             addIndicesSourceSafe(msg, indices, resolver, cs, XContentType.JSON, sourceAsMap, settings, resolveIndices, logRequestBody, false, searchguardIndex);
         } else if (request instanceof ClusterUpdateSettingsRequest) {
@@ -302,10 +290,8 @@ public final class RequestResolver {
         } else if (request instanceof ReindexRequest) {
             final IndexRequest ir = ((ReindexRequest) request).getDestination();
             final String[] indices = arrayOrEmpty(ir.indices());
-            final String type = ir.type();
             final String id = ir.id();
             msg.addShardId(ir.shardId());
-            msg.addType(type);
             msg.addId(id);
             addIndicesSourceSafe(msg, indices, resolver, cs, ir.getContentType(), ir.source(), settings, resolveIndices, logRequestBody, true, searchguardIndex);
         } else if (request instanceof DeleteByQueryRequest) {
@@ -319,7 +305,6 @@ public final class RequestResolver {
         } else if (request instanceof PutMappingRequest) {
             final PutMappingRequest pr = (PutMappingRequest) request;
             final Index ci = pr.getConcreteIndex();
-            msg.addType(pr.type());
             String[] indices = new String[0];
             msg.addIndices(indices);
             
