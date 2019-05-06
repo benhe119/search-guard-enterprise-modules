@@ -45,7 +45,7 @@ public final class InternalESSink extends AuditLogSink {
 		Settings sinkSettings = getSinkSettings(settingsPrefix);
 		
 		this.index = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_INDEX, "'sg7-auditlog-'YYYY.MM.dd");
-		this.type = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_TYPE, "auditlog");
+		this.type = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_TYPE, null);
 
 		this.threadPool = threadPool;
 		try {
