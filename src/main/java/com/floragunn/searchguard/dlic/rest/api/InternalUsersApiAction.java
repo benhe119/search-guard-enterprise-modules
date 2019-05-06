@@ -134,7 +134,6 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         // for existing users, hash is optional
         if (userExisted && sgJsonNode.get("hash").asString() == null) {
             // sanity check, this should usually not happen
-            @SuppressWarnings("unchecked")
             final String hash = ((Hashed)internaluser.getCEntry(username)).getHash();
             if (hash == null || hash.length() == 0) {
                 internalErrorResponse(channel, 

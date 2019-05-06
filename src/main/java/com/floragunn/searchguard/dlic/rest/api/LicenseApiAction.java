@@ -80,7 +80,7 @@ public class LicenseApiAction extends AbstractApiAction {
 			@Override
 			public void onFailure(final Exception e) {
 			    request.params().clear();
-	            logger.error("Unable to fetch license due to", e);
+			    log.error("Unable to fetch license due to", e);
 	            internalErrorResponse(channel, "Unable to fetch license: " + e.getMessage());
 			}
 
@@ -98,7 +98,7 @@ public class LicenseApiAction extends AbstractApiAction {
 			                new BytesRestResponse(RestStatus.OK, builder));
 				} catch (IOException e) {
 				    internalErrorResponse(channel, "Unable to fetch license: " + e.getMessage());
-					logger.error("Cannot fetch convert license to XContent due to", e);		
+				    log.error("Cannot fetch convert license to XContent due to", e);		
 				}
 			}
 		});

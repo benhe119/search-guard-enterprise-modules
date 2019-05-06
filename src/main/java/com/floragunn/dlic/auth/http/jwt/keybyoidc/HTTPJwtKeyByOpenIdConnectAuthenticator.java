@@ -16,8 +16,6 @@ package com.floragunn.dlic.auth.http.jwt.keybyoidc;
 
 import java.nio.file.Path;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.settings.Settings;
 
 import com.floragunn.dlic.auth.http.jwt.AbstractHTTPJwtAuthenticator;
@@ -25,7 +23,7 @@ import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 
 public class HTTPJwtKeyByOpenIdConnectAuthenticator extends AbstractHTTPJwtAuthenticator {
 
-	private final static Logger log = LogManager.getLogger(HTTPJwtKeyByOpenIdConnectAuthenticator.class);
+	//private final static Logger log = LogManager.getLogger(HTTPJwtKeyByOpenIdConnectAuthenticator.class);
 
 	public HTTPJwtKeyByOpenIdConnectAuthenticator(Settings settings, Path configPath) {
 		super(settings, configPath);

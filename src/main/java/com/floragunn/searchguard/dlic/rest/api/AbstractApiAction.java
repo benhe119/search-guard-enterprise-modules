@@ -276,13 +276,13 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	        final SgDynamicConfiguration<?> settings, OnSucessActionListener<IndexResponse> actionListener) {
 		final IndexRequest ir = new IndexRequest(this.searchguardIndex);
 
-		final String type = "_doc";
+		//final String type = "_doc";
 		final String id = cType.toLCString();
 
 		settings.removeStatic();
 		
 		try {
-            client.index(ir.type(type).id(id)
+            client.index(ir.id(id)
                     .setRefreshPolicy(RefreshPolicy.IMMEDIATE)
                     .setIfSeqNo(settings.getSeqNo())
                     .setIfPrimaryTerm(settings.getPrimaryTerm())
@@ -353,7 +353,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
         String authError = restApiPrivilegesEvaluator.checkAccessPermissions(request, getEndpoint());
 
         if (authError != null) {
-            logger.error("No permission to access REST API: " + authError);
+            log.error("No permission to access REST API: " + authError);
             final User user = (User) threadPool.getThreadContext().getTransient(ConfigConstants.SG_USER);
             auditLog.logMissingPrivileges(authError, user == null ? null : user.getName(), request);
             // for rest request
@@ -387,7 +387,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		boolean success = response.getNodes().size() == nodeCount;
 		if (!success) {
-			logger.error(
+		    log.error(
 					"Expected " + nodeCount + " nodes to return response, but got only " + response.getNodes().size());
 		}
 
@@ -397,7 +397,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 					&& node.getUpdatedConfigTypes().length == expectedConfigCount;
 
 			if (!successNode) {
-				logger.error("Expected " + expectedConfigCount + " config types for node " + nodeId + " but got only "
+			    log.error("Expected " + expectedConfigCount + " config types for node " + nodeId + " but got only "
 						+ Arrays.toString(node.getUpdatedConfigTypes()));
 			}
 
