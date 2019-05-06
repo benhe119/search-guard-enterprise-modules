@@ -65,7 +65,7 @@ public final class ExternalESSink extends AuditLogSink {
                     + "If you have no date pattern configured you can safely ignore this message", e.getMessage());
         }
 		
-		this.type = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_TYPE, "auditlog");
+		this.type = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_TYPE, null);
 		final boolean verifyHostnames = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_VERIFY_HOSTNAMES, true);
 		final boolean enableSsl = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_ENABLE_SSL, false);
 		final boolean enableSslClientAuth = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_ENABLE_SSL_CLIENT_AUTH , ConfigConstants.SEARCHGUARD_AUDIT_SSL_ENABLE_SSL_CLIENT_AUTH_DEFAULT);
