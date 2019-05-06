@@ -57,9 +57,6 @@ public final class AuditMessage {
     public static final String REQUEST_EFFECTIVE_USER = "audit_request_effective_user";
     public static final String REQUEST_INITIATING_USER = "audit_request_initiating_user";
     public static final String UTC_TIMESTAMP = "@timestamp";
-    
-    @Deprecated
-    private static final String UTC_TIMESTAMP_DEPRECATED = "audit_utc_timestamp";
 
     public static final String CLUSTER_NAME = "audit_cluster_name";
     public static final String NODE_ID = "audit_node_id";
@@ -113,10 +110,9 @@ public final class AuditMessage {
     public AuditMessage(final Category msgCategory, final ClusterService clusterService, final Origin origin, final Origin layer) {
         this.msgCategory = Objects.requireNonNull(msgCategory);
         final String currentTime = currentTime();
-        auditInfo.put(FORMAT_VERSION, 3);
+        auditInfo.put(FORMAT_VERSION, 4);
         auditInfo.put(CATEGORY, Objects.requireNonNull(msgCategory));
         auditInfo.put(UTC_TIMESTAMP, currentTime);
-        auditInfo.put(UTC_TIMESTAMP_DEPRECATED, currentTime);
         auditInfo.put(NODE_HOST_ADDRESS, Objects.requireNonNull(clusterService).localNode().getHostAddress());
         auditInfo.put(NODE_ID, Objects.requireNonNull(clusterService).localNode().getId());
         auditInfo.put(NODE_HOST_NAME, Objects.requireNonNull(clusterService).localNode().getHostName());
