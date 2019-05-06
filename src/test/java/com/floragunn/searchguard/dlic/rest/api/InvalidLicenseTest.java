@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.Header;
-import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
 import org.junit.Test;
 
