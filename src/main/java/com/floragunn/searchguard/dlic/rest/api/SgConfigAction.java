@@ -75,12 +75,11 @@ public class SgConfigAction extends PatchableResourceApiAction {
 	@Override
 	protected void handleGet(RestChannel channel, RestRequest request, Client client, final JsonNode content) throws IOException{
 
-		final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), true);
+		final SgDynamicConfiguration<?> configuration = load(getConfigName(), true);
 		
-		filter(configurationSettings);
+		filter(configuration);
 
-		channel.sendResponse(
-				new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
+		successResponse(channel, configuration);
 	}
 	
 	

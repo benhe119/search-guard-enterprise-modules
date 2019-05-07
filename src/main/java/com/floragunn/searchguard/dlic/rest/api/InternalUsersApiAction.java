@@ -89,15 +89,15 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         // TODO it might be sensible to consolidate this with the overridden method in
         // order to minimize duplicated logic
 
-        final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), false);
+        final SgDynamicConfiguration<?> configuration = load(getConfigName(), false);
 
-        if (isHidden(configurationSettings, username)) {
+        if (isHidden(configuration, username)) {
             forbidden(channel, "Resource '" + username + "' is not available.");
             return;
         }
 
         // check if resource is writeable
-        if (isReserved(configurationSettings, username)) {
+        if (isReserved(configuration, username)) {
             forbidden(channel, "Resource '" + username + "' is read-only.");
             return;
         }

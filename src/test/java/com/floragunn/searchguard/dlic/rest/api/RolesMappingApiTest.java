@@ -44,12 +44,14 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		// check rolesmapping exists, new API
 		response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Assert.assertTrue(response.getContentType(), response.isJsonContentType());
 
 		// -- GET
 
 		// GET sg_role_starfleet, exists
 		response = rh.executeGetRequest("/_searchguard/api/rolesmapping/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Assert.assertTrue(response.getContentType(), response.isJsonContentType());
 		Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		Assert.assertEquals("starfleet", settings.getAsList("sg_role_starfleet.backend_roles").get(0));
 		Assert.assertEquals("captains", settings.getAsList("sg_role_starfleet.backend_roles").get(1));
@@ -63,10 +65,12 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		// GET, new URL endpoint in SG6
 		response = rh.executeGetRequest("/_searchguard/api/rolesmapping/", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Assert.assertTrue(response.getContentType(), response.isJsonContentType());
 
 		// GET, new URL endpoint in SG6
 		response = rh.executeGetRequest("/_searchguard/api/rolesmapping", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Assert.assertTrue(response.getContentType(), response.isJsonContentType());
 
 	    // GET, rolesmapping is hidden
         response = rh.executeGetRequest("/_searchguard/api/rolesmapping/sg_role_internal", new Header[0]);
@@ -102,6 +106,7 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
 		// remove complete role mapping for sg_role_starfleet_captains.
 		response = rh.executeDeleteRequest("/_searchguard/api/rolesmapping/sg_role_starfleet_captains", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+		Assert.assertTrue(response.getContentType(), response.isJsonContentType());
 		response = rh.executeGetRequest("_searchguard/api/rolesmapping");
 		rh.sendHTTPClientCertificate = false;
 
@@ -254,6 +259,12 @@ public class RolesMappingApiTest extends AbstractRestApiUnitTest {
         permissions = settings.getAsList("bulknew1.backend_roles");
         Assert.assertNotNull(permissions);
         Assert.assertTrue(permissions.contains("vulcanadmin"));
+        
+        // PATCH err
+        rh.sendHTTPClientCertificate = true;
+        response = rh.executePatchRequest("/_searchguard/api/rolesmapping", "[{ \"op\": \"add\", \"path\": \"/bulknew1\", \"value\": {  \"unknownfield\":[\"vulcanadmin\"]} }]", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getContentType(), response.isJsonContentType());
         
         // PATCH delete
         rh.sendHTTPClientCertificate = true;
