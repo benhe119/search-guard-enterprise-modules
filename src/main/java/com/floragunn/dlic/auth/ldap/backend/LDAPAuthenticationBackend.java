@@ -120,12 +120,13 @@ public class LDAPAuthenticationBackend implements AuthenticationBackend {
                 AccessController.doPrivileged(new PrivilegedExceptionAction<Response<Void>>() {
                     @Override
                     public Response<Void> run() throws LdapException {
-                        Utils.unbindAndCloseSilently(_con);
-                        return _con.open(br);
+                        return _con.reopen(br);
                     }
                 });
             } catch (PrivilegedActionException e) {
                 throw e.getException();
+            } finally {
+                Utils.unbindAndCloseSilently(_con);
             }
 
             final String usernameAttribute = settings.get(ConfigConstants.LDAP_AUTHC_USERNAME_ATTRIBUTE, null);
