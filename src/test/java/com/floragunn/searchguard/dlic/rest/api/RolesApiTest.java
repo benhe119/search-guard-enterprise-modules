@@ -65,6 +65,45 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
         Assert.assertFalse(response.getBody().contains("_sg_meta"));
     }
     
+    @Test
+    public void testPutDuplicateKeys() throws Exception {
+
+        setup();
+        
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executePutRequest("_searchguard/api/roles/dup", "{ \"cluster_permissions\": [\"*\"], \"cluster_permissions\": [\"*\"] }");
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().contains("JsonParseException"));
+        assertHealthy();
+    }
+    
+    @Test
+    public void testPutUnknownKey() throws Exception {
+
+        setup();
+        
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executePutRequest("_searchguard/api/roles/dup", "{ \"unknownkey\": [\"*\"], \"cluster_permissions\": [\"*\"] }");
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().contains("invalid_keys"));
+        assertHealthy();
+    }
+    
+    @Test
+    public void testPutInvalidJson() throws Exception {
+
+        setup();
+        
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+        HttpResponse response = rh.executePutRequest("_searchguard/api/roles/dup", "{ \"invalid\"::{{ [\"*\"], \"cluster_permissions\": [\"*\"] }");
+        Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
+        Assert.assertTrue(response.getBody().contains("JsonParseException"));
+        assertHealthy();
+    }
+    
 	@Test
 	public void testRolesApi() throws Exception {
 
