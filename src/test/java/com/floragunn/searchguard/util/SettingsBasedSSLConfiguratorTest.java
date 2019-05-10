@@ -27,7 +27,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-
+import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.util.Map;
 
@@ -72,6 +72,7 @@ import org.junit.rules.ExpectedException;
 
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
+import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
@@ -406,14 +407,14 @@ public class SettingsBasedSSLConfiguratorTest {
 
             try {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                KeyStore trustStore = KeyStore.getInstance("JKS");
+                KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
                 InputStream trustStream = new FileInputStream(
                         FileHelper.getAbsoluteFilePathFromClassPath(trustStorePath).toFile());
                 trustStore.load(trustStream, password.toCharArray());
                 tmf.init(trustStore);
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                KeyStore keyStore = KeyStore.getInstance("JKS");
+                KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
 
                 Path path = FileHelper.getAbsoluteFilePathFromClassPath(keyStorePath);
 

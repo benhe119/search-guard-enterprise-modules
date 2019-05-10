@@ -18,7 +18,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-
+import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -34,6 +34,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.auditlog.helper.LoggingSink;
 import com.floragunn.searchguard.auditlog.helper.MockAuditMessageFactory;
 import com.floragunn.searchguard.auditlog.helper.TestHttpHandler;
@@ -696,13 +697,13 @@ public class WebhookAuditLogTest {
 	private SSLContext createSSLContext() throws Exception {
 			final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory
 					.getDefaultAlgorithm());
-			final KeyStore trustStore = KeyStore.getInstance("JKS");
+			final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
 			InputStream trustStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks").toFile());
 			trustStore.load(trustStream, "changeit".toCharArray());
 			tmf.init(trustStore);
 
 			final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());			
-			final KeyStore keyStore = KeyStore.getInstance("JKS");
+			final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
 			InputStream keyStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore.jks").toFile());
 
 			keyStore.load(keyStream, "changeit".toCharArray());

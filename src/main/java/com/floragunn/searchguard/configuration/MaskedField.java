@@ -16,6 +16,7 @@ package com.floragunn.searchguard.configuration;
 
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -140,7 +141,7 @@ public class MaskedField {
         if (algo != null) {
             try {
                 return FipsManager.hash(in, algo);
-            } catch (NoSuchAlgorithmException e) {
+            } catch (Exception e) {
                 throw new IllegalArgumentException(e);
             }
         } else if (regexReplacements != null) {
@@ -165,12 +166,11 @@ public class MaskedField {
     }
 
     private byte[] blake2bHash(byte[] in) {
-        return FipsManager.fastHash(in);
-        //final Blake2bDigest hash = new Blake2bDigest(null, 32, null, defaultSalt);
-        //hash.update(in, 0, in.length);
-        //final byte[] out = new byte[hash.getDigestSize()];
-        //hash.doFinal(out, 0);
-        //return Hex.encode(out);
+        try {
+            return FipsManager.fastHash(in, defaultSalt);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     private BytesRef blake2bHash(BytesRef in) {

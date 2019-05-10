@@ -27,7 +27,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.security.GeneralSecurityException;
-
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
@@ -149,6 +149,7 @@ import org.opensaml.xmlsec.signature.support.Signer;
 import org.opensaml.xmlsec.signature.support.impl.ExplicitKeySignatureTrustEngine;
 import org.w3c.dom.Document;
 
+import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
@@ -648,7 +649,7 @@ class MockSamlIdpServer implements Closeable {
         try {
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
-            KeyStore keyStore = KeyStore.getInstance("JKS");
+            KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath(path).toFile());
 
             keyStore.load(keyStream, "changeit".toCharArray());
@@ -659,8 +660,7 @@ class MockSamlIdpServer implements Closeable {
             this.signingCredential = new BasicX509Credential(this.signingCertificate,
                     (PrivateKey) keyStore.getKey(alias, "changeit".toCharArray()));
 
-        } catch (NoSuchAlgorithmException | KeyStoreException | CertificateException | IOException
-                | UnrecoverableKeyException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -672,14 +672,14 @@ class MockSamlIdpServer implements Closeable {
 
         try {
             final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            final KeyStore trustStore = KeyStore.getInstance("JKS");
+            final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
             InputStream trustStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore.jks").toFile());
             trustStore.load(trustStream, "changeit".toCharArray());
             tmf.init(trustStore);
 
             final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            final KeyStore keyStore = KeyStore.getInstance("JKS");
+            final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/node-0-keystore.jks").toFile());
 

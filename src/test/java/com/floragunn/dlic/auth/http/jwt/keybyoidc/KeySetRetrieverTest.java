@@ -18,7 +18,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
-
+import java.security.KeyStore;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Map;
@@ -38,6 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
+import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.hash.Hashing;
@@ -104,12 +105,12 @@ public class KeySetRetrieverTest {
         }) {
             SSLContextBuilder sslContextBuilder = SSLContexts.custom();
 
-            KeyStore trustStore = KeyStore.getInstance("JKS");
+            KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
             InputStream trustStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore.jks").toFile());
             trustStore.load(trustStream, "changeit".toCharArray());
 
-            KeyStore keyStore = KeyStore.getInstance("JKS");
+            KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/spock-keystore.jks").toFile());
 

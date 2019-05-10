@@ -17,7 +17,7 @@ package com.floragunn.dlic.auth.http.saml;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -54,6 +54,7 @@ import org.opensaml.saml.saml2.core.NameIDType;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.floragunn.searchguard.DefaultObjectMapper;
+import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.util.FakeRestRequest;
@@ -491,7 +492,7 @@ public class HTTPSamlAuthenticatorTest {
         try {
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
-            KeyStore keyStore = KeyStore.getInstance("JKS");
+            KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("saml/spock-keystore.jks").toFile());
 
@@ -502,8 +503,7 @@ public class HTTPSamlAuthenticatorTest {
 
             spSigningPrivateKey = (PrivateKey) keyStore.getKey("spock", "changeit".toCharArray());
 
-        } catch (NoSuchAlgorithmException | KeyStoreException | CertificateException | IOException
-                | UnrecoverableKeyException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
