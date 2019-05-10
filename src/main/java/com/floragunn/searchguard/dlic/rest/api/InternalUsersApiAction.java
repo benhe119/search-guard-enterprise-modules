@@ -89,15 +89,15 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         // TODO it might be sensible to consolidate this with the overridden method in
         // order to minimize duplicated logic
 
-        final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), false);
+        final SgDynamicConfiguration<?> configuration = load(getConfigName(), false);
 
-        if (isHidden(configurationSettings, username)) {
+        if (isHidden(configuration, username)) {
             forbidden(channel, "Resource '" + username + "' is not available.");
             return;
         }
 
         // check if resource is writeable
-        if (isReserved(configurationSettings, username)) {
+        if (isReserved(configuration, username)) {
             forbidden(channel, "Resource '" + username + "' is read-only.");
             return;
         }
@@ -134,7 +134,6 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
         // for existing users, hash is optional
         if (userExisted && sgJsonNode.get("hash").asString() == null) {
             // sanity check, this should usually not happen
-            @SuppressWarnings("unchecked")
             final String hash = ((Hashed)internaluser.getCEntry(username)).getHash();
             if (hash == null || hash.length() == 0) {
                 internalErrorResponse(channel, 

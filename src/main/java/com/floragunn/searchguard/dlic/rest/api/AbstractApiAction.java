@@ -45,12 +45,16 @@ import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.threadpool.ThreadPool;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateNodeResponse;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
+import com.floragunn.searchguard.action.licenseinfo.LicenseInfoResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
@@ -105,25 +109,33 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 	protected void handleApiRequest(final RestChannel channel, final RestRequest request, final Client client) throws IOException {
 
-		// validate additional settings, if any
-		AbstractConfigurationValidator validator = getValidator(request, request.content());
-		if (!validator.validateSettings()) {
-			request.params().clear();
-			channel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
-			return;
-		}
-		switch (request.method()) {
-		case DELETE:
-			handleDelete(channel,request, client, validator.getContentAsNode()); break;
-		case POST:
-			handlePost(channel,request, client, validator.getContentAsNode());break;
-		case PUT:
-			handlePut(channel,request, client, validator.getContentAsNode());break;
-		case GET:
-             handleGet(channel,request, client, validator.getContentAsNode());break;
-		default:
-			throw new IllegalArgumentException(request.method() + " not supported");
-		}
+		try {
+            // validate additional settings, if any
+            AbstractConfigurationValidator validator = getValidator(request, request.content());
+            if (!validator.validate()) {
+            	request.params().clear();
+            	badRequestResponse(channel, validator);
+            	return;
+            }
+            switch (request.method()) {
+            case DELETE:
+            	handleDelete(channel,request, client, validator.getContentAsNode()); break;
+            case POST:
+            	handlePost(channel,request, client, validator.getContentAsNode());break;
+            case PUT:
+            	handlePut(channel,request, client, validator.getContentAsNode());break;
+            case GET:
+                 handleGet(channel,request, client, validator.getContentAsNode());break;
+            default:
+            	throw new IllegalArgumentException(request.method() + " not supported");
+            }
+        } catch (JsonMappingException jme) {
+            throw jme;
+            //TODO strip source
+            //if(jme.getLocation() == null || jme.getLocation().getSourceRef() == null) {
+            //    throw jme;
+            //} else throw new JsonMappingException(null, jme.getMessage());
+        }
 	}
 
 	protected void handleDelete(final RestChannel channel, final RestRequest request, final Client client, final JsonNode content) throws IOException {
@@ -134,23 +146,23 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return;
 		}
 
-		final SgDynamicConfiguration<?> existingAsSettings = load(getConfigName(), false);
+		final SgDynamicConfiguration<?> existingConfiguration = load(getConfigName(), false);
 		
-		if (isHidden(existingAsSettings, name)) {
+		if (isHidden(existingConfiguration, name)) {
             notFound(channel, getResourceName() + " " + name + " not found.");
             return;
 		}
 		
-		if (isReserved(existingAsSettings, name)) {
+		if (isReserved(existingConfiguration, name)) {
 			forbidden(channel, "Resource '"+ name +"' is read-only.");
 			return;
 		}
 		
-        boolean existed = existingAsSettings.exists(name);
-        existingAsSettings.remove(name);
+        boolean existed = existingConfiguration.exists(name);
+        existingConfiguration.remove(name);
 		
 		if (existed) {
-			saveAnUpdateConfigs(client, request, getConfigName(), existingAsSettings, new OnSucessActionListener<IndexResponse>(channel) {
+			saveAnUpdateConfigs(client, request, getConfigName(), existingConfiguration, new OnSucessActionListener<IndexResponse>(channel) {
                 
                 @Override
                 public void onResponse(IndexResponse response) {
@@ -172,14 +184,14 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			return;
 		}
 
-		final SgDynamicConfiguration<?> existingAsSettings = load(getConfigName(), false);
+		final SgDynamicConfiguration<?> existingConfiguration = load(getConfigName(), false);
 
-		if (isHidden(existingAsSettings, name)) {
+		if (isHidden(existingConfiguration, name)) {
             forbidden(channel, "Resource '"+ name +"' is not available.");
             return;
 		}
 		
-		if (isReserved(existingAsSettings, name)) {
+		if (isReserved(existingConfiguration, name)) {
 			forbidden(channel, "Resource '"+ name +"' is read-only.");
 			return;
 		}
@@ -188,10 +200,10 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			log.trace(content.toString());
 		}
 		
-		boolean existed = existingAsSettings.exists(name);
-		existingAsSettings.putCObject(name, DefaultObjectMapper.readTree(content, existingAsSettings.getImplementingClass()));
+		boolean existed = existingConfiguration.exists(name);
+		existingConfiguration.putCObject(name, DefaultObjectMapper.readTree(content, existingConfiguration.getImplementingClass()));
 		
-		saveAnUpdateConfigs(client, request, getConfigName(), existingAsSettings, new OnSucessActionListener<IndexResponse>(channel) {
+		saveAnUpdateConfigs(client, request, getConfigName(), existingConfiguration, new OnSucessActionListener<IndexResponse>(channel) {
 
             @Override
             public void onResponse(IndexResponse response) {
@@ -215,26 +227,24 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	    
 		final String resourcename = request.param("name");
 
-		final SgDynamicConfiguration<?> settingsBuilder = load(getConfigName(), true);
-		filter(settingsBuilder);
+		final SgDynamicConfiguration<?> configuration = load(getConfigName(), true);
+		filter(configuration);
 		
 
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
 		     
-			channel.sendResponse(
-					new BytesRestResponse(RestStatus.OK, convertToJson(channel, settingsBuilder)));
+		    successResponse(channel, configuration);
 			return;
 		}
 
-		if (!settingsBuilder.exists(resourcename)) {
+		if (!configuration.exists(resourcename)) {
 			notFound(channel, "Resource '" + resourcename + "' not found.");
 			return;
 		}	
 
-		settingsBuilder.removeOthers(resourcename);
-		channel.sendResponse(
-            		new BytesRestResponse(RestStatus.OK, convertToJson(channel, settingsBuilder)));
+		configuration.removeOthers(resourcename);
+		successResponse(channel, configuration);
 
 		return;
 	}
@@ -273,20 +283,20 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	}
 
 	protected void saveAnUpdateConfigs(final Client client, final RestRequest request, final CType cType,
-	        final SgDynamicConfiguration<?> settings, OnSucessActionListener<IndexResponse> actionListener) {
+	        final SgDynamicConfiguration<?> configuration, OnSucessActionListener<IndexResponse> actionListener) {
 		final IndexRequest ir = new IndexRequest(this.searchguardIndex);
 
-		final String type = "_doc";
+		//final String type = "_doc";
 		final String id = cType.toLCString();
 
-		settings.removeStatic();
+		configuration.removeStatic();
 		
 		try {
-            client.index(ir.type(type).id(id)
+            client.index(ir.id(id)
                     .setRefreshPolicy(RefreshPolicy.IMMEDIATE)
-                    .setIfSeqNo(settings.getSeqNo())
-                    .setIfPrimaryTerm(settings.getPrimaryTerm())
-                    .source(id, XContentHelper.toXContent(settings, XContentType.JSON, false)),
+                    .setIfSeqNo(configuration.getSeqNo())
+                    .setIfPrimaryTerm(configuration.getPrimaryTerm())
+                    .source(id, XContentHelper.toXContent(configuration, XContentType.JSON, false)),
                     new ConfigUpdatingActionListener<IndexResponse>(client, actionListener));
         } catch (IOException e) {
             throw ExceptionsHelper.convertToElastic(e);
@@ -307,7 +317,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
         @Override
         public void onResponse(Response response) {
             
-            final ConfigUpdateRequest cur = new ConfigUpdateRequest(new String[] { "config", "roles", "rolesmapping", "internalusers", "actiongroups" });
+            final ConfigUpdateRequest cur = new ConfigUpdateRequest(CType.lcStringValues().toArray(new String[0]));
             
             client.execute(ConfigUpdateAction.INSTANCE, cur, new ActionListener<ConfigUpdateResponse>() {
                 @Override
@@ -343,17 +353,14 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
         // check if SG index has been initialized
         if (!ensureIndexExists()) {
-            return channel -> channel.sendResponse(
-                    new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ErrorType.SG_NOT_INITIALIZED.getMessage())); // TODO
-                                                                                                                         // return
-                                                                                                                         // json
+            return channel -> internalErrorResponse(channel, ErrorType.SG_NOT_INITIALIZED.getMessage());
         }
 
         // check if request is authorized
         String authError = restApiPrivilegesEvaluator.checkAccessPermissions(request, getEndpoint());
 
         if (authError != null) {
-            logger.error("No permission to access REST API: " + authError);
+            log.error("No permission to access REST API: " + authError);
             final User user = (User) threadPool.getThreadContext().getTransient(ConfigConstants.SG_USER);
             auditLog.logMissingPrivileges(authError, user == null ? null : user.getName(), request);
             // for rest request
@@ -376,6 +383,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
                 threadPool.getThreadContext().putTransient(ConfigConstants.SG_ORIGIN, originalOrigin);
 
                 handleApiRequest(channel, request, client);
+ 
             }
         };
     }
@@ -387,7 +395,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		boolean success = response.getNodes().size() == nodeCount;
 		if (!success) {
-			logger.error(
+		    log.error(
 					"Expected " + nodeCount + " nodes to return response, but got only " + response.getNodes().size());
 		}
 
@@ -397,7 +405,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 					&& node.getUpdatedConfigTypes().length == expectedConfigCount;
 
 			if (!successNode) {
-				logger.error("Expected " + expectedConfigCount + " config types for node " + nodeId + " but got only "
+			    log.error("Expected " + expectedConfigCount + " config types for node " + nodeId + " but got only "
 						+ Arrays.toString(node.getUpdatedConfigTypes()));
 			}
 
@@ -407,22 +415,22 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		return success;
 	}
 
-	protected static XContentBuilder convertToJson(RestChannel channel, ToXContent settings) {
+	protected static XContentBuilder convertToJson(RestChannel channel, ToXContent toxContent) {
 		try {
             XContentBuilder builder = channel.newBuilder();
-            settings.toXContent(builder, ToXContent.EMPTY_PARAMS);
+            toxContent.toXContent(builder, ToXContent.EMPTY_PARAMS);
             return builder;
         } catch (IOException e) {
             throw ExceptionsHelper.convertToElastic(e);
         }
 	}
 
-	protected void response(RestChannel channel, RestStatus status, String statusString, String message) {
+	protected void response(RestChannel channel, RestStatus status, String message) {
 
 		try {
 			final XContentBuilder builder = channel.newBuilder();
 			builder.startObject();
-			builder.field("status", statusString);
+			builder.field("status", status.name());
 			builder.field("message", message);
 			builder.endObject();
 			channel.sendResponse(new BytesRestResponse(status, builder));
@@ -431,55 +439,81 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		}
 	}
 
+	protected void successResponse(RestChannel channel, SgDynamicConfiguration<?> response) {
+	    channel.sendResponse(
+                new BytesRestResponse(RestStatus.OK, convertToJson(channel, response)));
+    }
+	
+	protected void successResponse(RestChannel channel, LicenseInfoResponse ur) {
+	    try {
+            final XContentBuilder builder = channel.newBuilder();
+            builder.startObject();
+            ur.toXContent(builder, ToXContent.EMPTY_PARAMS);
+            builder.endObject();
+            if (log.isDebugEnabled()) {
+                log.debug("Successfully fetched license " + ur.toString());
+            }
+            channel.sendResponse(
+                    new BytesRestResponse(RestStatus.OK, builder));
+        } catch (IOException e) {
+            internalErrorResponse(channel, "Unable to fetch license: " + e.getMessage());
+            log.error("Cannot fetch convert license to XContent due to", e);        
+        }
+    }
+
+	protected void badRequestResponse(RestChannel channel, AbstractConfigurationValidator validator) {
+        channel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+    }
+	
 	protected void successResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.OK, RestStatus.OK.name(), message);
+		response(channel, RestStatus.OK, message);
 	}
 
 	protected void createdResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.CREATED, RestStatus.CREATED.name(), message);
+		response(channel, RestStatus.CREATED, message);
 	}
 
 	protected void badRequestResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.BAD_REQUEST, RestStatus.BAD_REQUEST.name(), message);
+		response(channel, RestStatus.BAD_REQUEST, message);
 	}
 
 	protected void notFound(RestChannel channel, String message) {
-		response(channel, RestStatus.NOT_FOUND, RestStatus.NOT_FOUND.name(), message);
+		response(channel, RestStatus.NOT_FOUND, message);
 	}
 
 	protected void forbidden(RestChannel channel, String message) {
-		response(channel, RestStatus.FORBIDDEN, RestStatus.FORBIDDEN.name(), message);
+		response(channel, RestStatus.FORBIDDEN, message);
 	}
 
 	protected void internalErrorResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.INTERNAL_SERVER_ERROR, RestStatus.INTERNAL_SERVER_ERROR.name(), message);
+		response(channel, RestStatus.INTERNAL_SERVER_ERROR, message);
 	}
 
 	protected void unprocessable(RestChannel channel, String message) {
-		response(channel, RestStatus.UNPROCESSABLE_ENTITY, RestStatus.UNPROCESSABLE_ENTITY.name(), message);
+		response(channel, RestStatus.UNPROCESSABLE_ENTITY, message);
 	}
 
 	protected void notImplemented(RestChannel channel, Method method) {
-		response(channel, RestStatus.NOT_IMPLEMENTED, RestStatus.NOT_IMPLEMENTED.name(),
+		response(channel, RestStatus.NOT_IMPLEMENTED,
 				"Method " + method.name() + " not supported for this action.");
 	}
 	
-	protected final boolean isReserved(SgDynamicConfiguration<?> settings, String resourceName) {
-	    if(isStatic(settings, resourceName)) { //static is also always reserved
+	protected final boolean isReserved(SgDynamicConfiguration<?> configuration, String resourceName) {
+	    if(isStatic(configuration, resourceName)) { //static is also always reserved
 	        return true;
 	    }
 	    
-	    final Object o = settings.getCEntry(resourceName);
+	    final Object o = configuration.getCEntry(resourceName);
 	    return o != null && o instanceof Hideable && ((Hideable) o).isReserved();
 	}
 
-    protected final boolean isHidden(SgDynamicConfiguration<?> settings, String resourceName) {
-        final Object o = settings.getCEntry(resourceName);
+    protected final boolean isHidden(SgDynamicConfiguration<?> configuration, String resourceName) {
+        final Object o = configuration.getCEntry(resourceName);
         return o != null && o instanceof Hideable && ((Hideable) o).isHidden();
     }
     
-    protected final boolean isStatic(SgDynamicConfiguration<?> settings, String resourceName) {
-        final Object o = settings.getCEntry(resourceName);
+    protected final boolean isStatic(SgDynamicConfiguration<?> configuration, String resourceName) {
+        final Object o = configuration.getCEntry(resourceName);
         return o != null && o instanceof StaticDefinable && ((StaticDefinable) o).isStatic();
     }
 	

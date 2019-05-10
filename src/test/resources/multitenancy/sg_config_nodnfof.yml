@@ -19,8 +19,6 @@ sg_config:
         enabled: true
         internalProxies: ".*"
         remoteIpHeader: "x-forwarded-for"
-        proxiesHeader: "x-forwarded-by"
-        trustedProxies: ".*"
     authc:
       ldap:
         http_enabled: false
@@ -130,7 +128,6 @@ sg_config:
       roles_from_another_ldap:
         http_enabled: false
         transport_enabled: false
-        order: 0
         authorization_backend:
           type: "ldap"
           config: {}
@@ -138,7 +135,6 @@ sg_config:
       roles_from_myldap:
         http_enabled: false
         transport_enabled: false
-        order: 0
         authorization_backend:
           type: "ldap"
           config:

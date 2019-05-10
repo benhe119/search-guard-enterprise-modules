@@ -22,8 +22,6 @@ sg_config:
           d{1,3}|172\\.1[6-9]{1}\\.\\d{1,3}\\.\\d{1,3}|172\\.2[0-9]{1}\\.\\d{1,3}\\\
           .\\d{1,3}|172\\.3[0-1]{1}\\.\\d{1,3}\\.\\d{1,3}"
         remoteIpHeader: "X-Forwarded-For"
-        proxiesHeader: "X-Forwarded-By"
-        trustedProxies: null
     authc:
       dummy_c_domain:
         http_enabled: true
@@ -41,7 +39,6 @@ sg_config:
       dummy_z_domain:
         http_enabled: true
         transport_enabled: true
-        order: 0
         authorization_backend:
           type: "com.floragunn.searchguard.cache.DummyAuthorizer"
           config: {}

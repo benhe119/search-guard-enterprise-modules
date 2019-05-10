@@ -69,8 +69,12 @@ public class SgConfigApiTest extends AbstractRestApiUnitTest {
         response = rh.executePutRequest("/_searchguard/api/sgconfig/sg_config", FileHelper.loadFile("restapi/sgconfig.json"), new Header[0]);
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         
+        response = rh.executePutRequest("/_searchguard/api/sgconfig/sg_config", FileHelper.loadFile("restapi/invalid_sgconfig.json"), new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
+        Assert.assertTrue(response.getContentType(), response.isJsonContentType());
+        Assert.assertTrue(response.getBody().contains("Unrecognized field"));
+
         response = rh.executeGetRequest("/_searchguard/api/sgconfig", new Header[0]);
-        System.out.println(response.getBody());
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
 
         response = rh.executePostRequest("/_searchguard/api/sgconfig", "{\"xxx\": 1}", new Header[0]);

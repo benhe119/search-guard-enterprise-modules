@@ -42,8 +42,8 @@ public class InternalUsersValidator extends AbstractConfigurationValidator {
     }
 
     @Override
-    public boolean validateSettings() {
-        if(!super.validateSettings()) {
+    public boolean validate() {
+        if(!super.validate()) {
             return false;
         }
 

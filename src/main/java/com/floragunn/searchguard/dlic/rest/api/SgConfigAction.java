@@ -54,11 +54,19 @@ public class SgConfigAction extends PatchableResourceApiAction {
 		
 		allowPutOrPatch = settings.getAsBoolean(ConfigConstants.SEARCHGUARD_UNSUPPORTED_RESTAPI_ALLOW_SGCONFIG_MODIFICATION, false);
 		
+		//deprecated, will be removed with SG 8, use sg_config instead of sgconfig
 		controller.registerHandler(Method.GET, "/_searchguard/api/sgconfig/", this);
 		
+		controller.registerHandler(Method.GET, "/_searchguard/api/sg_config/", this);
+		
 		if(allowPutOrPatch) {
+		    
+		    //deprecated, will be removed with SG 8, use sg_config instead of sgconfig
 		    controller.registerHandler(Method.PUT, "/_searchguard/api/sgconfig/{name}", this);
 		    controller.registerHandler(Method.PATCH, "/_searchguard/api/sgconfig/", this);
+		    
+		    controller.registerHandler(Method.PUT, "/_searchguard/api/sg_config/{name}", this);
+            controller.registerHandler(Method.PATCH, "/_searchguard/api/sg_config/", this);
 		}
 	}
 
@@ -67,12 +75,11 @@ public class SgConfigAction extends PatchableResourceApiAction {
 	@Override
 	protected void handleGet(RestChannel channel, RestRequest request, Client client, final JsonNode content) throws IOException{
 
-		final SgDynamicConfiguration<?> configurationSettings = load(getConfigName(), true);
+		final SgDynamicConfiguration<?> configuration = load(getConfigName(), true);
 		
-		filter(configurationSettings);
+		filter(configuration);
 
-		channel.sendResponse(
-				new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
+		successResponse(channel, configuration);
 	}
 	
 	

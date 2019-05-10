@@ -50,31 +50,31 @@ public class IndexMissingTest extends AbstractRestApiUnitTest {
 		HttpResponse response = rh.executeGetRequest("_searchguard/api/roles");
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		String errorString = response.getBody();
-		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
+		Assert.assertEquals("{\"status\":\"INTERNAL_SERVER_ERROR\",\"message\":\"Search Guard index not initialized (SG11)\"}", errorString);
 	
 		// GET roles
 		response = rh.executeGetRequest("/_searchguard/api/roles/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		errorString = response.getBody();
-		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
+        Assert.assertEquals("{\"status\":\"INTERNAL_SERVER_ERROR\",\"message\":\"Search Guard index not initialized (SG11)\"}", errorString);
 
 		// GET rolesmapping
 		response = rh.executeGetRequest("/_searchguard/api/rolesmapping/sg_role_starfleet", new Header[0]);
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		errorString = response.getBody();
-		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
+        Assert.assertEquals("{\"status\":\"INTERNAL_SERVER_ERROR\",\"message\":\"Search Guard index not initialized (SG11)\"}", errorString);
 		
 		// GET actiongroups
 		response = rh.executeGetRequest("_searchguard/api/actiongroups/READ");
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		errorString = response.getBody();
-		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
+        Assert.assertEquals("{\"status\":\"INTERNAL_SERVER_ERROR\",\"message\":\"Search Guard index not initialized (SG11)\"}", errorString);
 
 		// GET internalusers
 		response = rh.executeGetRequest("_searchguard/api/internalusers/picard");
 		Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, response.getStatusCode());
 		errorString = response.getBody();
-		Assert.assertEquals("Search Guard index not initialized (SG11)", errorString);
+        Assert.assertEquals("{\"status\":\"INTERNAL_SERVER_ERROR\",\"message\":\"Search Guard index not initialized (SG11)\"}", errorString);
 		
 		// PUT request
 		response = rh.executePutRequest("/_searchguard/api/actiongroups/READ", FileHelper.loadFile("restapi/actiongroup_read.json"), new Header[0]);

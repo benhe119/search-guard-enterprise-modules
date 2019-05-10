@@ -190,7 +190,9 @@ public class HttpClient implements Closeable {
 
             try {
 
-                final IndexResponse response = rclient.index(new IndexRequest(index, type)
+                final IndexRequest ir = type==null?new IndexRequest(index):new IndexRequest(index, type);
+                
+                final IndexResponse response = rclient.index(ir
                               .setRefreshPolicy(refresh?RefreshPolicy.IMMEDIATE:RefreshPolicy.NONE)
                               .source(content, XContentType.JSON), RequestOptions.DEFAULT);
 

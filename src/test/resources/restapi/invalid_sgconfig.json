@@ -1,7 +1,7 @@
 {
   
        "dynamic":{
-          "filtered_alias_mode":"warn",
+          "unknownproperty":"xxx",
           "disable_rest_auth": false,
           "disable_intertransport_auth":false,
           "respect_request_indices_options":false,
