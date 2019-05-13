@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
+import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -452,7 +453,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                                     ConfigConstants.LDAPS_PEMKEY_FILEPATH, settings, configPath, enableClientAuth));
                 }
 
-                cc = CredentialConfigFactory.createX509CredentialConfig(trustCertificates, authenticationCertificate,
+                cc = Utils.createX509CredentialConfig(trustCertificates, authenticationCertificate,
                         authenticationKey);
 
                 if (log.isDebugEnabled()) {
@@ -494,7 +495,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                     log.debug("trustStoreAliases: {}, keyStoreAlias: {}", trustStoreAliases, keyStoreAlias);
                 }
 
-                cc = CredentialConfigFactory.createKeyStoreCredentialConfig(trustStore,
+                cc = Utils.createKeyStoreCredentialConfig(trustStore,
                         trustStoreAliases == null ? null : trustStoreAliases.toArray(new String[0]), keyStore,
                         keyStorePassword, keyStoreAliases);
 
@@ -502,12 +503,12 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
             sslConfig.setCredentialConfig(cc);
 
-            if (trustAll) {
-                sslConfig.setTrustManagers(new AllowAnyTrustManager());
+            if (trustAll) {xxx
+                //sslConfig.setTrustManagers(new AllowAnyTrustManager());
             }
 
-            if (!verifyHostnames) {
-                sslConfig.setHostnameVerifier(new AllowAnyHostnameVerifier());
+            if (!verifyHostnames) {xxx
+                //sslConfig.setHostnameVerifier(new AllowAnyHostnameVerifier());
                 final String deiProp = System.getProperty(COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION);
                 
                 if (deiProp == null || !Boolean.parseBoolean(deiProp)) {
