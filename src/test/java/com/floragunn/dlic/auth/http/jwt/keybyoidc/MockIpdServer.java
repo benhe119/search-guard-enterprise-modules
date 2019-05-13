@@ -55,7 +55,7 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
 import com.floragunn.dlic.AbstractNonClusterTest;
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
@@ -171,14 +171,14 @@ class MockIpdServer extends AbstractNonClusterTest implements Closeable {
 
 		try {
 			final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-			final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
+			final KeyStore trustStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
 			InputStream trustStream = new FileInputStream(
 					FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
 			trustStore.load(trustStream, "changeit".toCharArray());
 			tmf.init(trustStore);
 
 			final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-			final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
+			final KeyStore keyStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
 			InputStream keyStream = new FileInputStream(
 					FileHelper.getAbsoluteFilePathFromClassPath("jwt/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 

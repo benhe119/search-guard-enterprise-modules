@@ -73,7 +73,7 @@ import org.junit.rules.ExpectedException;
 import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
@@ -408,14 +408,14 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
 
             try {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
+                KeyStore trustStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
                 InputStream trustStream = new FileInputStream(
                         FileHelper.getAbsoluteFilePathFromClassPath(trustStorePath).toFile());
                 trustStore.load(trustStream, password.toCharArray());
                 tmf.init(trustStore);
 
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-                KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
+                KeyStore keyStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
 
                 Path path = FileHelper.getAbsoluteFilePathFromClassPath(keyStorePath);
 

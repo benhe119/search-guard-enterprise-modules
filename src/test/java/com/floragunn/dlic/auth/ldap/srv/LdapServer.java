@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.floragunn.dlic.AbstractNonClusterTest;
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.io.CharStreams;
@@ -123,7 +123,7 @@ final class LdapServer extends AbstractNonClusterTest {
         Collection<InMemoryListenerConfig> listenerConfigs = new ArrayList<InMemoryListenerConfig>();
 
         String serverKeyStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile().getAbsolutePath();
-        final SSLUtil serverSSLUtil = new SSLUtil(FipsManager.getKeyManagers(serverKeyStorePath, "changeit".toCharArray()), FipsManager.getTrustManagers(serverKeyStorePath, "changeit".toCharArray()));
+        final SSLUtil serverSSLUtil = new SSLUtil(CryptoManagerFactory.getInstance().getKeyManagers(serverKeyStorePath, "changeit".toCharArray()), CryptoManagerFactory.getInstance().getTrustManagers(serverKeyStorePath, "changeit".toCharArray()));
         
         //final SSLUtil clientSSLUtil = new SSLUtil(new TrustStoreTrustManager(serverKeyStorePath));
         

@@ -150,7 +150,7 @@ import org.opensaml.xmlsec.signature.support.impl.ExplicitKeySignatureTrustEngin
 import org.w3c.dom.Document;
 
 import com.floragunn.dlic.AbstractNonClusterTest;
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
@@ -650,7 +650,7 @@ class MockSamlIdpServer extends AbstractNonClusterTest implements Closeable {
         try {
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
-            KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
+            KeyStore keyStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath(path).toFile());
 
             keyStore.load(keyStream, "changeit".toCharArray());
@@ -673,14 +673,14 @@ class MockSamlIdpServer extends AbstractNonClusterTest implements Closeable {
 
         try {
             final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
+            final KeyStore trustStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
             InputStream trustStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
             trustStore.load(trustStream, "changeit".toCharArray());
             tmf.init(trustStore);
 
             final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
+            final KeyStore keyStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 

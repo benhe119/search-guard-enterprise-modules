@@ -24,7 +24,7 @@ import java.util.Objects;
 
 import org.apache.lucene.util.BytesRef;
 
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.google.common.base.Splitter;
 
 public class MaskedField {
@@ -140,7 +140,7 @@ public class MaskedField {
     private byte[] customHash(byte[] in) {
         if (algo != null) {
             try {
-                return FipsManager.hash(in, algo);
+                return CryptoManagerFactory.getInstance().hash(in, algo);
             } catch (Exception e) {
                 throw new IllegalArgumentException(e);
             }
@@ -167,7 +167,7 @@ public class MaskedField {
 
     private byte[] blake2bHash(byte[] in) {
         try {
-            return FipsManager.fastHash(in, defaultSalt);
+            return CryptoManagerFactory.getInstance().fastHash(in, defaultSalt);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }

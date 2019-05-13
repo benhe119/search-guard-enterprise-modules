@@ -55,7 +55,7 @@ import org.opensaml.saml.saml2.core.NameIDType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.searchguard.DefaultObjectMapper;
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.util.FakeRestRequest;
@@ -493,7 +493,7 @@ public class HTTPSamlAuthenticatorTest extends AbstractNonClusterTest {
         try {
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
-            KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
+            KeyStore keyStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("saml/spock-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 

@@ -37,10 +37,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.floragunn.searchguard.DefaultObjectMapper;
-import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.InternalUsersValidator;
@@ -203,7 +203,7 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
     public static String hash(final char[] clearTextPassword) {
         final byte[] salt = new byte[16];
         new SecureRandom().nextBytes(salt);
-        final String hash = FipsManager.generatePasswordHash((Objects.requireNonNull(clearTextPassword)), salt, 12);
+        final String hash = CryptoManagerFactory.getInstance().generatePasswordHash((Objects.requireNonNull(clearTextPassword)), salt, 12);
         Arrays.fill(salt, (byte) 0);
         Arrays.fill(clearTextPassword, '\0');
         return hash;

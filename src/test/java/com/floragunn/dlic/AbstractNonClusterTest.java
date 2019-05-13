@@ -18,7 +18,7 @@ import java.security.Permission;
 import java.security.Policy;
 import java.security.ProtectionDomain;
 
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 
 public class AbstractNonClusterTest {
     
@@ -44,7 +44,7 @@ static {
 
         System.setSecurityManager(new SecurityManager());
         
-        FipsManager.initialize(utFips());
+        CryptoManagerFactory.initialize(utFips());
         
     }
 }

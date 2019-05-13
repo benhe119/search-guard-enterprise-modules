@@ -39,7 +39,7 @@ import org.junit.Test;
 
 import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
-import com.floragunn.searchguard.FipsManager;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.hash.Hashing;
@@ -106,12 +106,12 @@ public class KeySetRetrieverTest extends AbstractNonClusterTest {
         }) {
             SSLContextBuilder sslContextBuilder = SSLContexts.custom();
 
-            KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
+            KeyStore trustStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
             InputStream trustStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
             trustStore.load(trustStream, "changeit".toCharArray());
 
-            KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
+            KeyStore keyStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
                     FileHelper.getAbsoluteFilePathFromClassPath("jwt/spock-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 

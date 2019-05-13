@@ -32,11 +32,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.floragunn.dlic.AbstractNonClusterTest;
-import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.auditlog.helper.MockAuditMessageFactory;
 import com.floragunn.searchguard.auditlog.helper.TestHttpHandler;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage.Category;
+import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 
 public class SinkProviderTLSTest extends AbstractNonClusterTest {
@@ -109,13 +109,13 @@ public class SinkProviderTLSTest extends AbstractNonClusterTest {
 	private SSLContext createSSLContext() throws Exception {
 			final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory
 					.getDefaultAlgorithm());
-			final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
+			final KeyStore trustStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
 			InputStream trustStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
 			trustStore.load(trustStream, "changeit".toCharArray());
 			tmf.init(trustStore);
 
 			final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());			
-			final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
+			final KeyStore keyStore = CryptoManagerFactory.getInstance().getKeystoreInstance("JKS");
 			InputStream keyStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 
 			keyStore.load(keyStream, "changeit".toCharArray());
