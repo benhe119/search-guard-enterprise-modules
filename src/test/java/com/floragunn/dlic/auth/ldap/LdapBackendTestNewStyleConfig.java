@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.ldaptive.Connection;
 import org.ldaptive.LdapEntry;
 
+import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.auth.ldap.backend.LDAPAuthenticationBackend;
 import com.floragunn.dlic.auth.ldap.backend.LDAPAuthorizationBackend;
 import com.floragunn.dlic.auth.ldap.srv.EmbeddedLDAPServer;
@@ -37,7 +38,7 @@ import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.user.User;
 
-public class LdapBackendTestNewStyleConfig {
+public class LdapBackendTestNewStyleConfig extends AbstractNonClusterTest {
 
     static {
         System.setProperty("sg.display_lic_none", "true");
@@ -163,7 +164,7 @@ public class LdapBackendTestNewStyleConfig {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put("users.u1.search", "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("verify_hostnames", false).put("path.home", ".").build();
 
         final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null)
@@ -214,7 +215,7 @@ public class LdapBackendTestNewStyleConfig {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put("users.u1.search", "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("verify_hostnames", false).putList("enabled_ssl_protocols", "SSLv3").put("path.home", ".").build();
 
         try {
@@ -234,7 +235,7 @@ public class LdapBackendTestNewStyleConfig {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put("users.u1.search", "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("verify_hostnames", false).putList("enabled_ssl_ciphers", "AAA").put("path.home", ".").build();
 
         try {
@@ -254,7 +255,7 @@ public class LdapBackendTestNewStyleConfig {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put("users.u1.search", "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("verify_hostnames", false).putList("enabled_ssl_protocols", "TLSv1")
                 .putList("enabled_ssl_ciphers", "TLS_DHE_RSA_WITH_AES_128_CBC_SHA").put("path.home", ".").build();
 
@@ -272,7 +273,7 @@ public class LdapBackendTestNewStyleConfig {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put("users.u1.search", "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("verify_hostnames", false).put("path.home", ".").build();
 
         final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null)
@@ -516,7 +517,7 @@ public class LdapBackendTestNewStyleConfig {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapPort)
                 .put("users.u1.search", "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_START_TLS, true)
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("verify_hostnames", false).put("path.home", ".").build();
 
         final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null)

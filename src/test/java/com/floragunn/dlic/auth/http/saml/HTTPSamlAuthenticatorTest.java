@@ -53,6 +53,7 @@ import org.junit.Test;
 import org.opensaml.saml.saml2.core.NameIDType;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
@@ -60,7 +61,7 @@ import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.util.FakeRestRequest;
 import com.google.common.collect.ImmutableMap;
 
-public class HTTPSamlAuthenticatorTest {
+public class HTTPSamlAuthenticatorTest extends AbstractNonClusterTest {
     protected static MockSamlIdpServer mockSamlIdpServer;
     private static final Pattern WWW_AUTHENTICATE_PATTERN = Pattern
             .compile("([^\\s]+)\\s*([^\\s=]+)=\"([^\"]+)\"\\s*([^\\s=]+)=\"([^\"]+)\"\\s*([^\\s=]+)=\"([^\"]+)\"\\s*");
@@ -117,7 +118,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void basicTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString(null);
 
@@ -153,7 +154,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void unsolicitedSsoTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString(null);
         mockSamlIdpServer.setDefaultAssertionConsumerService("http://wherever/searchguard/saml/acs/idpinitiated");
@@ -189,7 +190,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void badUnsolicitedSsoTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString(null);
         mockSamlIdpServer.setDefaultAssertionConsumerService("http://wherever/searchguard/saml/acs/idpinitiated");
@@ -217,7 +218,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void wrongCertTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString(null);
 
@@ -229,7 +230,7 @@ public class HTTPSamlAuthenticatorTest {
 
         AuthenticateHeaders authenticateHeaders = getAutenticateHeaders(samlAuthenticator);
 
-        mockSamlIdpServer.loadSigningKeys("saml/spock-keystore.jks", "spock");
+        mockSamlIdpServer.loadSigningKeys("saml/spock-keystore"+(!utFips()?".jks":".BCFKS"), "spock");
 
         String encodedSamlResponse = mockSamlIdpServer.handleSsoGetRequestURI(authenticateHeaders.location);
 
@@ -269,7 +270,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void rolesTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setAuthenticateUserRoles(Arrays.asList("a", "b"));
         mockSamlIdpServer.setEndpointQueryString(null);
@@ -308,7 +309,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void idpEndpointWithQueryStringTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setEndpointQueryString("extra=query");
 
@@ -346,7 +347,7 @@ public class HTTPSamlAuthenticatorTest {
     public void commaSeparatedRolesTest() throws Exception {
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUserRoles(Arrays.asList("a,b"));
         mockSamlIdpServer.setEndpointQueryString(null);
 
@@ -385,7 +386,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void basicLogoutTest() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
         mockSamlIdpServer.setEndpointQueryString(null);
@@ -413,7 +414,7 @@ public class HTTPSamlAuthenticatorTest {
     @Test
     public void basicLogoutTestEncryptedKey() throws Exception {
         mockSamlIdpServer.setSignResponses(true);
-        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
         mockSamlIdpServer.setAuthenticateUser("horst");
         mockSamlIdpServer.setSpSignatureCertificate(spSigningCertificate);
         mockSamlIdpServer.setEndpointQueryString(null);
@@ -494,7 +495,7 @@ public class HTTPSamlAuthenticatorTest {
 
             KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
-                    FileHelper.getAbsoluteFilePathFromClassPath("saml/spock-keystore.jks").toFile());
+                    FileHelper.getAbsoluteFilePathFromClassPath("saml/spock-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 
             keyStore.load(keyStream, "changeit".toCharArray());
             kmf.init(keyStore, "changeit".toCharArray());

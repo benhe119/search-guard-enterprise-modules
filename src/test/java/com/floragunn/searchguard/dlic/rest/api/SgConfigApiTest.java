@@ -31,7 +31,7 @@ public class SgConfigApiTest extends AbstractRestApiUnitTest {
 
 		setup();
 
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 		rh.sendHTTPClientCertificate = true;
 
 		HttpResponse response = rh.executeGetRequest("/_searchguard/api/sgconfig", new Header[0]);
@@ -57,7 +57,7 @@ public class SgConfigApiTest extends AbstractRestApiUnitTest {
 	    Settings settings = Settings.builder().put(ConfigConstants.SEARCHGUARD_UNSUPPORTED_RESTAPI_ALLOW_SGCONFIG_MODIFICATION, true).build();
         setup(settings);
 
-        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.sendHTTPClientCertificate = true;
 
         HttpResponse response = rh.executeGetRequest("/_searchguard/api/sgconfig", new Header[0]);

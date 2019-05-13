@@ -34,6 +34,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.auditlog.helper.LoggingSink;
 import com.floragunn.searchguard.auditlog.helper.MockAuditMessageFactory;
@@ -44,7 +45,7 @@ import com.floragunn.searchguard.auditlog.sink.WebhookSink.WebhookFormat;
 import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 
-public class WebhookAuditLogTest {
+public class WebhookAuditLogTest extends AbstractNonClusterTest {
     
     protected HttpServer server = null;
 
@@ -68,7 +69,7 @@ public class WebhookAuditLogTest {
 		Settings settings = Settings.builder()
 		        .put("path.home", ".")
 		        .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 		        .build();
 		LoggingSink fallback = new LoggingSink("test", Settings.EMPTY, null, null);
 		MockWebhookAuditLog auditlog = new MockWebhookAuditLog(settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, fallback);
@@ -92,7 +93,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("path.home", ".")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("searchguard.ssl.transport.enforce_hostname_verification", false)
 				.build();
 		
@@ -107,7 +108,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "idonotexist")
 				.put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.put("path.home", ".")
 				.build();
 		auditlog = new MockWebhookAuditLog(settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null);
@@ -122,7 +123,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "text")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))				
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))				
 				.put("path.home", ".")
 				.build();
 		auditlog = new MockWebhookAuditLog(settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null);
@@ -138,7 +139,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "json")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("path.home", ".")
 				.build();
 		auditlog = new MockWebhookAuditLog(settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null);
@@ -155,7 +156,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "slack")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))				
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))				
 				.put("path.home", ".")
 				.build();
 		auditlog = new MockWebhookAuditLog(settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null);
@@ -178,7 +179,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "slack")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.put("path.home", ".")
 				.build();
 		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);;
@@ -201,7 +202,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "slack")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.put("path.home", ".")
 				.build();
 
@@ -237,7 +238,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.format", "slack")
 				.put("path.home", ".")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.build();
 
 		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);;
@@ -257,7 +258,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "texT")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.put("path.home", ".")
 				.build();
 
@@ -275,7 +276,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.url", url)
 				.put("searchguard.audit.config.webhook.format", "JSon")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.put("path.home", ".")
 				.build();
 
@@ -293,7 +294,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.format", "URL_PARAMETER_POST")
 				.put("path.home", ".")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.build();
 		
 		auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
@@ -310,7 +311,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.format", "URL_PARAMETER_GET")
 				.put("path.home", ".")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.build();
 
 		auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
@@ -341,7 +342,7 @@ public class WebhookAuditLogTest {
 				.put("searchguard.audit.config.webhook.format", "slack")
 				.put("path.home", ".")
                 .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
 				.build();
 
 		LoggingSink fallback =  new LoggingSink("test", Settings.EMPTY, null, null);;
@@ -413,7 +414,7 @@ public class WebhookAuditLogTest {
         settings = Settings.builder()
                 .put("searchguard.audit.config.webhook.url", url)
                 .put("searchguard.audit.config.webhook.format", "jSoN")
-                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))                
+                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))                
                 .put("searchguard.audit.config.webhook.ssl.verify", true)
                 .put("path.home", ".")
                 .build();
@@ -429,7 +430,7 @@ public class WebhookAuditLogTest {
         settings = Settings.builder()
                 .put("searchguard.audit.config.webhook.url", url)
                 .put("searchguard.audit.config.webhook.format", "jSoN")
-                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore_fail.jks"))                
+                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore_fail"+(!utFips()?".jks":".BCFKS")))                
                 .put("searchguard.audit.config.webhook.ssl.verify", true)
                 .put("path.home", ".")
                 .build();
@@ -481,7 +482,7 @@ public class WebhookAuditLogTest {
         settings = Settings.builder()
                 .put("searchguard.audit.config.webhook.url", url)
                 .put("searchguard.audit.config.webhook.format", "jSoN")                            
-                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))                
+                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))                
                 .put("searchguard.audit.config.webhook.ssl.verify", true)
                 .put("path.home", ".")
                 .build();
@@ -498,7 +499,7 @@ public class WebhookAuditLogTest {
                 .put("searchguard.audit.config.webhook.url", url)
                 .put("searchguard.audit.config.webhook.format", "jSoN")
                 .put("searchguard.audit.config.webhook.ssl.pemtrustedcas_filepath", "wrong")                
-                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore_fail.jks"))                
+                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore_fail"+(!utFips()?".jks":".BCFKS")))                
                 .put("searchguard.audit.config.webhook.ssl.verify", true)
                 .put("path.home", ".")
                 .build();
@@ -543,7 +544,7 @@ public class WebhookAuditLogTest {
         settings = Settings.builder()
                 .put("searchguard.audit.config.webhook.url", url)
                 .put("searchguard.audit.config.webhook.format", "jSoN")
-                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))                
+                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))                
                 .put("searchguard.audit.config.webhook.ssl.pemtrustedcas_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/spock.crt.pem"))                                
                 .put("searchguard.audit.config.webhook.ssl.verify", true)
                 .put("path.home", ".")
@@ -596,7 +597,7 @@ public class WebhookAuditLogTest {
                 .put("searchguard.audit.endpoints.endpoint1.config.webhook.url", url)
                 .put("searchguard.audit.endpoints.endpoint1.config.webhook.format", "jSoN")
                 .put("searchguard.audit.endpoints.endpoint1.config.webhook.ssl.verify", true)
-                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))                
+                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))                
                 .put("path.home", ".")
                 .build();
         auditlog = new WebhookSink("name", settings, "searchguard.audit.endpoints.endpoint1.config", null, fallback);        
@@ -612,7 +613,7 @@ public class WebhookAuditLogTest {
                 .put("searchguard.audit.endpoints.endpoint1.config.webhook.url", url)
                 .put("searchguard.audit.endpoints.endpoint1.config.webhook.format", "jSoN")
                 .put("searchguard.audit.endpoints.endpoint1.config.webhook.ssl.verify", true)
-                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore_fail.jks"))                
+                .put("searchguard.ssl.transport.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore_fail"+(!utFips()?".jks":".BCFKS")))                
                 .put("path.home", ".")
                 .build();
         auditlog = new WebhookSink("name", settings, "searchguard.audit.endpoints.endpoint1.config", null, fallback);        
@@ -698,13 +699,13 @@ public class WebhookAuditLogTest {
 			final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory
 					.getDefaultAlgorithm());
 			final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
-			InputStream trustStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks").toFile());
+			InputStream trustStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
 			trustStore.load(trustStream, "changeit".toCharArray());
 			tmf.init(trustStore);
 
 			final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());			
 			final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
-			InputStream keyStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore.jks").toFile());
+			InputStream keyStream = new FileInputStream(FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 
 			keyStore.load(keyStream, "changeit".toCharArray());
 			kmf.init(keyStore, "changeit".toCharArray());

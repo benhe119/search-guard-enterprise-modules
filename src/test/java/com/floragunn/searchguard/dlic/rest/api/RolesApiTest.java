@@ -37,7 +37,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 
         setup();
 
-        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.sendHTTPClientCertificate = true;
         // check roles exists
         HttpResponse response = rh.executePutRequest("_searchguard/api/roles/admin", FileHelper.loadFile("restapi/simple_role.json"));
@@ -58,7 +58,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 
         setup();
         
-        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.sendHTTPClientCertificate = true;
         HttpResponse response = rh.executeGetRequest("_searchguard/api/roles");
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
@@ -70,7 +70,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 
         setup();
         
-        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.sendHTTPClientCertificate = true;
         HttpResponse response = rh.executePutRequest("_searchguard/api/roles/dup", "{ \"cluster_permissions\": [\"*\"], \"cluster_permissions\": [\"*\"] }");
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
@@ -83,7 +83,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 
         setup();
         
-        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.sendHTTPClientCertificate = true;
         HttpResponse response = rh.executePutRequest("_searchguard/api/roles/dup", "{ \"unknownkey\": [\"*\"], \"cluster_permissions\": [\"*\"] }");
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
@@ -96,7 +96,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 
         setup();
         
-        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.sendHTTPClientCertificate = true;
         HttpResponse response = rh.executePutRequest("_searchguard/api/roles/dup", "{ \"invalid\"::{{ [\"*\"], \"cluster_permissions\": [\"*\"] }");
         Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
@@ -109,7 +109,7 @@ public class RolesApiTest extends AbstractRestApiUnitTest {
 
 		setup();
 
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 		rh.sendHTTPClientCertificate = true;
 
 		// check roles exists

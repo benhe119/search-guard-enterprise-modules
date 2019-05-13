@@ -80,7 +80,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         rh.enableHTTPClientSSL = true;
         rh.trustHTTPServerCertificate = true;
         rh.sendHTTPClientCertificate = true;
-        rh.keystore = "kirk-keystore.jks";
+        rh.keystore = "kirk-keystore"+(!utFips()?".jks":".BCFKS");
         
         HttpResponse response = rh.executePutRequest("_searchguard/api/internalusers/compuser?pretty", body);
         Thread.sleep(1500);
@@ -116,7 +116,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         rh.enableHTTPClientSSL = true;
         rh.trustHTTPServerCertificate = true;
         rh.sendHTTPClientCertificate = true;
-        rh.keystore = "kirk-keystore.jks";
+        rh.keystore = "kirk-keystore"+(!utFips()?".jks":".BCFKS");
         System.out.println("----rest");
         HttpResponse response = rh.executeGetRequest("_searchguard/api/rolesmapping/sg_all_access?pretty");
         Thread.sleep(1500);
@@ -207,7 +207,7 @@ public class RestApiComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         rh.enableHTTPClientSSL = true;
         rh.trustHTTPServerCertificate = true;
         rh.sendHTTPClientCertificate = true;
-        rh.keystore = "kirk-keystore.jks";
+        rh.keystore = "kirk-keystore"+(!utFips()?".jks":".BCFKS");
         System.out.println("req");
         HttpResponse response = rh.executeGetRequest("_searchguard/api/internalusers/admin?pretty");
         Thread.sleep(1500);

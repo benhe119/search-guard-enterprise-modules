@@ -53,13 +53,13 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 
 		builder.put("searchguard.ssl.http.enabled", true)
 				.put("searchguard.ssl.http.keystore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
 				.put("searchguard.ssl.http.truststore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"));
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore"+(!utFips()?".jks":".BCFKS")));
 		
 		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
 		rh = restHelper();
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 	}
 	
     @Override
@@ -68,14 +68,14 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 
 		builder.put("searchguard.ssl.http.enabled", true)
 				.put("searchguard.ssl.http.keystore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
 				.put("searchguard.ssl.http.truststore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"))
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore"+(!utFips()?".jks":".BCFKS")))
 				.put(nodeOverride);		
 		
 		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
 		rh = restHelper();
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 	}
 
 	protected final void setupAllowInvalidLicenses() throws Exception {
@@ -83,14 +83,14 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 
 		builder.put("searchguard.ssl.http.enabled", true)
 				.put("searchguard.ssl.http.keystore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
 				.put("searchguard.ssl.http.truststore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"))
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore"+(!utFips()?".jks":".BCFKS")))
 				.put("searchguard.unsupported.restapi.accept_invalid_license", true);
 		
 		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
 		rh = restHelper();
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 	}
 	
 	protected final void setupWithRestRoles() throws Exception {
@@ -98,9 +98,9 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 
 		builder.put("searchguard.ssl.http.enabled", true)
 				.put("searchguard.ssl.http.keystore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
 				.put("searchguard.ssl.http.truststore_filepath",
-						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"));
+						FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore"+(!utFips()?".jks":".BCFKS")));
 
 		builder.put("searchguard.restapi.roles_enabled.0", "sg_role_klingons");
 		builder.put("searchguard.restapi.roles_enabled.1", "sg_role_vulcans");
@@ -118,7 +118,7 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 		
 		setup(Settings.EMPTY, new DynamicSgConfig(), builder.build(), init);
 		rh = restHelper();
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 	}
 
 	protected void deleteUser(String username) throws Exception {
@@ -243,9 +243,9 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 		if (enableRestSSL) {
 			builder.put("searchguard.ssl.http.enabled", true)
 					.put("searchguard.ssl.http.keystore_filepath",
-							FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore.jks"))
+							FileHelper.getAbsoluteFilePathFromClassPath("restapi/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
 					.put("searchguard.ssl.http.truststore_filepath",
-							FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore.jks"));
+							FileHelper.getAbsoluteFilePathFromClassPath("restapi/truststore"+(!utFips()?".jks":".BCFKS")));
 		}
 		return builder.build();
 	}

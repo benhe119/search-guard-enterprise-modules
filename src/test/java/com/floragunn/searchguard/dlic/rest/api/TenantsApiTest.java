@@ -29,7 +29,7 @@ public class TenantsApiTest extends AbstractRestApiUnitTest {
 
 		setup();
 
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 		rh.sendHTTPClientCertificate = true;
 
 		HttpResponse response = rh.executeGetRequest("/_searchguard/api/tenants", new Header[0]);

@@ -149,6 +149,7 @@ import org.opensaml.xmlsec.signature.support.Signer;
 import org.opensaml.xmlsec.signature.support.impl.ExplicitKeySignatureTrustEngine;
 import org.w3c.dom.Document;
 
+import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
@@ -156,7 +157,7 @@ import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import net.shibboleth.utilities.java.support.codec.Base64Support;
 import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
 
-class MockSamlIdpServer implements Closeable {
+class MockSamlIdpServer extends AbstractNonClusterTest implements Closeable {
 
     final static String ENTITY_ID = "http://test.entity";
 
@@ -191,7 +192,7 @@ class MockSamlIdpServer implements Closeable {
         this.idpEntityId = idpEntityId;
         this.endpointQueryString = endpointQueryString;
 
-        this.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+        this.loadSigningKeys("saml/kirk-keystore"+(!utFips()?".jks":".BCFKS"), "kirk");
 
         ServerBootstrap serverBootstrap = ServerBootstrap.bootstrap().setListenerPort(port)
                 .registerHandler(CTX_METADATA, new HttpRequestHandler() {
@@ -674,14 +675,14 @@ class MockSamlIdpServer implements Closeable {
             final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
             InputStream trustStream = new FileInputStream(
-                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore.jks").toFile());
+                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
             trustStore.load(trustStream, "changeit".toCharArray());
             tmf.init(trustStore);
 
             final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
-                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/node-0-keystore.jks").toFile());
+                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 
             keyStore.load(keyStream, "changeit".toCharArray());
             kmf.init(keyStore, "changeit".toCharArray());

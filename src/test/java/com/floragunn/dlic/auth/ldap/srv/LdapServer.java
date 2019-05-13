@@ -31,10 +31,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.floragunn.dlic.AbstractNonClusterTest;
+import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.io.CharStreams;
@@ -50,7 +55,7 @@ import com.unboundid.util.ssl.KeyStoreKeyManager;
 import com.unboundid.util.ssl.SSLUtil;
 import com.unboundid.util.ssl.TrustStoreTrustManager;
 
-final class LdapServer {
+final class LdapServer extends AbstractNonClusterTest {
     private final static Logger LOG = LoggerFactory.getLogger(LdapServer.class);
 
     private static final int LOCK_TIMEOUT = 60;
@@ -117,16 +122,16 @@ final class LdapServer {
     private Collection<InMemoryListenerConfig> getInMemoryListenerConfigs() throws Exception {
         Collection<InMemoryListenerConfig> listenerConfigs = new ArrayList<InMemoryListenerConfig>();
 
-        String serverKeyStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/node-0-keystore.jks").toFile().getAbsolutePath();
-        final SSLUtil serverSSLUtil = new SSLUtil(
-                new KeyStoreKeyManager(serverKeyStorePath, "changeit".toCharArray()), new TrustStoreTrustManager(serverKeyStorePath));
+        String serverKeyStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile().getAbsolutePath();
+        final SSLUtil serverSSLUtil = new SSLUtil(FipsManager.getKeyManagers(serverKeyStorePath, "changeit".toCharArray()), FipsManager.getTrustManagers(serverKeyStorePath, "changeit".toCharArray()));
+        
         //final SSLUtil clientSSLUtil = new SSLUtil(new TrustStoreTrustManager(serverKeyStorePath));
         
         ldapPort = SocketUtils.findAvailableTcpPort();
         ldapsPort = SocketUtils.findAvailableTcpPort();
         
         listenerConfigs.add(InMemoryListenerConfig.createLDAPConfig("ldap", null, ldapPort, serverSSLUtil.createSSLSocketFactory()));
-        listenerConfigs.add(InMemoryListenerConfig.createLDAPSConfig("ldaps", ldapsPort, serverSSLUtil.createSSLServerSocketFactory()));
+        listenerConfigs.add(InMemoryListenerConfig.createLDAPSConfig("ldaps", null, ldapsPort, serverSSLUtil.createSSLServerSocketFactory(), serverSSLUtil.createSSLSocketFactory()));
 
         return listenerConfigs;
     }

@@ -34,7 +34,7 @@ public class ActionGroupsApiTest extends AbstractRestApiUnitTest {
 
 		setup();
 
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 		rh.sendHTTPClientCertificate = true;
 
 		// --- GET_UT

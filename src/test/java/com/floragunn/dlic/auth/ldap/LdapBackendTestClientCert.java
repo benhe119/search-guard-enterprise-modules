@@ -25,13 +25,14 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.auth.ldap.backend.LDAPAuthenticationBackend;
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
 import com.floragunn.searchguard.ssl.util.ExceptionUtils;
 import com.floragunn.searchguard.user.AuthCredentials;
 
 @Ignore
-public class LdapBackendTestClientCert {
+public class LdapBackendTestClientCert extends AbstractNonClusterTest {
     
     static {
         System.setProperty("sg.display_lic_none", "true");
@@ -46,7 +47,7 @@ public class LdapBackendTestClientCert {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:636")
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore.jks")
+                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore"+(!utFips()?".jks":".BCFKS"))
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,dc=example,dc=com")
                 .put(ConfigConstants.LDAP_AUTHC_USERNAME_ATTRIBUTE, "uid")
                 .put("path.home",".")
@@ -72,7 +73,7 @@ public class LdapBackendTestClientCert {
                 .putList(ConfigConstants.LDAP_HOSTS, "kdc.dummy.com:636")
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore.jks")
+                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore"+(!utFips()?".jks":".BCFKS"))
                 .put(ConfigConstants.LDAPS_VERIFY_HOSTNAMES, false)
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,dc=example,dc=com")
                 .put(ConfigConstants.LDAP_AUTHC_USERNAME_ATTRIBUTE, "uid")
@@ -99,7 +100,7 @@ public class LdapBackendTestClientCert {
                 .putList(ConfigConstants.LDAP_HOSTS, "kdc.dummy.com:636")
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/wrong/truststore.jks")
+                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/wrong/truststore"+(!utFips()?".jks":".BCFKS"))
                 .put(ConfigConstants.LDAPS_VERIFY_HOSTNAMES, false)
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,dc=example,dc=com")
                 .put(ConfigConstants.LDAP_AUTHC_USERNAME_ATTRIBUTE, "uid")
@@ -129,7 +130,7 @@ public class LdapBackendTestClientCert {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:636")
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore.jks")
+                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore"+(!utFips()?".jks":".BCFKS"))
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,dc=example,dc=com")
                 .put(ConfigConstants.LDAP_AUTHC_USERNAME_ATTRIBUTE, "uid")
                 .put(ConfigConstants.LDAP_BIND_DN, "cn=ldapbinder,ou=people,dc=example,dc=com")
@@ -151,8 +152,8 @@ public class LdapBackendTestClientCert {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:636")
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put("searchguard.ssl.transport.keystore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/spock-keystore.jks")
-                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore.jks")
+                .put("searchguard.ssl.transport.keystore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/spock-keystore"+(!utFips()?".jks":".BCFKS"))
+                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore"+(!utFips()?".jks":".BCFKS"))
                 .put(ConfigConstants.LDAPS_ENABLE_SSL_CLIENT_AUTH, true)
                 .put(ConfigConstants.LDAPS_JKS_CERT_ALIAS, "spock")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,dc=example,dc=com")
@@ -200,8 +201,8 @@ public class LdapBackendTestClientCert {
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:636")
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put("searchguard.ssl.transport.keystore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/kirk-keystore.jks")
-                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore.jks")
+                .put("searchguard.ssl.transport.keystore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/kirk-keystore"+(!utFips()?".jks":".BCFKS"))
+                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore"+(!utFips()?".jks":".BCFKS"))
                 .put(ConfigConstants.LDAPS_ENABLE_SSL_CLIENT_AUTH, true)
                 .put(ConfigConstants.LDAPS_JKS_CERT_ALIAS, "kirk")
                 .put(ConfigConstants.LDAP_AUTHC_USERBASE, "ou=people,dc=example,dc=com")
@@ -225,8 +226,8 @@ public class LdapBackendTestClientCert {
                 .putList(ConfigConstants.LDAP_HOSTS, "kdc.dummy.com:636")
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})")
                 .put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                //.put("searchguard.ssl.transport.keystore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/cn=ldapbinder,ou=people,dc=example,dc=com-keystore.jks")
-                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore.jks")
+                //.put("searchguard.ssl.transport.keystore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/cn=ldapbinder,ou=people,dc=example,dc=com-keystore"+(!utFips()?".jks":".BCFKS"))
+                .put("searchguard.ssl.transport.truststore_filepath", "/Users/temp/search-guard-integration-tests/ldap/ssl-root-ca/truststore"+(!utFips()?".jks":".BCFKS"))
                 //.put("verify_hostnames", false)
                 //.put(ConfigConstants.LDAPS_ENABLE_SSL_CLIENT_AUTH, true)
                 //.put(ConfigConstants.LDAPS_JKS_CERT_ALIAS, "cn=ldapbinder,ou=people,dc=example,dc=com")

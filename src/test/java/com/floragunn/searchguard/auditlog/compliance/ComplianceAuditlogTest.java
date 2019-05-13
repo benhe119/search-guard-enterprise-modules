@@ -50,7 +50,7 @@ public class ComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         final boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
         final String keystore = rh.keystore;
         rh.sendHTTPClientCertificate = true;
-        rh.keystore = "auditlog/kirk-keystore.jks";
+        rh.keystore = "auditlog/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.executePutRequest("emp/doc/0?refresh", "{\"Designation\" : \"CEO\", \"Gender\" : \"female\", \"Salary\" : 100}", new Header[0]);
         rh.executePutRequest("emp/doc/1?refresh", "{\"Designation\" : \"IT\", \"Gender\" : \"male\", \"Salary\" : 200}", new Header[0]);
         rh.executePutRequest("emp/doc/2?refresh", "{\"Designation\" : \"IT\", \"Gender\" : \"female\", \"Salary\" : 300}", new Header[0]);
@@ -104,7 +104,7 @@ public class ComplianceAuditlogTest extends AbstractAuditlogiUnitTest {
         final boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
         final String keystore = rh.keystore;
         rh.sendHTTPClientCertificate = true;
-        rh.keystore = "auditlog/kirk-keystore.jks";
+        rh.keystore = "auditlog/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         rh.executePutRequest("emp/doc/0?refresh", "{\"Designation\" : \"CEO\", \"Gender\" : \"female\", \"Salary\" : 100}", new Header[0]);
         rh.executePutRequest("emp/doc/1?refresh", "{\"Designation\" : \"IT\", \"Gender\" : \"male\", \"Salary\" : 200}", new Header[0]);
         rh.executePutRequest("emp/doc/2?refresh", "{\"Designation\" : \"IT\", \"Gender\" : \"female\", \"Salary\" : 300}", new Header[0]);

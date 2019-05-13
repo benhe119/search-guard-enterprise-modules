@@ -37,13 +37,14 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.hash.Hashing;
 
-public class KeySetRetrieverTest {
+public class KeySetRetrieverTest extends AbstractNonClusterTest {
     protected static MockIpdServer mockIdpServer;
 
     @BeforeClass
@@ -107,12 +108,12 @@ public class KeySetRetrieverTest {
 
             KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
             InputStream trustStream = new FileInputStream(
-                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore.jks").toFile());
+                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
             trustStore.load(trustStream, "changeit".toCharArray());
 
             KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
             InputStream keyStream = new FileInputStream(
-                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/spock-keystore.jks").toFile());
+                    FileHelper.getAbsoluteFilePathFromClassPath("jwt/spock-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 
             keyStore.load(keyStream, "changeit".toCharArray());
 

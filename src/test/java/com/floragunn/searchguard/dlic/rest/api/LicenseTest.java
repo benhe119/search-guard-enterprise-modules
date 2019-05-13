@@ -52,7 +52,7 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 
 		setup();
 
-		rh.keystore = "restapi/kirk-keystore.jks";
+		rh.keystore = "restapi/kirk-keystore"+(!utFips()?".jks":".BCFKS");
 		rh.sendHTTPClientCertificate = true;
 		
 		// get sg_config at the beginning of the test. Subsequent calls must not alter

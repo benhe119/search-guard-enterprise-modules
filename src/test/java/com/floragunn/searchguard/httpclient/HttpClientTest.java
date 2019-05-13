@@ -56,7 +56,7 @@ public class HttpClientTest extends SingleClusterTest {
         }
         
         try(final HttpClient httpClient = HttpClient.builder("unknownhost:6654", clusterInfo.httpHost+":"+clusterInfo.httpPort)
-                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore.jks","changeit"), false)
+                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS"),"changeit"), false)
                 .setBasicCredentials("admin", "admin").build()) {
             Assert.assertFalse(httpClient.index("{\"a\":5}", "index", "type", false));
             Assert.assertFalse(httpClient.index("{\"a\":5}", "index", "type", true));
@@ -79,8 +79,8 @@ public class HttpClientTest extends SingleClusterTest {
                 .put("searchguard.ssl.http.enabled", true)
                 .put(SSLConfigConstants.SEARCHGUARD_SSL_HTTP_ENABLE_OPENSSL_IF_AVAILABLE, false)
                 .put(SSLConfigConstants.SEARCHGUARD_SSL_HTTP_KEYSTORE_ALIAS, "node-0")
-                .put("searchguard.ssl.http.keystore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore.jks"))
-                .put("searchguard.ssl.http.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                .put("searchguard.ssl.http.keystore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
+                .put("searchguard.ssl.http.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
                 .build();
 
         setup(Settings.EMPTY, new DynamicSgConfig(), settings);
@@ -88,7 +88,7 @@ public class HttpClientTest extends SingleClusterTest {
         Thread.sleep(1000);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
-                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore.jks","changeit"), false)
+                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS"),"changeit"), false)
                 .setBasicCredentials("admin", "admin").build()) {
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", false));
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", true));
@@ -112,8 +112,8 @@ public class HttpClientTest extends SingleClusterTest {
                 .put("searchguard.ssl.http.clientauth_mode", "REQUIRE")
                 .put(SSLConfigConstants.SEARCHGUARD_SSL_HTTP_ENABLE_OPENSSL_IF_AVAILABLE, false)
                 .put(SSLConfigConstants.SEARCHGUARD_SSL_HTTP_KEYSTORE_ALIAS, "node-0")
-                .put("searchguard.ssl.http.keystore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore.jks"))
-                .put("searchguard.ssl.http.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                .put("searchguard.ssl.http.keystore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
+                .put("searchguard.ssl.http.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
                 .build();
 
         setup(Settings.EMPTY, new DynamicSgConfig(), settings);
@@ -121,8 +121,8 @@ public class HttpClientTest extends SingleClusterTest {
         Thread.sleep(1000);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
-                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore.jks","changeit"), false)
-                .setPkiCredentials(FileHelper.getKeystoreFromClassPath("auditlog/spock-keystore.jks", "changeit"), "changeit".toCharArray(), null)
+                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS"),"changeit"), false)
+                .setPkiCredentials(FileHelper.getKeystoreFromClassPath("auditlog/spock-keystore"+(!utFips()?".jks":".BCFKS"), "changeit"), "changeit".toCharArray(), null)
                 .build()) {
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", false));
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", true));

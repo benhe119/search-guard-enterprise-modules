@@ -76,8 +76,8 @@ public class BasicAuditlogTest extends AbstractAuditlogiUnitTest {
         
         Settings additionalSettings = Settings.builder()
                 .put("searchguard.ssl.http.enabled",true)
-                .put("searchguard.ssl.http.keystore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore.jks"))
-                .put("searchguard.ssl.http.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore.jks"))
+                .put("searchguard.ssl.http.keystore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/node-0-keystore"+(!utFips()?".jks":".BCFKS")))
+                .put("searchguard.ssl.http.truststore_filepath", FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
                 .put("searchguard.audit.type", TestAuditlogImpl.class.getName())
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_TRANSPORT_CATEGORIES, "NONE")
                 .put(ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DISABLED_REST_CATEGORIES, "NONE")
@@ -121,7 +121,7 @@ public class BasicAuditlogTest extends AbstractAuditlogiUnitTest {
         TestAuditlogImpl.clear();
         
         System.out.println("#### testSimpleAuthenticated");        
-        try (TransportClient tc = getUserTransportClient(clusterInfo, "spock-keystore.jks", Settings.EMPTY)) {  
+        try (TransportClient tc = getUserTransportClient(clusterInfo, "spock-keystore"+(!utFips()?".jks":".BCFKS"), Settings.EMPTY)) {  
             StoredContext ctx = tc.threadPool().getThreadContext().stashContext();
             try {
                 Header header = encodeBasicHeader("admin", "admin");
@@ -160,7 +160,7 @@ public class BasicAuditlogTest extends AbstractAuditlogiUnitTest {
         setupStarfleetIndex();
         TestAuditlogImpl.clear();
                
-        try (TransportClient tc = getUserTransportClient(clusterInfo, "spock-keystore.jks", Settings.EMPTY)) {  
+        try (TransportClient tc = getUserTransportClient(clusterInfo, "spock-keystore"+(!utFips()?".jks":".BCFKS"), Settings.EMPTY)) {  
             StoredContext ctx = tc.threadPool().getThreadContext().stashContext();
             try {
                 Header header = encodeBasicHeader("admin", "admin");
@@ -492,7 +492,7 @@ public class BasicAuditlogTest extends AbstractAuditlogiUnitTest {
         final boolean sendHTTPClientCertificate = rh.sendHTTPClientCertificate;
         final String keystore = rh.keystore;
         rh.sendHTTPClientCertificate = true;
-        rh.keystore = "auditlog/kirk-keystore.jks";
+        rh.keystore = "auditlog/kirk-keystore"+(!utFips()?".jks":".BCFKS");
         HttpResponse res = rh.executeGetRequest("_cat/indices", new Header[0]);
         rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
         rh.keystore = keystore;

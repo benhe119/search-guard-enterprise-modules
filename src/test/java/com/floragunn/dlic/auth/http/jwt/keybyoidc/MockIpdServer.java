@@ -54,11 +54,12 @@ import org.apache.http.io.HttpMessageWriterFactory;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
+import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.searchguard.FipsManager;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
-class MockIpdServer implements Closeable {
+class MockIpdServer extends AbstractNonClusterTest implements Closeable {
 	final static String CTX_DISCOVER = "/discover";
 	final static String CTX_KEYS = "/api/oauth/keys";
 
@@ -172,14 +173,14 @@ class MockIpdServer implements Closeable {
 			final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			final KeyStore trustStore = FipsManager.getKeystoreInstance("JKS");
 			InputStream trustStream = new FileInputStream(
-					FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore.jks").toFile());
+					FileHelper.getAbsoluteFilePathFromClassPath("jwt/truststore"+(!utFips()?".jks":".BCFKS")).toFile());
 			trustStore.load(trustStream, "changeit".toCharArray());
 			tmf.init(trustStore);
 
 			final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 			final KeyStore keyStore = FipsManager.getKeystoreInstance("JKS");
 			InputStream keyStream = new FileInputStream(
-					FileHelper.getAbsoluteFilePathFromClassPath("jwt/node-0-keystore.jks").toFile());
+					FileHelper.getAbsoluteFilePathFromClassPath("jwt/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile());
 
 			keyStore.load(keyStream, "changeit".toCharArray());
 			kmf.init(keyStore, "changeit".toCharArray());
