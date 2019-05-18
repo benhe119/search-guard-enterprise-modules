@@ -3,154 +3,183 @@ _sg_meta:
   type: "internalusers"
   config_version: 2
 user_masked_nowc1:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "6XeGXZy4CW/LDvC0toxFpd7fUeKur8SQDfRniiEFI/U=#nAgyzwzY6qAH6HLB+uZSuzoyqkswhoIDnAvLcRgjRyg="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 dept_manager:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "b20PtHp3l+o8xjLbrMWO6OmcYQHVROvwux9kktSmLU0=#ccPmVMe5B8AZjsNqqPmCCIVDQx/CURiKVRaRTmeWhuY="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 admin:
-  hash: "$2a$12$VcCDgh2NDk07JGN0rjGbM.Ad41qVR/YFJcgHp0UGns5JDymv..TOG"
+  hash: "ePZd6nWd8ZVrIVauOaj4cte4WS49hMycPPG3Xsum790=#DJeVs/lj6XvRHPCjUTpQC8qqP4jFQreP4wrfDOa4Oaw="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 perf_named_ex:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "5ExZ5yaY8iXcOcvSE8O8jBjXho9wMnNCPyLvlxBC3Yo=#E/bPji0vg28UQzLZk3TjDqjdvZTm4x4vInTAYri6KMY="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 perf_wc_ex:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "W4dyRotXfy1XPyL+3XT91OleaPkebtcR2WcaNNSEtic=#bTkVAyEHs8YXTYYp3bFQ+Zy+c82AiMkfNMyc1NkgZtk="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 human_resources_trainee:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "AD8scHwHMbav+ln71U7JSPYarlr0X3fsd0vwJf93evw=#yOHM0kqvdZ7NgN1CvpLwmrYD544IjyRdqclu0ATKcP0="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 perf_named_only:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "woh/5pjn0jNCWJTOzu/++M50ldaKUHbs1MsLaOQt7HM=#t2yN41W47KOWv0B++oUPs31Rbu6l39Q7i60xRJt7cG0="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 user_bbb:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "us8u1hsKWYKVZkpz0n7+l22jl1XHR+ciwsMWUXu9O0c=#IPpkJEvkXG6ssCY8EBYQ+6O7h3XZ3WoMqOUTNb+ZgMM="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 user_aaa:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "eFTwTWZcuQE26vDHNMXVEn85RtYzenTNG7tDWYHK6gY=#ycjcF/gex9P73w+VgkAARpuwjYzKDv5sFWf7BLOsPzs="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 dept_manager_fls_reversed_fields:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "m9uImLLOxzceoSp96bClky8G3TGEgvviLwapCk5Esxg=#8eZvQgFe9M+63JuvAou7WUu3IavsTIhXGArjd88pHRU="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 logstash:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "0AVbB+xBFxfJ/MqN++iMJOa6epnLctr+SJ+MfE2mNMg=#l8bV3l0tsuUBqIYMqBUv018pB9bonQMx62XeMLMvol8="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 regex:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "4YL6h6iOfKSXXvpadhtzepiM21+96wv3Wh9i9/12hBk=#9JUEN0g82oHaI3RlFw6jSouqRnm93sXwFjAYdoVIry0="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 dept_manager_fls_dls:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "hY0rJHYi4GvA2Q/ylB0pmngkJ62fxVo0/i0P/zU6lbo=#F/QlRvLtJULOHe7Ks5/t0oYvuEfHzgHDUDSjEfgZk+k="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 fls_fields:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "XrXnXv8222GJeS5/7Mm9LkAYvlMop7/hAnROrMmG8wA=#MCWKesX9yaVjCtPhjQWx4fe7FnJ8bMROtIyKX3HhuWU="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 user_masked_nowc:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "kadtlvwurASW/KPS7A+7r4c471JKoNSJg1XN/LQMAaw=#HlIWYjKoOzQRbeOBEz8IQdSXiy6lEKsdpEbNuXwBfEY="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
+user_masked_nowc_fips:
+  hash: "kadtlvwurASW/KPS7A+7r4c471JKoNSJg1XN/LQMAaw=#HlIWYjKoOzQRbeOBEz8IQdSXiy6lEKsdpEbNuXwBfEY="
+  reserved: false
+  hidden: false
+  backend_roles: []
+  attributes: {}
+  description: "Migrated from v6"
+  static: false
 perf_wc_in:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "Vaa9ZD/REO7Uw7MX6hPf2NLhgPmS47HHODo2TKPDTxU=#kpGQIsUyYo+qJthBbP08lRKiaKB+T5mu60Njx5TTElM="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 user_masked:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "Xd+a3Hv8fuL9C6+bPFgAY/PHoNUX41kpjkJw+8W2n+M=#jyRrFX6rIuu5kRbItsbqX3C9wx2SNQm3VY1EzsKgoWs="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 dept_manager_fls:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "Fl22i2FRisUcocoiJPnTB+0u48s4ZdwbQq6YRaFXoYc=#EoMQxeyNd+bSv2u7KALnG7zvAEmSpI9GkFYfmCloyBc="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 dept_manager_multi:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "v4Djj3rq9re7kCmV+af5nMhdVIUJ1L6y15GaZG5X7Ow=#qOB4GcKW1+PP9p7KMY3QwP3ibOwr/nKF6CqRuSKIWiE="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 fls_fields_wc:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "SDdPXRGxkb9W3o9C0uzDb1n7q0TkxyZtJudUUjz3ygc=#yjwxnw/g5zIEjj3EC9Mm3AZfz8d7EcX2d6LbiQ6iFy8="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 user_combined:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "gVXRmVhxGs9XN1whYD2eKzt9v+B8l4QFUUzmSAfFMdw=#7Piq1HP25GO5+XxOCcPlrmHTA5CdCq4uHpRBvPaM5ak="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 prop_replace:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "nQurZvrzuMgJ1gHYK4aVWoezzU6Gke4e/3hKdCpd5iY=#GYNLy0stYhNlEftCy4f0thUIIcsdGvabN34ZzxKZV1U="
   reserved: false
   hidden: false
   backend_roles:
@@ -158,13 +187,20 @@ prop_replace:
   - "prole2"
   attributes: {}
   description: "Migrated from v6"
+  static: false
+date_math:
+  hash: "RYKIYNWbOh1L+SneaOdWPbwiEyVNH97XpUQ6JiT0hFA=#8TFAoNJnMPHu7IFssJxKw8HTnbD6cnZqABsITeo7W+k="
+  reserved: false
+  hidden: false
+  backend_roles: []
+  attributes: {}
+  description: null
+  static: false
 user_masked_custom:
-  hash: "$2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe"
+  hash: "Qhshopht7fyPCgJf/k7xJ66o284g8YArQiRh5lyvtsM=#2evc5sM5WTGXxQo/DCJ5TDH06TcYgjl5Jbkhrye1D5g="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
-date_math:
-  #password
-  hash: $2a$12$YCBrpxYyFusK609FurY5Ee3BlmuzWw0qHwpwqEyNhM2.XnQY3Bxpe
+  static: false

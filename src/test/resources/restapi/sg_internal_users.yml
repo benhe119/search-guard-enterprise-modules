@@ -3,12 +3,13 @@ _sg_meta:
   type: "internalusers"
   config_version: 2
 q:
-  hash: "$2a$12$Ioo1uXmH.Nq/lS5dUVBEsePSmZ5pSIpVO/xKHaquU/Jvq97I7nAgG"
+  hash: "4/cULODhW0GspjHrl3msz+0JbW9QOzWID7/75pGOVDo=#m3/gnhTOqM81F5I65gqf7WIyjo3d2fRLRs6Qj+femUc="
   reserved: false
   hidden: true
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 other:
   hash: "someotherhash"
   reserved: false
@@ -16,33 +17,38 @@ other:
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 test:
-  hash: "$2a$12$1HqHxm3QTfzwkse7vwzhFOV4gDv787cZ8BwmCwNEyJhn0CZoo8VVu"
+  hash: "3Toln9Hcq3+5SderBXurG7cAHBjt8kTqZY0vrfaDsQ8=#m4a6XTw9wH5lOcKjeCHKMgOjg008KjSQbCqkqiQAoA4="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 sarek:
-  hash: "$2a$12$Ioo1uXmH.Nq/lS5dUVBEsePSmZ5pSIpVO/xKHaquU/Jvq97I7nAgG"
+  hash: "bRzSoEfRdo9yAJWcgE9jShSYcxvL43dJ0xuMLMiKY5I=#UXhT23mXKYAN/fBK0CBPchlIMVcNeGkjuL7iihNUAdI="
   reserved: true
   hidden: false
   backend_roles:
   - "vulcan"
   attributes: {}
   description: "Migrated from v6"
+  static: false
 admin:
-  hash: "$2a$12$VcCDgh2NDk07JGN0rjGbM.Ad41qVR/YFJcgHp0UGns5JDymv..TOG"
+  hash: "ePZd6nWd8ZVrIVauOaj4cte4WS49hMycPPG3Xsum790=#DJeVs/lj6XvRHPCjUTpQC8qqP4jFQreP4wrfDOa4Oaw="
   reserved: false
   hidden: false
   backend_roles: []
   attributes: {}
   description: "Migrated from v6"
+  static: false
 worf:
-  hash: "$2a$12$A41IxPXV1/Dx46C6i1ufGubv.p3qYX7xVcY46q33sylYbIqQVwTMu"
+  hash: "VMhQG4x6sM6IfTT0YWVyxLvovmhS4yMtYDfRiT113bY=#hXVeiXUMymi/5c12eSgXI1jntcZ6aCtDKe+CixEgOlA="
   reserved: false
   hidden: false
   backend_roles:
   - "klingon"
   attributes: {}
   description: "Migrated from v6"
+  static: false

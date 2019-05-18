@@ -173,6 +173,15 @@ sg_masked_nowc:
   - "user_masked_nowc"
   and_backend_roles: []
   description: "Migrated from v6"
+sg_masked_nowc_fips:
+  reserved: false
+  hidden: false
+  backend_roles: []
+  hosts: []
+  users:
+  - "user_masked_nowc_fips"
+  and_backend_roles: []
+  description: "Migrated from v6" 
 sg_masked_nowc1:
   reserved: false
   hidden: false

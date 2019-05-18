@@ -1285,6 +1285,32 @@ sg_masked_nowc:
     allowed_actions:
     - "*"
   tenant_permissions: []
+sg_masked_nowc_fips:
+  reserved: false
+  hidden: false
+  description: "Migrated from v6 (all types mapped)"
+  cluster_permissions:
+  - "CLUSTER_COMPOSITE_OPS"
+  index_permissions:
+  - index_patterns:
+    - "logs"
+    dls: null
+    fls: null
+    masked_fields:
+    - "clientip::/[0-9]{1,3}/::*"
+    - "ip::/[0-9]{1,3}/::XXX"
+    - "phpmemory::/[0-9]{1,}/::XXX"
+    - "agent::/Mozilla|AppleWebKit|Chrome|MSIE|FIREFOX/::ANONYMIZED_BROWSER"
+    - "url::/elastic/::static"
+    - "machine.os::SHA-512"
+    - "message::SHA-512"
+    - "referer::SHA3-512"
+    - "request::SHA-1"
+    - "tags"
+    - "timestamp"
+    allowed_actions:
+    - "*"
+  tenant_permissions: []
 sg_deals_without_amount:
   reserved: false
   hidden: false
