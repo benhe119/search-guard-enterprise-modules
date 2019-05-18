@@ -447,15 +447,22 @@ public class HTTPJwtAuthenticatorTest {
     }
     
     @Test
-    public void testES512() throws Exception {
+    public void testESAlgos() throws Exception {
+        testES(SignatureAlgorithm.ES256);
+        testES(SignatureAlgorithm.ES384);
+        testES(SignatureAlgorithm.ES512);
+    }
+        
+    protected void testES(SignatureAlgorithm algo) throws Exception {
+        Assert.assertTrue(algo.isEllipticCurve());
         
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
-        keyGen.initialize(571);
+        keyGen.initialize(algo.getMinKeyLength());
         KeyPair pair = keyGen.generateKeyPair();
         PrivateKey priv = pair.getPrivate();
         PublicKey pub = pair.getPublic();
     
-        String jwsToken = Jwts.builder().setSubject("Leonard McCoy").signWith(SignatureAlgorithm.ES512, priv).compact();
+        String jwsToken = Jwts.builder().setSubject("Leonard McCoy").signWith(algo, priv).compact();
         Settings settings = Settings.builder().put("signing_key", BaseEncoding.base64().encode(pub.getEncoded())).build();
 
         HTTPJwtAuthenticator jwtAuth = new HTTPJwtAuthenticator(settings, null);

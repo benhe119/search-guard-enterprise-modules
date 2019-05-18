@@ -65,7 +65,7 @@ public class FlsFieldsWcTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("@timestamp"));
         Assert.assertTrue(res.getBody().contains("\"timestamp"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("fls_fields_wc", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("fls_fields_wc", "fls_fields_wc"))).getStatusCode());
         Assert.assertFalse(res.getBody().contains("customer"));
         Assert.assertFalse(res.getBody().contains("secret"));
         Assert.assertFalse(res.getBody().contains("timestamp"));
@@ -84,7 +84,7 @@ public class FlsFieldsWcTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("@timestamp"));
         Assert.assertTrue(res.getBody().contains("\"timestamp"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("fls_fields_wc", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("fls_fields_wc", "fls_fields_wc"))).getStatusCode());
         Assert.assertFalse(res.getBody().contains("customer"));
         Assert.assertFalse(res.getBody().contains("secret"));
         Assert.assertFalse(res.getBody().contains("timestamp"));

@@ -69,7 +69,7 @@ public class DateMathTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("mymsg"));
         Assert.assertTrue(res.getBody().contains("msgid"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/%3Clogstash-%7Bnow%2Fd%7D%3E/logs/_search?pretty", encodeBasicHeader("logstash", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/%3Clogstash-%7Bnow%2Fd%7D%3E/logs/_search?pretty", encodeBasicHeader("logstash", "logstash"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 1,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
@@ -92,7 +92,7 @@ public class DateMathTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("message"));
         Assert.assertTrue(res.getBody().contains("msgid"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/%3Clogstash-%7Bnow%2Fd%7D%3E/_field_caps?fields=*&pretty", encodeBasicHeader("logstash", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/%3Clogstash-%7Bnow%2Fd%7D%3E/_field_caps?fields=*&pretty", encodeBasicHeader("logstash", "logstash"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertFalse(res.getBody().contains("ipaddr"));
         Assert.assertFalse(res.getBody().contains("message"));
@@ -115,7 +115,7 @@ public class DateMathTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("mymsg"));
         Assert.assertTrue(res.getBody().contains("msgid"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/logstash-*/logs/_search?pretty", encodeBasicHeader("logstash", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/logstash-*/logs/_search?pretty", encodeBasicHeader("logstash", "logstash"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 2,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
@@ -141,7 +141,7 @@ public class DateMathTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("mymsg"));
         Assert.assertTrue(res.getBody().contains("msgid"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/logstash-1-*,logstash-20*/logs/_search?pretty", encodeBasicHeader("regex", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/logstash-1-*,logstash-20*/logs/_search?pretty", encodeBasicHeader("regex", "regex"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 2,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));

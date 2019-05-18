@@ -60,7 +60,7 @@ public class FlsDlsTestAB extends AbstractDlsFlsTest{
         
         HttpResponse res;
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/aaa,bbb/_search?pretty", encodeBasicHeader("user_aaa", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/aaa,bbb/_search?pretty", encodeBasicHeader("user_aaa", "user_aaa"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 4,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
@@ -75,7 +75,7 @@ public class FlsDlsTestAB extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("f1_b"));
         
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/abalias/_search?pretty", encodeBasicHeader("user_aaa", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/abalias/_search?pretty", encodeBasicHeader("user_aaa", "user_aaa"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 4,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
@@ -89,7 +89,7 @@ public class FlsDlsTestAB extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("f3_b"));
         Assert.assertFalse(res.getBody().contains("f1_b"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/aaa,bbb/_search?pretty", encodeBasicHeader("user_bbb", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/aaa,bbb/_search?pretty", encodeBasicHeader("user_bbb", "user_bbb"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 4,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
@@ -104,7 +104,7 @@ public class FlsDlsTestAB extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("f1_b"));
         
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/abalias/_search?pretty", encodeBasicHeader("user_bbb", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/abalias/_search?pretty", encodeBasicHeader("user_bbb", "user_bbb"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 4,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));

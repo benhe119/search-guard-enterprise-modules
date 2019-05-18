@@ -132,7 +132,7 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		msg = settings.get("message");
-		Assert.assertEquals("License could not be decoded due to: org.bouncycastle.openpgp.PGPException: Cannot find license signature", msg);		
+		Assert.assertTrue(msg, msg.contains("Invalid license signature"));
 		checkCurrentLicenseProperties(SearchGuardLicense.Type.FULL, Boolean.TRUE, "unlimited", validStartDate, validExpiryDate);
 	}
 

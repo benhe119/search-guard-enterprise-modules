@@ -37,14 +37,14 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
-import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.hash.Hashing;
 
-public class KeySetRetrieverTest extends AbstractNonClusterTest {
+public class KeySetRetrieverTest extends AbstractSGUnitTest {
     protected static MockIpdServer mockIdpServer;
 
     @BeforeClass
@@ -94,7 +94,7 @@ public class KeySetRetrieverTest extends AbstractNonClusterTest {
                 try {
                     String sha256Fingerprint = Hashing.sha256().hashBytes(peerCert.getEncoded()).toString();
 
-                    Assert.assertEquals("04b2b8baea7a0a893f0223d95b72081e9a1e154a0f9b1b4e75998085972b1b68",
+                    Assert.assertEquals("efdabd7242d43ba0502377ab7a77b2feeb9cae8e4244be4ef9894498b06808b5",
                             sha256Fingerprint);
 
                 } catch (CertificateEncodingException e) {
@@ -119,17 +119,11 @@ public class KeySetRetrieverTest extends AbstractNonClusterTest {
 
             sslContextBuilder.loadTrustMaterial(trustStore, null);
 
-            sslContextBuilder.loadKeyMaterial(keyStore, "changeit".toCharArray(), new PrivateKeyStrategy() {
-
-                @Override
-                public String chooseAlias(Map<String, PrivateKeyDetails> aliases, Socket socket) {
-                    return "spock";
-                }
-            });
+            sslContextBuilder.loadKeyMaterial(keyStore, "changeit".toCharArray());
 
             SettingsBasedSSLConfigurator.SSLConfig sslConfig = new SettingsBasedSSLConfigurator.SSLConfig(
                     sslContextBuilder.build(), new String[] { "TLSv1.2", "TLSv1.1" }, null, null, false, false, false,
-                    trustStore, null, keyStore, null, null);
+                    trustStore, null, keyStore, null, null, null, null);
 
             KeySetRetriever keySetRetriever = new KeySetRetriever(sslMockIdpServer.getDiscoverUri(), sslConfig, false);
 

@@ -63,7 +63,7 @@ public class CustomFieldMaskedTest extends AbstractDlsFlsTest{
         //Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty&size=0", query, encodeBasicHeader("admin", "admin"))).getStatusCode());
         //Assert.assertTrue(res.getBody().contains("100.100"));
 
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty&size=0", query, encodeBasicHeader("user_masked_custom", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty&size=0", query, encodeBasicHeader("user_masked_custom", "user_masked_custom"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertFalse(res.getBody().contains("100.100"));
         Assert.assertTrue(res.getBody().contains("***"));
@@ -93,7 +93,7 @@ public class CustomFieldMaskedTest extends AbstractDlsFlsTest{
             Assert.assertFalse(res.getBody().contains("***"));
             Assert.assertFalse(res.getBody().contains("XXX"));
     
-            Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty&size=0", query, encodeBasicHeader("user_masked_custom", "password"))).getStatusCode());
+            Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty&size=0", query, encodeBasicHeader("user_masked_custom", "user_masked_custom"))).getStatusCode());
             Assert.assertTrue(res.getBody().contains("\"doc_count\" : 31"));
             Assert.assertTrue(res.getBody().contains("\"doc_count\" : 1"));
             Assert.assertFalse(res.getBody().contains("100.100"));
@@ -133,7 +133,7 @@ public class CustomFieldMaskedTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("***"));
         Assert.assertFalse(res.getBody().contains("XXX"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100", encodeBasicHeader("user_masked_custom", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty&size=100", encodeBasicHeader("user_masked_custom", "user_masked_custom"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("\"value\" : 32,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
@@ -165,7 +165,7 @@ public class CustomFieldMaskedTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("XXX"));
 
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?pretty", encodeBasicHeader("user_masked_custom", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?pretty", encodeBasicHeader("user_masked_custom", "user_masked_custom"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("\"found\" : true"));
         Assert.assertFalse(res.getBody().contains("cust1"));
         Assert.assertFalse(res.getBody().contains("cust2"));

@@ -53,7 +53,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("amount"));
         Assert.assertTrue(res.getBody().contains("secret"));
 
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_field_caps?fields=*&pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_field_caps?fields=*&pretty", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("customer"));
         Assert.assertTrue(res.getBody().contains("customer.name"));
         Assert.assertTrue(res.getBody().contains("zip"));
@@ -61,7 +61,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("amount"));
         Assert.assertFalse(res.getBody().contains("secret"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_field_caps?fields=*&pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_field_caps?fields=*&pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "dept_manager_fls_reversed_fields"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertFalse(res.getBody().contains("customer"));
         Assert.assertFalse(res.getBody().contains("customer.name"));
@@ -87,7 +87,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("amount"));
         Assert.assertTrue(res.getBody().contains("secret"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_mapping?pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_mapping?pretty", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("customer"));
         Assert.assertTrue(res.getBody().contains("name"));
         Assert.assertTrue(res.getBody().contains("zip"));
@@ -95,7 +95,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("amount"));
         Assert.assertFalse(res.getBody().contains("secret"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_mapping?pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_mapping?pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "dept_manager_fls_reversed_fields"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains("customer"));
         Assert.assertFalse(res.getBody().contains("name"));
@@ -123,7 +123,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("amount"));
         Assert.assertTrue(res.getBody().contains("secret"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("\"value\" : 2,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         Assert.assertTrue(res.getBody().contains("cust1"));
@@ -133,7 +133,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("amount"));
         Assert.assertFalse(res.getBody().contains("secret"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/_search?pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "dept_manager_fls_reversed_fields"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("\"value\" : 2,\n      \"relation"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         Assert.assertFalse(res.getBody().contains("cust1"));
@@ -159,7 +159,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("ctype"));
         Assert.assertTrue(res.getBody().contains("amount"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?pretty", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("\"found\" : true"));
         Assert.assertTrue(res.getBody().contains("cust1"));
         Assert.assertFalse(res.getBody().contains("cust2"));
@@ -167,7 +167,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("ctype"));
         Assert.assertFalse(res.getBody().contains("amount"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?realtime=true&pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?realtime=true&pretty", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("\"found\" : true"));
         Assert.assertTrue(res.getBody().contains("cust1"));
         Assert.assertFalse(res.getBody().contains("cust2"));
@@ -175,7 +175,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertFalse(res.getBody().contains("ctype"));
         Assert.assertFalse(res.getBody().contains("amount"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?realtime=true&pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("/deals/deals/0?realtime=true&pretty", encodeBasicHeader("dept_manager_fls_reversed_fields", "dept_manager_fls_reversed_fields"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("\"found\" : true"));
         Assert.assertFalse(res.getBody().contains("cust1"));
         Assert.assertFalse(res.getBody().contains("cust2"));
@@ -196,7 +196,7 @@ public class FlsTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("\"_version\" : 2"));
         Assert.assertFalse(res.getBody(), res.getBody().contains("\"successful\" : 0"));
         
-        Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, (res = rh.executePostRequest("/deals/deals/0/_update?pretty", "{\"doc\": {\"zip\": \"98765000\"}}", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, (res = rh.executePostRequest("/deals/deals/0/_update?pretty", "{\"doc\": {\"zip\": \"98765000\"}}", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("Update is not supported"));
     }
     
@@ -207,7 +207,7 @@ public class FlsTest extends AbstractDlsFlsTest{
 
         HttpResponse res = null;
               
-        Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, (res = rh.executePostRequest("/deals/deals/0/_update?pretty", "{\"doc\": {\"zip\": \"98765000\"}}", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, (res = rh.executePostRequest("/deals/deals/0/_update?pretty", "{\"doc\": {\"zip\": \"98765000\"}}", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertTrue(res.getBody().contains("Update is not supported"));
     }
 }

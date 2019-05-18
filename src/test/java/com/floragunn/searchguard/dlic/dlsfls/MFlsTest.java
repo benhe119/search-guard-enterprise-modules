@@ -45,7 +45,7 @@ public class MFlsTest extends AbstractDlsFlsTest{
         HttpResponse res;
         
         System.out.println("### normal search");
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("deals,finance/_search?pretty", encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest("deals,finance/_search?pretty", encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertFalse(res.getBody().contains("_sg_"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         Assert.assertFalse(res.getBody().contains("xception"));
@@ -64,7 +64,7 @@ public class MFlsTest extends AbstractDlsFlsTest{
                 "{\"size\":10, \"query\":{\"bool\":{\"must\":{\"match_all\":{}}}}}"+System.lineSeparator();
         
         System.out.println("### msearch");
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("_msearch?pretty", msearchBody, encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("_msearch?pretty", msearchBody, encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertFalse(res.getBody().contains("_sg_"));
         Assert.assertTrue(res.getBody().contains("\"failed\" : 0"));
         Assert.assertFalse(res.getBody().contains("xception"));
@@ -91,7 +91,7 @@ public class MFlsTest extends AbstractDlsFlsTest{
             "}"; 
         
         System.out.println("### mget");
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("_mget?pretty", mgetBody, encodeBasicHeader("dept_manager_fls", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("_mget?pretty", mgetBody, encodeBasicHeader("dept_manager_fls", "dept_manager_fls"))).getStatusCode());
         Assert.assertFalse(res.getBody().contains("_sg_"));
         Assert.assertTrue(res.getBody().contains("\"found\" : true"));
         Assert.assertFalse(res.getBody().contains("\"found\" : false"));

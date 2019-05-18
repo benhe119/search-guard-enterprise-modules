@@ -34,18 +34,19 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.searchguard.auditlog.helper.LoggingSink;
 import com.floragunn.searchguard.auditlog.helper.MockAuditMessageFactory;
 import com.floragunn.searchguard.auditlog.helper.TestHttpHandler;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage.Category;
 import com.floragunn.searchguard.auditlog.sink.WebhookSink.WebhookFormat;
-import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
+import com.floragunn.searchguard.sgconf.impl.CType;
 import com.floragunn.searchguard.support.ConfigConstants;
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 
-public class WebhookAuditLogTest extends AbstractNonClusterTest {
+public class WebhookAuditLogTest extends AbstractSGUnitTest {
     
     protected HttpServer server = null;
 
@@ -389,25 +390,30 @@ public class WebhookAuditLogTest extends AbstractNonClusterTest {
         auditlog.store(msg);
         Assert.assertNull(handler.method);
         Assert.assertNull(handler.body);
-        Assert.assertNull(handler.body);        
+        Assert.assertNull(handler.body);
 		// message must be stored in fallback
 		Assert.assertEquals(1, fallback.messages.size());
 		Assert.assertEquals(msg, fallback.messages.get(0));
         
-        // disable ssl verification, no ca, call must succeed 
-        handler.reset();
-        settings = Settings.builder()
-                .put("searchguard.audit.config.webhook.url", url)
-                .put("searchguard.audit.config.webhook.format", "jSoN")
-                .put("searchguard.audit.config.webhook.ssl.verify", false)
-                .put("path.home", ".")
-                .build();
-        auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
-        auditlog.store(msg);
-        Assert.assertTrue(handler.method.equals("POST"));
-        Assert.assertTrue(handler.body != null);
-        Assert.assertTrue(handler.body.contains("{"));
-        assertStringContainsAllKeysAndValues(handler.body);
+        //In FIPS mode there is nothing like trust all!
+        if(!CryptoManagerFactory.isFipsEnabled()) {
+            // disable ssl verification, no ca, call must succeed 
+    		handler.reset();
+            settings = Settings.builder()
+                    .put("searchguard.audit.config.webhook.url", url)
+                    .put("searchguard.audit.config.webhook.format", "jSoN")
+                    .put("searchguard.audit.config.webhook.ssl.verify", false)
+                    .put("path.home", ".")
+                    .build();
+            auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
+            auditlog.store(msg);
+            Assert.assertNotNull(handler);
+            Assert.assertNotNull(handler.method);
+            Assert.assertTrue(handler.method.equals("POST"));
+            Assert.assertTrue(handler.body != null);
+            Assert.assertTrue(handler.body.contains("{"));
+            assertStringContainsAllKeysAndValues(handler.body);
+        }
 
         // enable ssl verification, provide correct trust ca, call must succeed
         handler.reset();
@@ -420,6 +426,8 @@ public class WebhookAuditLogTest extends AbstractNonClusterTest {
                 .build();
         auditlog = new WebhookSink("name", settings, ConfigConstants.SEARCHGUARD_AUDIT_CONFIG_DEFAULT, null, fallback);
         auditlog.store(msg);
+        Assert.assertNotNull(handler);
+        Assert.assertNotNull(handler.method);
         Assert.assertTrue(handler.method.equals("POST"));
         Assert.assertTrue(handler.body != null);
         Assert.assertTrue(handler.body.contains("{"));

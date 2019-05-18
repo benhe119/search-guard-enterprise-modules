@@ -66,7 +66,7 @@ public class FlsFieldsTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("\"timestamp"));
         Assert.assertTrue(res.getBody().contains("numfield5"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("fls_fields", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty", query, encodeBasicHeader("fls_fields", "fls_fields"))).getStatusCode());
         Assert.assertFalse(res.getBody().contains("customer"));
         Assert.assertFalse(res.getBody().contains("secret"));
         Assert.assertFalse(res.getBody().contains("timestamp"));
@@ -85,7 +85,7 @@ public class FlsFieldsTest extends AbstractDlsFlsTest{
         Assert.assertTrue(res.getBody().contains("@timestamp"));
         Assert.assertTrue(res.getBody().contains("\"timestamp"));
         
-        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty=true", query, encodeBasicHeader("fls_fields", "password"))).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executePostRequest("/deals/_search?pretty=true", query, encodeBasicHeader("fls_fields", "fls_fields"))).getStatusCode());
         Assert.assertFalse(res.getBody().contains("customer"));
         Assert.assertFalse(res.getBody().contains("secret"));
         Assert.assertFalse(res.getBody().contains("timestamp"));

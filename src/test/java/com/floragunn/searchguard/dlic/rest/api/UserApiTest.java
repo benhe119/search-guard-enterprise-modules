@@ -176,17 +176,17 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 
 		// add/update user, user is read only, forbidden
 		rh.sendHTTPClientCertificate = true;
-		addUserWithHash("sarek", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+		addUserWithHash("sarek", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
 				HttpStatus.SC_FORBIDDEN);
 
         // add/update user, user is hidden, forbidden
         rh.sendHTTPClientCertificate = true;
-        addUserWithHash("q", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+        addUserWithHash("q", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
                 HttpStatus.SC_FORBIDDEN);
 
 		// add users
 		rh.sendHTTPClientCertificate = true;
-		addUserWithHash("nagilum", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+		addUserWithHash("nagilum", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
 				HttpStatus.SC_CREATED);
 
 		// access must be allowed now
@@ -232,7 +232,7 @@ public class UserApiTest extends AbstractRestApiUnitTest {
 		// new user, password or hash is mandatory
 		addUserWithoutPasswordOrHash("nagilum", new String[] { "starfleet" }, HttpStatus.SC_BAD_REQUEST);
 		// new user, add hash
-		addUserWithHash("nagilum", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+		addUserWithHash("nagilum", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
 				HttpStatus.SC_CREATED);
 		// update user, do not specify hash or password, hash must remain the same
 		addUserWithoutPasswordOrHash("nagilum", new String[] { "starfleet" }, HttpStatus.SC_OK);
@@ -407,13 +407,13 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
         Assert.assertEquals(30, settings.size());
         
-        addUserWithPassword(".my.dotuser0", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+        addUserWithPassword(".my.dotuser0", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
                 HttpStatus.SC_CREATED);
         
         addUserWithPassword(".my.dot.user0", "12345678",
                 HttpStatus.SC_CREATED);
         
-        addUserWithHash(".my.dotuser1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+        addUserWithHash(".my.dotuser1", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
                 HttpStatus.SC_CREATED);
         
         addUserWithPassword(".my.dot.user2", "12345678",
@@ -432,16 +432,16 @@ public class UserApiTest extends AbstractRestApiUnitTest {
         // initial configuration, 5 users
         HttpResponse response;
         
-        addUserWithHash("user1", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+        addUserWithHash("user1", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
                 HttpStatus.SC_CREATED);
         
-        response = rh.executePutRequest("/_searchguard/api/internalusers/user1", "{\"hash\":\"$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m\",\"password\":\"\",\"backend_roles\":[\"admin\",\"rolea\"]}");
+        response = rh.executePutRequest("/_searchguard/api/internalusers/user1", "{\"hash\":\"rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=\",\"password\":\"\",\"backend_roles\":[\"admin\",\"rolea\"]}");
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         
         response = rh.executeGetRequest("/_searchguard/api/internalusers/user1");
         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
         
-        addUserWithHash("user2", "$2a$12$n5nubfWATfQjSYHiWtUyeOxMIxFInUHOAx8VMmGmxFNPGpaBmeB.m",
+        addUserWithHash("user2", "rSq/hevsp/POBFynVcKVYXQF3HdWmCF+Mkcrk3NKrlg=#xCflqfuu0Ev6ZR1BSlwRCOmatnMN3yXyRSe2xH6Iy5Q=",
                 HttpStatus.SC_CREATED);
         
         response = rh.executePutRequest("/_searchguard/api/internalusers/user2", "{\"password\":\"\",\"backend_roles\":[\"admin\",\"rolex\"]}");

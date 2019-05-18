@@ -17,9 +17,10 @@ import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 
-public class SinkProviderTest {
+public class SinkProviderTest extends AbstractSGUnitTest {
 
 	@Test
 	public void testConfiguration() throws Exception {

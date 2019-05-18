@@ -54,12 +54,12 @@ import org.apache.http.io.HttpMessageWriterFactory;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
-import com.floragunn.dlic.AbstractNonClusterTest;
-import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
-class MockIpdServer extends AbstractNonClusterTest implements Closeable {
+class MockIpdServer extends AbstractSGUnitTest implements Closeable {
 	final static String CTX_DISCOVER = "/discover";
 	final static String CTX_KEYS = "/api/oauth/keys";
 
