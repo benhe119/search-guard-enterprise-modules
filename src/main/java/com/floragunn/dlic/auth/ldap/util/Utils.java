@@ -22,12 +22,15 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
 import org.apache.logging.log4j.LogManager;
@@ -39,9 +42,13 @@ import org.ldaptive.LdapAttribute;
 import org.ldaptive.LdapUtils;
 import org.ldaptive.ssl.CredentialConfig;
 import org.ldaptive.ssl.DefaultTrustManager;
+import org.ldaptive.ssl.HostnameVerifierConfig;
 import org.ldaptive.ssl.HostnameVerifyingTrustManager;
 import org.ldaptive.ssl.KeyStoreSSLContextInitializer;
+import org.ldaptive.ssl.SSLContextInitializer;
 import org.ldaptive.ssl.X509SSLContextInitializer;
+
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 
 public final class Utils {
     
@@ -123,97 +130,49 @@ public final class Utils {
         return attribute.getStringValue();
     }
     
-    public static CredentialConfig createX509CredentialConfig(
-            final X509Certificate[] trustCertificates,
-            final X509Certificate authenticationCertificate,
-            final PrivateKey authenticationKey)
-          {
-            return
-              () -> {
-                final X509SSLContextInitializer sslInit = new X509SSLContextInitializer(){
-
+    
+    /**
+     * FIPS ready
+     * 
+     */
+    public static CredentialConfig createFipsCompliantCredentialConfig(final SSLConfig sslConfig) {
+        return new CredentialConfig() {
+            
+            @Override
+            public SSLContextInitializer createSSLContextInitializer() throws GeneralSecurityException {
+                return new SSLContextInitializer() {
+                    
                     @Override
-                    public TrustManager[] getTrustManagers() throws GeneralSecurityException {
-                        final TrustManager[] tm = createTrustManagers();
-                        final TrustManager[] hostnameTrustManager = hostnameVerifierConfig != null ?xxx
-                          new TrustManager[] {
-                            new HostnameVerifyingTrustManager(
-                              hostnameVerifierConfig.getCertificateHostnameVerifier(),
-                              hostnameVerifierConfig.getHostnames()),
-                          } : null;
+                    public void setTrustManagers(TrustManager... managers) {
 
-                        if (tm == null) {
-                            throw new RuntimeException("tm null");
-                        } else {
-                            
-                            if(trustManagers != null) throw new RuntimeException("trustManagers");
-                            //if(hostnameTrustManager != null) throw new RuntimeException("hostnameTrustManager");
-                            
-                            return tm;
-                        }
                     }
                     
-                };
-                if (trustCertificates != null) {
-                  sslInit.setTrustCertificates(trustCertificates);
-                }
-                if (authenticationCertificate != null) {
-                  sslInit.setAuthenticationCertificate(authenticationCertificate);
-                }
-                if (authenticationKey != null) {
-                  sslInit.setAuthenticationKey(authenticationKey);
-                }
-                return sslInit;
-              };
-          }
-    
-    
-    public static CredentialConfig createKeyStoreCredentialConfig(
-            final KeyStore trustStore,
-            final String[] trustStoreAliases,
-            final KeyStore keyStore,
-            final String keyStorePassword,
-            final String[] keyStoreAliases)
-          {
-            return
-              () -> {
-                final KeyStoreSSLContextInitializer sslInit = new KeyStoreSSLContextInitializer() {
+                    @Override
+                    public void setHostnameVerifierConfig(HostnameVerifierConfig config) {
 
+                    }
+                    
+                    @Override
+                    public SSLContext initSSLContext(String protocol) throws GeneralSecurityException {
+                        return sslConfig.getSslContext();
+                    }
+                    
                     @Override
                     public TrustManager[] getTrustManagers() throws GeneralSecurityException {
-                        final TrustManager[] tm = createTrustManagers();
-                        final TrustManager[] hostnameTrustManager = hostnameVerifierConfig != null ?xxx
-                          new TrustManager[] {
-                            new HostnameVerifyingTrustManager(
-                              hostnameVerifierConfig.getCertificateHostnameVerifier(),
-                              hostnameVerifierConfig.getHostnames()),
-                          } : null;
-
-                        if (tm == null) {
-                            throw new RuntimeException("tm null");
-                        } else {
-                            
-                            if(trustManagers != null) throw new RuntimeException("trustManagers");
-                            //if(hostnameTrustManager != null) throw new RuntimeException("hostnameTrustManager");
-                            
-                            return tm;
-                        }
+                        return sslConfig.getTrustManagersAsArray();
                     }
-
                     
+                    @Override
+                    public KeyManager[] getKeyManagers() throws GeneralSecurityException {
+                        return sslConfig.getKeyManagersAsArray();
+                    }
                     
+                    @Override
+                    public HostnameVerifierConfig getHostnameVerifierConfig() {
+                        return null;
+                    }
                 };
-                if (trustStore != null) {
-                  sslInit.setTrustKeystore(trustStore);
-                  sslInit.setTrustAliases(trustStoreAliases);
-                }
-                if (keyStore != null) {
-                  sslInit.setAuthenticationKeystore(keyStore);
-                  sslInit.setAuthenticationPassword(keyStorePassword != null ? keyStorePassword.toCharArray() : null);
-                  sslInit.setAuthenticationAliases(keyStoreAliases);
-                }
-                return sslInit;
-              };
-          }
-
+            }
+        };
+    }
 }

@@ -15,16 +15,15 @@
 package com.floragunn.searchguard.configuration;
 
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.util.BytesRef;
+import org.bouncycastle.util.encoders.Hex;
 
-import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
 import com.google.common.base.Splitter;
 
 public class MaskedField {
@@ -140,7 +139,7 @@ public class MaskedField {
     private byte[] customHash(byte[] in) {
         if (algo != null) {
             try {
-                return CryptoManagerFactory.getInstance().hash(in, algo);
+                return Hex.encode(CryptoManagerFactory.getInstance().hash(in, algo));
             } catch (Exception e) {
                 throw new IllegalArgumentException(e);
             }
@@ -167,9 +166,9 @@ public class MaskedField {
 
     private byte[] blake2bHash(byte[] in) {
         try {
-            return CryptoManagerFactory.getInstance().fastHash(in, defaultSalt);
+            return Hex.encode(CryptoManagerFactory.getInstance().fastHash(in, defaultSalt));
         } catch (Exception e) {
-            throw new IllegalArgumentException(e);
+            throw new RuntimeException(e);
         }
     }
 

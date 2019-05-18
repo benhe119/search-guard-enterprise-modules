@@ -16,7 +16,10 @@ package com.floragunn.searchguard.dlic.rest.api;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -40,7 +43,7 @@ import com.floragunn.searchguard.DefaultObjectMapper;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.ConfigurationRepository;
-import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
 import com.floragunn.searchguard.dlic.rest.support.Utils;
 import com.floragunn.searchguard.dlic.rest.validation.AbstractConfigurationValidator;
 import com.floragunn.searchguard.dlic.rest.validation.InternalUsersValidator;
@@ -201,12 +204,12 @@ public class InternalUsersApiAction extends PatchableResourceApiAction {
     }
 
     public static String hash(final char[] clearTextPassword) {
-        final byte[] salt = new byte[16];
-        new SecureRandom().nextBytes(salt);
-        final String hash = CryptoManagerFactory.getInstance().generatePasswordHash((Objects.requireNonNull(clearTextPassword)), salt, 12);
-        Arrays.fill(salt, (byte) 0);
-        Arrays.fill(clearTextPassword, '\0');
-        return hash;
+        try {
+            final String hash = CryptoManagerFactory.getInstance().generatePasswordHash((Objects.requireNonNull(clearTextPassword)));
+            return hash;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

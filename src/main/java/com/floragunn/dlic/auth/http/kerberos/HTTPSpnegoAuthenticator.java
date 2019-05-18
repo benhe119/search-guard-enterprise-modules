@@ -23,7 +23,6 @@ import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +30,7 @@ import java.util.Set;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.ExceptionsHelper;
@@ -196,7 +196,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
                 log.warn("No 'Negotiate Authorization' header, send 401 and 'WWW-Authenticate Negotiate'");
                 return null;
             } else {
-                final byte[] decodedNegotiateHeader = Base64.getDecoder().decode(authorizationHeader.substring(10));
+                final byte[] decodedNegotiateHeader = Base64.decodeBase64(authorizationHeader.substring(10));
 
                 GSSContext gssContext = null;
                 byte[] outToken = null;
@@ -285,7 +285,7 @@ public class HTTPSpnegoAuthenticator implements HTTPAuthenticator {
         if(creds == null || creds.getNativeCredentials() == null) {
             wwwAuthenticateResponse.addHeader("WWW-Authenticate", "Negotiate");
         } else {
-            wwwAuthenticateResponse.addHeader("WWW-Authenticate", "Negotiate "+Base64.getEncoder().encodeToString((byte[]) creds.getNativeCredentials()));
+            wwwAuthenticateResponse.addHeader("WWW-Authenticate", "Negotiate "+Base64.encodeBase64String((byte[]) creds.getNativeCredentials()));
         }
         channel.sendResponse(wwwAuthenticateResponse);
         return true;
