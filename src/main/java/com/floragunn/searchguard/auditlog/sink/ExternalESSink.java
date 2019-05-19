@@ -16,10 +16,6 @@ package com.floragunn.searchguard.auditlog.sink;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,16 +23,15 @@ import org.elasticsearch.common.settings.Settings;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage;
 import com.floragunn.searchguard.httpclient.HttpClient;
 import com.floragunn.searchguard.httpclient.HttpClient.HttpClientBuilder;
-import com.floragunn.searchguard.ssl.util.SSLConfigConstants;
 import com.floragunn.searchguard.support.ConfigConstants;
-import com.floragunn.searchguard.support.PemKeyReader;
 
 public final class ExternalESSink extends AuditLogSink {
 
-    private static final List<String> DEFAULT_TLS_PROTOCOLS = Arrays.asList(new String[] { "TLSv1.2", "TLSv1.1"});
 	// config in elasticsearch.yml
 	private final String index;
 	private final String type;
@@ -44,7 +39,7 @@ public final class ExternalESSink extends AuditLogSink {
 	private List<String> servers;
 	private DateTimeFormatter indexPattern;
 	
-    static final String PKCS12 = "PKCS12";
+    //static final String PKCS12 = "PKCS12";
 
 	public ExternalESSink(final String name, final Settings settings, final String settingPrefix, final Path configPath, AuditLogSink fallbackSink) throws Exception {
 
@@ -66,15 +61,24 @@ public final class ExternalESSink extends AuditLogSink {
         }
 		
 		this.type = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_ES_TYPE, null);
-		final boolean verifyHostnames = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_VERIFY_HOSTNAMES, true);
-		final boolean enableSsl = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_ENABLE_SSL, false);
-		final boolean enableSslClientAuth = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_ENABLE_SSL_CLIENT_AUTH , ConfigConstants.SEARCHGUARD_AUDIT_SSL_ENABLE_SSL_CLIENT_AUTH_DEFAULT);
+		//final boolean verifyHostnames = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_VERIFY_HOSTNAMES, true);
+		//final boolean enableSsl = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_ENABLE_SSL, false);
+		//final boolean enableSslClientAuth = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_ENABLE_SSL_CLIENT_AUTH , ConfigConstants.SEARCHGUARD_AUDIT_SSL_ENABLE_SSL_CLIENT_AUTH_DEFAULT);
 		final String user = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_USERNAME);
 		final String password = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_PASSWORD);
+		
+		SSLConfig sslConfig = new SettingsBasedSSLConfigurator(sinkSettings, configPath, "", "ExternalEsSink").buildSSLConfig();
+		
 
 		final HttpClientBuilder builder = HttpClient.builder(servers.toArray(new String[0]));
+		
+		if(sslConfig != null) {
+		    builder.enableSsl(sslConfig);
+		}
+		
+		
 
-		if (enableSsl) {
+		/*if (enableSsl) {
 		    
 		    final boolean pem = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_PEMTRUSTEDCAS_FILEPATH, null) != null
                     || sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_EXTERNAL_ES_PEMTRUSTEDCAS_CONTENT, null) != null;
@@ -155,7 +159,7 @@ public final class ExternalESSink extends AuditLogSink {
                 builder.setPkiCredentials(effectiveKeystore, effectiveKeyPassword, effectiveKeyAlias);
             }
 		}
-
+*/
 		if (user != null && password != null) {
 			builder.setBasicCredentials(user, password);
 		}

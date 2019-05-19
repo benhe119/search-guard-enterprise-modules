@@ -35,12 +35,15 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.searchguard.auditlog.impl.AuditMessage;
 import com.floragunn.searchguard.ssl.util.SSLConfigConstants;
 import com.floragunn.searchguard.support.ConfigConstants;
@@ -53,21 +56,39 @@ public class WebhookSink extends AuditLogSink {
 	
 	String webhookUrl = null;
 	WebhookFormat webhookFormat = null;
-	final boolean verifySSL;
-	final KeyStore effectiveTruststore;
 
     public WebhookSink(final String name, final Settings settings, final String settingsPrefix, final Path configPath, AuditLogSink fallbackSink) throws Exception {
 	    super(name, settings, settingsPrefix, fallbackSink);
-		
+
 	    Settings sinkSettings = settings.getAsSettings(settingsPrefix);
-		
-	    this.effectiveTruststore = getEffectiveKeyStore(configPath);
 				
 		final String webhookUrl = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_WEBHOOK_URL);
 		final String format = sinkSettings.get(ConfigConstants.SEARCHGUARD_AUDIT_WEBHOOK_FORMAT);
 		
-		verifySSL = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_WEBHOOK_SSL_VERIFY, true);
-		httpClient = getHttpClient();
+		final boolean verifySSL = sinkSettings.getAsBoolean(ConfigConstants.SEARCHGUARD_AUDIT_WEBHOOK_SSL_VERIFY, true);
+		
+		Settings sslSettings = Settings.builder()
+                .put(settings)
+                .put(settingsPrefix+".webhook.ssl."+SettingsBasedSSLConfigurator.ENABLE_SSL, true)
+                .build();
+		
+		if(!verifySSL) {
+		    sslSettings = Settings.builder()
+		            .put(sslSettings)
+		            .put(settingsPrefix+".webhook.ssl."+SettingsBasedSSLConfigurator.TRUST_ALL, true)
+		            .put(settingsPrefix+".webhook.ssl."+SettingsBasedSSLConfigurator.VERIFY_HOSTNAMES, false)
+		            .build();
+		    
+		}
+		
+		SSLConfig sslcConfig = null;
+        try {
+            sslcConfig = new SettingsBasedSSLConfigurator(sslSettings, configPath, settingsPrefix+".webhook.ssl", "Auditlog webhook").buildSSLConfig();
+        } catch (Exception e) {
+            log.error("Can not configure SSL for {} webhook with prefix {} due to {}", name, settingsPrefix, e, e);
+        }
+
+		httpClient = getHttpClient(sslcConfig);
 		
 		if(httpClient == null) {
 			log.error("Could not create HttpClient, audit log not available.");
@@ -298,7 +319,7 @@ public class WebhookSink extends AuditLogSink {
 		}
 	}
 
-	private KeyStore getEffectiveKeyStore(final Path configPath) {
+	/*private KeyStore getEffectiveKeyStore0(final Path configPath) {
 
 		return AccessController.doPrivileged(new PrivilegedAction<KeyStore>() {
 
@@ -332,9 +353,9 @@ public class WebhookSink extends AuditLogSink {
 				}
 			}
 		});
-	}	
+	}	*/
 	
-	CloseableHttpClient getHttpClient()  {
+	CloseableHttpClient getHttpClient(SSLConfig sslConfig)  {
 	    
         // TODO: set a timeout until we have a proper way to deal with back pressure
         int timeout = 5;
@@ -344,7 +365,17 @@ public class WebhookSink extends AuditLogSink {
           .setConnectionRequestTimeout(timeout * 1000)
           .setSocketTimeout(timeout * 1000).build();
         
-        final TrustStrategy trustAllStrategy = new TrustStrategy() {
+        HttpClientBuilder httpClientBuilder = HttpClients
+                .custom()
+                .setDefaultRequestConfig(config);
+        
+        if(sslConfig != null) {
+            httpClientBuilder.setSSLSocketFactory(sslConfig.toSSLConnectionSocketFactory());
+        }
+        
+        return  httpClientBuilder.build();
+        
+        /*final TrustStrategy trustAllStrategy = new TrustStrategy() {
             @Override
             public boolean isTrusted(X509Certificate[] chain, String authType) {
                 return true;
@@ -385,7 +416,7 @@ public class WebhookSink extends AuditLogSink {
 	    } catch(Exception ex) {
 	    	log.error("Could not create HTTPClient due to {}, audit log not available.", ex.getMessage(), ex);
 	    	return null;
-	    }
+	    }*/
 	}
 	
 	public static enum WebhookFormat {
