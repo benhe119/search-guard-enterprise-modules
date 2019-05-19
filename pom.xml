@@ -39,7 +39,7 @@
 
     <!-- Test only -->
     <mockito.version>2.23.0</mockito.version>
-    <unboundid-ldapsdk.version>4.0.9</unboundid-ldapsdk.version>
+    <unboundid-ldapsdk.version>4.0.10</unboundid-ldapsdk.version>
   </properties>
 
   <scm>
