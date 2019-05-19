@@ -66,18 +66,20 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
-import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfigException;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 
-public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
+public class SettingsBasedSSLConfiguratorTest extends AbstractSGUnitTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -86,7 +88,7 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     public void testPemTrust() throws Exception {
 
         try (TestServer testServer = new TestServer("sslConfigurator/pem/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "secret", false)) {
+                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "changeit", false)) {
             Path rootCaPemPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/pem/root-ca.pem");
 
             Assert.assertTrue(rootCaPemPath.toFile().exists());
@@ -115,7 +117,7 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     public void testPemWrongTrust() throws Exception {
 
         try (TestServer testServer = new TestServer("sslConfigurator/pem/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "secret", false)) {
+                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "changeit", false)) {
             Path rootCaPemPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/pem/other-root-ca.pem");
 
             Settings settings = Settings.builder()
@@ -144,14 +146,14 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     public void testPemClientAuth() throws Exception {
 
         try (TestServer testServer = new TestServer("sslConfigurator/pem/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "secret", true)) {
+                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "changeit", true)) {
             Path rootCaPemPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/pem/root-ca.pem");
 
             Settings settings = Settings.builder()
                     .put("prefix.pemtrustedcas_filepath", rootCaPemPath.getFileName().toString())
                     .put("prefix.enable_ssl", "true").put("path.home", rootCaPemPath.getParent().toString())
                     .put("prefix.enable_ssl_client_auth", "true").put("prefix.pemcert_filepath", "kirk.pem")
-                    .put("prefix.pemkey_filepath", "kirk.key").put("prefix.pemkey_password", "secret").build();
+                    .put("prefix.pemkey_filepath", "kirk.key.pem.enc").put("prefix.pemkey_password", "changeit").build();
             Path configPath = rootCaPemPath.getParent();
 
             SettingsBasedSSLConfigurator sbsc = new SettingsBasedSSLConfigurator(settings, configPath, "prefix");
@@ -173,7 +175,7 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     public void testPemClientAuthFailure() throws Exception {
 
         try (TestServer testServer = new TestServer("sslConfigurator/pem/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "secret", true)) {
+                "sslConfigurator/pem/node1-keystore"+(!utFips()?".jks":".BCFKS"), "changeit", true)) {
             Path rootCaPemPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/pem/root-ca.pem");
 
             Settings settings = Settings.builder()
@@ -208,8 +210,9 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     @Test
     public void testPemHostnameVerificationFailure() throws Exception {
 
+        //node4 has a wrong hostname
         try (TestServer testServer = new TestServer("sslConfigurator/pem/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/pem/node-wrong-hostname-keystore"+(!utFips()?".jks":".BCFKS"), "secret", false)) {
+            "sslConfigurator/pem/node4-keystore"+(!utFips()?".p12":".BCFKS"), "changeit", false)) {
             Path rootCaPemPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/pem/root-ca.pem");
 
             Settings settings = Settings.builder()
@@ -237,8 +240,9 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     @Test
     public void testPemHostnameVerificationOff() throws Exception {
 
+        //node4 has a wrong hostname
         try (TestServer testServer = new TestServer("sslConfigurator/pem/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/pem/node-wrong-hostname-keystore"+(!utFips()?".jks":".BCFKS"), "secret", false)) {
+                "sslConfigurator/pem/node4-keystore"+(!utFips()?".p12":".BCFKS"), "changeit", false)) {
             Path rootCaPemPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/pem/root-ca.pem");
 
             Settings settings = Settings.builder()
@@ -265,12 +269,12 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     public void testJksTrust() throws Exception {
 
         try (TestServer testServer = new TestServer("sslConfigurator/jks/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/jks/node1-keystore"+(!utFips()?".jks":".BCFKS"), "secret", false)) {
+                "sslConfigurator/jks/node1-keystore"+(!utFips()?".jks":".BCFKS"), "changeit", false)) {
             Path rootCaJksPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/jks/truststore"+(!utFips()?".jks":".BCFKS"));
 
             Settings settings = Settings.builder()
                     .put("searchguard.ssl.transport.truststore_filepath", rootCaJksPath.getFileName().toString())
-                    .put("searchguard.ssl.transport.truststore_password", "secret").put("prefix.enable_ssl", "true")
+                    .put("searchguard.ssl.transport.truststore_password", "changeit").put("prefix.enable_ssl", "true")
                     .put("path.home", rootCaJksPath.getParent().toString()).build();
             Path configPath = rootCaJksPath.getParent();
 
@@ -293,12 +297,12 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
     public void testJksWrongTrust() throws Exception {
 
         try (TestServer testServer = new TestServer("sslConfigurator/jks/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/jks/node1-keystore"+(!utFips()?".jks":".BCFKS"), "secret", false)) {
+                "sslConfigurator/jks/node1-keystore"+(!utFips()?".jks":".BCFKS"), "changeit", false)) {
             Path rootCaJksPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/jks/other-root-ca"+(!utFips()?".jks":".BCFKS"));
 
             Settings settings = Settings.builder()
                     .put("searchguard.ssl.transport.truststore_filepath", rootCaJksPath.getFileName().toString())
-                    .put("searchguard.ssl.transport.truststore_password", "secret").put("prefix.enable_ssl", "true")
+                    .put("searchguard.ssl.transport.truststore_password", "changeit").put("prefix.enable_ssl", "true")
                     .put("path.home", rootCaJksPath.getParent().toString()).build();
             Path configPath = rootCaJksPath.getParent();
 
@@ -320,8 +324,14 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
 
     @Test
     public void testTrustAll() throws Exception {
+        
+        if(CryptoManagerFactory.isFipsEnabled()) {
+            //no trust all available in FIPS mode
+            thrown.expect(SSLConfigException.class);
+        }
+        
         try (TestServer testServer = new TestServer("sslConfigurator/jks/truststore"+(!utFips()?".jks":".BCFKS"),
-                "sslConfigurator/jks/node1-keystore"+(!utFips()?".jks":".BCFKS"), "secret", false)) {
+                "sslConfigurator/jks/node1-keystore"+(!utFips()?".jks":".BCFKS"), "changeit", false)) {
             Path rootCaJksPath = FileHelper.getAbsoluteFilePathFromClassPath("sslConfigurator/jks/other-root-ca"+(!utFips()?".jks":".BCFKS"));
 
             Settings settings = Settings.builder().put("prefix.enable_ssl", "true").put("prefix.trust_all", "true")
@@ -432,13 +442,7 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractNonClusterTest {
 
                 sslContextBuilder.loadTrustMaterial(trustStore, null);
 
-                sslContextBuilder.loadKeyMaterial(keyStore, password.toCharArray(), new PrivateKeyStrategy() {
-
-                    @Override
-                    public String chooseAlias(Map<String, PrivateKeyDetails> aliases, Socket socket) {
-                        return "node1";
-                    }
-                });
+                sslContextBuilder.loadKeyMaterial(keyStore, password.toCharArray());
 
                 return sslContextBuilder.build();
             } catch (GeneralSecurityException | IOException e) {

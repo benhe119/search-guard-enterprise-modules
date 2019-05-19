@@ -14,21 +14,22 @@
 
 package com.floragunn.dlic.util;
 
-import java.net.Socket;
 import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStore.Entry;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
-import java.security.UnrecoverableKeyException;
+import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -40,19 +41,18 @@ import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
-import org.apache.http.ssl.PrivateKeyDetails;
-import org.apache.http.ssl.PrivateKeyStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.SSLContexts;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.settings.Settings;
 
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
 import com.floragunn.searchguard.ssl.util.SSLConfigConstants;
 import com.floragunn.searchguard.support.PemKeyReader;
 import com.google.common.collect.ImmutableList;
 
 public class SettingsBasedSSLConfigurator {
+
     private static final Logger log = LogManager.getLogger(SettingsBasedSSLConfigurator.class);
 
     public static final String CERT_ALIAS = "cert_alias";
@@ -79,10 +79,10 @@ public class SettingsBasedSSLConfigurator {
     public static final String PEMTRUSTEDCAS_FILEPATH = "pemtrustedcas_filepath";
     public static final String VERIFY_HOSTNAMES = "verify_hostnames";
     public static final String TRUST_ALL = "trust_all";
+    public static final String ENABLED_SSL_CIPHERS = "enabled_ssl_ciphers";
+    public static final String ENABLED_SSL_PROTOCOLS = "enabled_ssl_protocols";
 
-    private static final List<String> DEFAULT_TLS_PROTOCOLS = ImmutableList.of("TLSv1.2", "TLSv1.1");
-
-    private SSLContextBuilder sslContextBuilder;
+    private ManagerAwareSSLContextBuilder sslContextBuilder;
     private final Settings settings;
     private final String settingsKeyPrefix;
     private final Path configPath;
@@ -108,12 +108,12 @@ public class SettingsBasedSSLConfigurator {
         this(settings, configPath, settingsKeyPrefix, null);
     }
 
-    SSLContext buildSSLContext() throws SSLConfigException {
+    ManagerAwareSSLContextBuilder configureContextBuilder() throws SSLConfigException {
         try {
             if (isTrustAllEnabled()) {
                 sslContextBuilder = new OverlyTrustfulSSLContextBuilder();
             } else {
-                sslContextBuilder = SSLContexts.custom();
+                sslContextBuilder = new ManagerAwareSSLContextBuilder();
             }
 
             configureWithSettings();
@@ -122,25 +122,31 @@ public class SettingsBasedSSLConfigurator {
                 return null;
             }
 
-            return sslContextBuilder.build();
+            return sslContextBuilder;
 
-        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+        } catch (NoSuchAlgorithmException | KeyStoreException e) {
             throw new SSLConfigException("Error while initializing SSL configuration for " + this.clientName, e);
         }
     }
 
     public SSLConfig buildSSLConfig() throws SSLConfigException {
-        SSLContext sslContext = buildSSLContext();
+        ManagerAwareSSLContextBuilder contextBuilder = configureContextBuilder();
+        
+        try {
+            SSLContext sslContext = contextBuilder==null?null:contextBuilder.build();
 
-        if (sslContext == null) {
-            // disabled
-            return null;
+            if (sslContext == null) {
+                // disabled
+                return null;
+            }
+
+            return new SSLConfig(sslContext, getSupportedProtocols(), getSupportedCipherSuites(), getHostnameVerifier(),
+                    isHostnameVerificationEnabled(), isTrustAllEnabled(), isStartTlsEnabled(), this.effectiveTruststore,
+                    this.effectiveTruststoreAliases, this.effectiveKeystore, this.effectiveKeyPassword,
+                    this.effectiveKeyAlias, contextBuilder.getKeyManagers(), contextBuilder.getTrustManagers());
+        } catch (NoSuchAlgorithmException | KeyManagementException e) {
+            throw new SSLConfigException("Error while initializing SSL configuration for " + this.clientName, e);
         }
-
-        return new SSLConfig(sslContext, getSupportedProtocols(), getSupportedCipherSuites(), getHostnameVerifier(),
-                isHostnameVerificationEnabled(), isTrustAllEnabled(), isStartTlsEnabled(), this.effectiveTruststore,
-                this.effectiveTruststoreAliases, this.effectiveKeystore, this.effectiveKeyPassword,
-                this.effectiveKeyAlias);
     }
 
     private boolean isHostnameVerificationEnabled() {
@@ -156,12 +162,15 @@ public class SettingsBasedSSLConfigurator {
     }
 
     private String[] getSupportedProtocols() {
-        return getSettingAsArray("enabled_ssl_protocols", DEFAULT_TLS_PROTOCOLS);
+        List<String> protocols = getSettingAsList(ENABLED_SSL_PROTOCOLS, CryptoManagerFactory.getInstance().getDefaultTlsProtocols());
+        CryptoManagerFactory.getInstance().checkTlsProtocols(protocols);
+        return protocols.toArray(new String[0]);
     }
 
     private String[] getSupportedCipherSuites() {
-        return getSettingAsArray("enabled_ssl_ciphers", null);
-
+        List<String> ciphers = getSettingAsList(ENABLED_SSL_CIPHERS, CryptoManagerFactory.getInstance().getDefaultTlsCiphers());
+        CryptoManagerFactory.getInstance().checkTlsChipers(ciphers);
+        return ciphers.toArray(new String[0]);
     }
 
     private boolean isStartTlsEnabled() {
@@ -195,7 +204,12 @@ public class SettingsBasedSSLConfigurator {
         if (enableSslClientAuth) {
             if (effectiveKeystore != null) {
                 try {
-                    sslContextBuilder.loadKeyMaterial(effectiveKeystore, effectiveKeyPassword,
+                    
+                    
+                    sslContextBuilder.loadKeyMaterial(aliasAwareKeyStore(effectiveKeystore, effectiveKeyPassword, effectiveKeyAlias, false), effectiveKeyPassword);
+                    
+                    //not working with FIPS
+                    /*sslContextBuilder.loadKeyMaterial(effectiveKeystore, effectiveKeyPassword,
                             new PrivateKeyStrategy() {
 
                                 @Override
@@ -211,9 +225,54 @@ public class SettingsBasedSSLConfigurator {
                                     return effectiveKeyAlias;
                                 }
                             });
-                } catch (UnrecoverableKeyException e) {
+                    */
+                    
+                    
+                } catch (UnrecoverableEntryException e) {
                     throw new RuntimeException(e);
                 }
+            }
+        }
+
+    }
+
+    private KeyStore aliasAwareKeyStore(KeyStore effectiveKeystore, char[] effectiveKeyPassword, String effectiveKeyAlias,
+            boolean ignoreMissingAlias) throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableEntryException {
+
+        if (effectiveKeystore == null || effectiveKeyAlias == null || effectiveKeyAlias.isEmpty()) {
+            return effectiveKeystore;
+        }
+
+        final List<String> keyAliases = new ArrayList<>();
+        final List<String> certAliases = new ArrayList<>();
+        for (String alias : Collections.list(effectiveKeystore.aliases())) {
+            if (effectiveKeystore.isKeyEntry(alias)) {
+                keyAliases.add(alias);
+            } else {
+                certAliases.add(alias);
+            }
+        }
+
+        if (keyAliases.isEmpty()) {
+            return effectiveKeystore;
+        }
+
+        KeyStore tmp = KeyStore.getInstance(effectiveKeystore.getType());
+        if (keyAliases.contains(effectiveKeyAlias)) {
+
+            if (keyAliases.size() == 1) {
+                return effectiveKeystore;
+            }
+
+            Entry entry = effectiveKeystore.getEntry(effectiveKeyAlias, new KeyStore.PasswordProtection(effectiveKeyPassword));
+            tmp.setEntry(effectiveKeyAlias, entry, new KeyStore.PasswordProtection(effectiveKeyPassword));
+            return tmp;
+
+        } else {
+            if (ignoreMissingAlias) {
+                return effectiveKeystore;
+            } else {
+                return null;
             }
         }
 
@@ -340,7 +399,24 @@ public class SettingsBasedSSLConfigurator {
         effectiveKeyAlias = getSetting(CERT_ALIAS);
 
         if (enableSslClientAuth && effectiveKeyAlias == null) {
-            throw new IllegalArgumentException(settingsKeyPrefix + CERT_ALIAS + " not given");
+            
+            try {
+                final List<String> keyAliases = new ArrayList<>();
+                for (String alias : Collections.list(keyStore.aliases())) {
+                    if (keyStore.isKeyEntry(alias)) {
+                        keyAliases.add(alias);
+                    }
+                }
+                
+                if(keyAliases.size() == 1) {
+                    effectiveKeyAlias = keyAliases.get(0);
+                } else {
+                    throw new IllegalArgumentException(settingsKeyPrefix + CERT_ALIAS + " not given");
+                }
+                
+            } catch (KeyStoreException e) {
+                throw new IllegalArgumentException("Keystore not initialized", e);
+            }
         }
 
         effectiveTruststore = trustStore;
@@ -394,11 +470,14 @@ public class SettingsBasedSSLConfigurator {
         private final KeyStore effectiveKeystore;
         private final char[] effectiveKeyPassword;
         private final String effectiveKeyAlias;
+        private Collection<KeyManager> keyManagers;
+        private Collection<TrustManager> trustManagers;
 
         public SSLConfig(SSLContext sslContext, String[] supportedProtocols, String[] supportedCipherSuites,
                 HostnameVerifier hostnameVerifier, boolean hostnameVerificationEnabled, boolean trustAll,
                 boolean startTlsEnabled, KeyStore effectiveTruststore, List<String> effectiveTruststoreAliases,
-                KeyStore effectiveKeystore, char[] effectiveKeyPassword, String effectiveKeyAlias) {
+                KeyStore effectiveKeystore, char[] effectiveKeyPassword, String effectiveKeyAlias, Collection<KeyManager> keyManagers,
+                Collection<TrustManager> trustManagers) {
             this.sslContext = sslContext;
             this.supportedProtocols = supportedProtocols;
             this.supportedCipherSuites = supportedCipherSuites;
@@ -411,6 +490,8 @@ public class SettingsBasedSSLConfigurator {
             this.effectiveKeystore = effectiveKeystore;
             this.effectiveKeyPassword = effectiveKeyPassword;
             this.effectiveKeyAlias = effectiveKeyAlias;
+            this.keyManagers = keyManagers;
+            this.trustManagers = trustManagers;
 
             if (log.isDebugEnabled()) {
                 log.debug("Created SSLConfig: " + this);
@@ -496,16 +577,32 @@ public class SettingsBasedSSLConfigurator {
 
         @Override
         public String toString() {
-            return "SSLConfig [sslContext=" + sslContext + ", supportedProtocols=" + Arrays.toString(supportedProtocols)
-                    + ", supportedCipherSuites=" + Arrays.toString(supportedCipherSuites) + ", hostnameVerifier="
-                    + hostnameVerifier + ", startTlsEnabled=" + startTlsEnabled + ", hostnameVerificationEnabled="
-                    + hostnameVerificationEnabled + ", trustAll=" + trustAll + ", effectiveTruststore="
-                    + effectiveTruststore + ", effectiveTruststoreAliases=" + effectiveTruststoreAliases
-                    + ", effectiveKeystore=" + effectiveKeystore + ", effectiveKeyAlias=" + effectiveKeyAlias + "]";
+            return "SSLConfig [sslContext=" + sslContext + ", supportedProtocols=" + Arrays.toString(supportedProtocols) + ", supportedCipherSuites="
+                    + Arrays.toString(supportedCipherSuites) + ", hostnameVerifier=" + hostnameVerifier + ", startTlsEnabled=" + startTlsEnabled
+                    + ", hostnameVerificationEnabled=" + hostnameVerificationEnabled + ", trustAll=" + trustAll + ", effectiveTruststore="
+                    + effectiveTruststore + ", effectiveTruststoreAliases=" + effectiveTruststoreAliases + ", effectiveKeystore=" + effectiveKeystore
+                    + ", effectiveKeyPassword=" + Arrays.toString(effectiveKeyPassword) + ", effectiveKeyAlias=" + effectiveKeyAlias
+                    + ", keyManagers=" + keyManagers + ", trustManagers=" + trustManagers + "]";
         }
 
         public boolean isTrustAllEnabled() {
             return trustAll;
+        }
+
+        public Collection<KeyManager> getKeyManagers() {
+            return keyManagers;
+        }
+
+        public Collection<TrustManager> getTrustManagers() {
+            return trustManagers;
+        }
+        
+        public KeyManager[] getKeyManagersAsArray() {
+            return keyManagers==null?null:keyManagers.toArray(new KeyManager[0]);
+        }
+
+        public TrustManager[] getTrustManagersAsArray() {
+            return trustManagers==null?null:trustManagers.toArray(new TrustManager[0]);
         }
     }
 
@@ -536,12 +633,11 @@ public class SettingsBasedSSLConfigurator {
 
     }
 
-    private static class OverlyTrustfulSSLContextBuilder extends SSLContextBuilder {
+    private static class OverlyTrustfulSSLContextBuilder extends ManagerAwareSSLContextBuilder {
         @Override
         protected void initSSLContext(SSLContext sslContext, Collection<KeyManager> keyManagers,
                 Collection<TrustManager> trustManagers, SecureRandom secureRandom) throws KeyManagementException {
-            sslContext.init(!keyManagers.isEmpty() ? keyManagers.toArray(new KeyManager[keyManagers.size()]) : null,
-                    new TrustManager[] { new OverlyTrustfulTrustManager() }, secureRandom);
+            super.initSSLContext(sslContext, keyManagers, ImmutableList.of(new OverlyTrustfulTrustManager()), secureRandom);
         }
     }
 
@@ -559,6 +655,32 @@ public class SettingsBasedSSLConfigurator {
         @Override
         public X509Certificate[] getAcceptedIssuers() {
             return new X509Certificate[0];
+        }
+    }
+    
+    public static class ManagerAwareSSLContextBuilder extends SSLContextBuilder {
+
+        public ManagerAwareSSLContextBuilder() {
+            super();
+        }
+
+        private Collection<KeyManager> keyManagers;
+        private Collection<TrustManager> trustManagers;
+        
+        @Override
+        protected void initSSLContext(SSLContext sslContext, Collection<KeyManager> keyManagers, Collection<TrustManager> trustManagers,
+                SecureRandom secureRandom) throws KeyManagementException {
+            this.keyManagers = keyManagers;
+            this.trustManagers = trustManagers;
+            super.initSSLContext(sslContext, keyManagers, trustManagers, secureRandom);
+        }
+
+        public Collection<KeyManager> getKeyManagers() {
+            return Collections.unmodifiableCollection(keyManagers);
+        }
+
+        public Collection<TrustManager> getTrustManagers() {
+            return Collections.unmodifiableCollection(trustManagers);
         }
     }
 }
