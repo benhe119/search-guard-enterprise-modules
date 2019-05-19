@@ -14,10 +14,14 @@
 
 package com.floragunn.searchguard.httpclient;
 
+import java.nio.file.Paths;
+
 import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.searchguard.ssl.util.SSLConfigConstants;
 import com.floragunn.searchguard.test.DynamicSgConfig;
 import com.floragunn.searchguard.test.SingleClusterTest;
@@ -55,8 +59,20 @@ public class HttpClientTest extends SingleClusterTest {
             Assert.assertFalse(httpClient.index("{\"a\":5}", "index", "type", true));
         }
         
+        Settings sslSettings = Settings.builder()
+               .put("path.home", ".")
+               .put(SettingsBasedSSLConfigurator.ENABLE_SSL, true)
+               .put(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_FILEPATH, 
+                       FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
+               .build();
+        
+        
+        SSLConfig sslConfig = new SettingsBasedSSLConfigurator(sslSettings, Paths.get(""), "").buildSSLConfig();
+        
+        Assert.assertNotNull(sslConfig);
+        
         try(final HttpClient httpClient = HttpClient.builder("unknownhost:6654", clusterInfo.httpHost+":"+clusterInfo.httpPort)
-                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS"),"changeit"), false)
+                .enableSsl(sslConfig)
                 .setBasicCredentials("admin", "admin").build()) {
             Assert.assertFalse(httpClient.index("{\"a\":5}", "index", "type", false));
             Assert.assertFalse(httpClient.index("{\"a\":5}", "index", "type", true));
@@ -86,9 +102,21 @@ public class HttpClientTest extends SingleClusterTest {
         setup(Settings.EMPTY, new DynamicSgConfig(), settings);
         
         Thread.sleep(1000);
+        
+        Settings sslSettings = Settings.builder()
+                .put("path.home", ".")
+                .put(SettingsBasedSSLConfigurator.ENABLE_SSL, true)
+                .put(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_FILEPATH, 
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
+                .build();
+         
+         
+         SSLConfig sslConfig = new SettingsBasedSSLConfigurator(sslSettings, Paths.get(""), "").buildSSLConfig();
+         
+         Assert.assertNotNull(sslConfig);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
-                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS"),"changeit"), false)
+                .enableSsl(sslConfig)
                 .setBasicCredentials("admin", "admin").build()) {
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", false));
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", true));
@@ -119,10 +147,24 @@ public class HttpClientTest extends SingleClusterTest {
         setup(Settings.EMPTY, new DynamicSgConfig(), settings);
         
         Thread.sleep(1000);
+        
+        Settings sslSettings = Settings.builder()
+                .put("path.home", ".")
+                .put(SettingsBasedSSLConfigurator.ENABLE_SSL, true)
+                .put(SettingsBasedSSLConfigurator.ENABLE_SSL_CLIENT_AUTH, true)
+                .put(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_FILEPATH, 
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS")))
+                .put(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_KEYSTORE_FILEPATH, 
+                        FileHelper.getAbsoluteFilePathFromClassPath("auditlog/spock-keystore"+(!utFips()?".jks":".BCFKS")))
+                .build();
+         
+         
+         SSLConfig sslConfig = new SettingsBasedSSLConfigurator(sslSettings, Paths.get(""), "").buildSSLConfig();
+         
+         Assert.assertNotNull(sslConfig);
 
         try(final HttpClient httpClient = HttpClient.builder(clusterInfo.httpHost+":"+clusterInfo.httpPort)
-                .enableSsl(FileHelper.getKeystoreFromClassPath("auditlog/truststore"+(!utFips()?".jks":".BCFKS"),"changeit"), false)
-                .setPkiCredentials(FileHelper.getKeystoreFromClassPath("auditlog/spock-keystore"+(!utFips()?".jks":".BCFKS"), "changeit"), "changeit".toCharArray(), null)
+                .enableSsl(sslConfig)
                 .build()) {
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", false));
             Assert.assertTrue(httpClient.index("{\"a\":5}", "index", "type", true));
