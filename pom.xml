@@ -244,10 +244,6 @@
           <groupId>org.bouncycastle</groupId>
           <artifactId>bcprov-jdk15on</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>org.cryptacular</groupId>
-          <artifactId>cryptacular</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
 
