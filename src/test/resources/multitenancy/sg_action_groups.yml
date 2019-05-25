@@ -177,3 +177,13 @@ SUGGEST:
   - "indices:data/read/suggest*"
   type: "unknown"
   description: "Migrated from v6 (legacy)"
+  
+KIBANA_VIS_GRAPH_ALL:
+  allowed_actions:
+  - kibana:visualisations/*
+  - kibana:graph/*
+
+KIBANA_VIS_GRAPH_READ:
+  allowed_actions:
+  - kibana:visualisations/*/read
+  - kibana:graph/*/read

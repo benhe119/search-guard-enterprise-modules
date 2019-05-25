@@ -1,0 +1,16 @@
+---
+_sg_meta:
+  type: "rolesmapping"
+  config_version: 2
+
+sg_so_read:
+  users:
+    - worf
+
+sg_so_readwrite:
+  users:
+    - kirk
+
+sg_vg_all:
+  users:
+    - kirk

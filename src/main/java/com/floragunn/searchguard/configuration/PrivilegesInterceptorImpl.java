@@ -50,7 +50,6 @@ import com.floragunn.searchguard.user.User;
 
 public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
 
-    private static final String USER_TENANT = "__user__";
     private static final String EMPTY_STRING = "";
 
     protected final Logger log = LogManager.getLogger(this.getClass());
@@ -121,7 +120,7 @@ public class PrivilegesInterceptorImpl extends PrivilegesInterceptor {
             return null;
         }
 
-        if (USER_TENANT.equals(requestedTenant)) {
+        if (User.USER_TENANT.equals(requestedTenant)) {
             requestedTenant = user.getName();
         }
 

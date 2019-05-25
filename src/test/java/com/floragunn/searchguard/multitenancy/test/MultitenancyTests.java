@@ -35,8 +35,10 @@ import com.floragunn.searchguard.support.ConfigConstants;
 import com.floragunn.searchguard.support.WildcardMatcher;
 import com.floragunn.searchguard.test.DynamicSgConfig;
 import com.floragunn.searchguard.test.SingleClusterTest;
+import com.floragunn.searchguard.test.helper.cluster.ClusterConfiguration;
 import com.floragunn.searchguard.test.helper.rest.RestHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
+import com.floragunn.searchguard.user.User;
 
 public class MultitenancyTests extends SingleClusterTest {
 
@@ -381,6 +383,68 @@ public class MultitenancyTests extends SingleClusterTest {
         Assert.assertEquals(HttpStatus.SC_OK, (res = rh.executeGetRequest(".kibana/doc/6.2.2?pretty", new BasicHeader("sgtenant", "__user__"), encodeBasicHeader("kibanaro", "kibanaro"))).getStatusCode());
         System.out.println(res.getBody());
         Assert.assertTrue(res.getBody().contains(".kibana_-900636979_kibanaro")); 
+    }
+    @Test
+    public void testPermissionEndpointRbacNotEnabled() throws Exception {
+        setup();
+        RestHelper rh = nonSslRestHelper();
+        HttpResponse response = rh.executeGetRequest(
+                "_searchguard/permission?permissions=searchguard:dings/x/bums,searchguard:dings/x/bims,kibana:foo/foo",
+                encodeBasicHeader("worf", "worf"));
+        Assert.assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, response.getStatusCode());
+    }
+    
+    @Test
+    public void testPermissionEndpoint() throws Exception {
+        setup(Settings.EMPTY, new DynamicSgConfig()
+                .setSgConfig("sg_config_rbac.yml")
+                .setSgRoles("sg_roles_rbac.yml")
+                .setSgRolesMapping("sg_roles_mapping_rbac.yml")
+                .setSgTenants("sg_roles_tenants_rbac.yml")
+                , Settings.EMPTY);
+
+        RestHelper rh = nonSslRestHelper();
+
+        HttpResponse response = rh.executeGetRequest(
+                "_searchguard/permission?permissions=searchguard:dings/x/bums,searchguard:dings/x/bims,kibana:foo/foo",
+                encodeBasicHeader("worf", "worf"));
+
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertTrue(response.getBody(),response.getBody().matches(".*\"searchguard:dings/x/bums\":\\s*true.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"searchguard:dings/x/bims\":\\s*false.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:foo/foo\":\\s*false.*"));
+
+        response = rh.executeGetRequest("_searchguard/permission?permissions=searchguard:dings/x/bums,searchguard:dings/x/bims,kibana:foo/foo",
+                encodeBasicHeader("kirk", "kirk"));
+
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"searchguard:dings/x/bums\":\\s*true.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"searchguard:dings/x/bims\":\\s*true.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:foo/foo\":\\s*false.*"));
+
+        response = rh.executeGetRequest("_searchguard/permission?permissions=kibana:visualisations/foo/bar,kibana:graph/qux/quz,kibana:foo/foo",
+                encodeBasicHeader("kirk", "kirk"));
+
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:visualisations/foo/bar\":\\s*true.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:graph/qux/quz\":\\s*true.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:foo/foo\":\\s*false.*"));
+        
+        response = rh.executeGetRequest("_searchguard/permission?permissions=kibana:visualisations/foo/bar,kibana:graph/qux/quz,kibana:foo/foo",
+                encodeBasicHeader("kirk", "kirk"), new BasicHeader("sgtenant", User.USER_TENANT));
+
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:visualisations/foo/bar\":\\s*true.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:graph/qux/quz\":\\s*true.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:foo/foo\":\\s*true.*"));
+        
+        response = rh.executeGetRequest("_searchguard/permission?permissions=kibana:visualisations/foo/bar,kibana:graph/qux/quz,kibana:foo/foo",
+                encodeBasicHeader("kirk", "kirk"), new BasicHeader("sgtenant", "unknown"));
+
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:visualisations/foo/bar\":\\s*false.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:graph/qux/quz\":\\s*false.*"));
+        Assert.assertTrue(response.getBody().matches(".*\"kibana:foo/foo\":\\s*false.*"));
     }
 
 }
