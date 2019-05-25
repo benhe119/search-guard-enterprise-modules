@@ -31,15 +31,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.floragunn.dlic.AbstractNonClusterTest;
-import com.floragunn.searchguard.cyrpto.CryptoManagerFactory;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.network.SocketUtils;
 import com.google.common.io.CharStreams;
@@ -51,11 +48,9 @@ import com.unboundid.ldap.sdk.Entry;
 import com.unboundid.ldap.sdk.LDAPException;
 import com.unboundid.ldap.sdk.schema.Schema;
 import com.unboundid.ldif.LDIFReader;
-import com.unboundid.util.ssl.KeyStoreKeyManager;
 import com.unboundid.util.ssl.SSLUtil;
-import com.unboundid.util.ssl.TrustStoreTrustManager;
 
-final class LdapServer extends AbstractNonClusterTest {
+final class LdapServer extends AbstractSGUnitTest {
     private final static Logger LOG = LoggerFactory.getLogger(LdapServer.class);
 
     private static final int LOCK_TIMEOUT = 60;
@@ -120,20 +115,27 @@ final class LdapServer extends AbstractNonClusterTest {
     }
 
     private Collection<InMemoryListenerConfig> getInMemoryListenerConfigs() throws Exception {
-        Collection<InMemoryListenerConfig> listenerConfigs = new ArrayList<InMemoryListenerConfig>();
+        try {
+            Collection<InMemoryListenerConfig> listenerConfigs = new ArrayList<InMemoryListenerConfig>();
 
-        String serverKeyStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/node-0-keystore"+(!utFips()?".jks":".BCFKS")).toFile().getAbsolutePath();
-        final SSLUtil serverSSLUtil = new SSLUtil(CryptoManagerFactory.getInstance().getKeyManagers(serverKeyStorePath, "changeit".toCharArray()), CryptoManagerFactory.getInstance().getTrustManagers(serverKeyStorePath, "changeit".toCharArray()));
-        
-        //final SSLUtil clientSSLUtil = new SSLUtil(new TrustStoreTrustManager(serverKeyStorePath));
-        
-        ldapPort = SocketUtils.findAvailableTcpPort();
-        ldapsPort = SocketUtils.findAvailableTcpPort();
-        
-        listenerConfigs.add(InMemoryListenerConfig.createLDAPConfig("ldap", null, ldapPort, serverSSLUtil.createSSLSocketFactory()));
-        listenerConfigs.add(InMemoryListenerConfig.createLDAPSConfig("ldaps", null, ldapsPort, serverSSLUtil.createSSLServerSocketFactory(), serverSSLUtil.createSSLSocketFactory()));
+            //node4-keystore does not have the localhost san entry
+            String serverKeyStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/node4-keystore"+(!utFips()?".p12":".BCFKS")).toFile().getAbsolutePath();
+            String serverTrustStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")).toFile().getAbsolutePath();
+            final SSLUtil serverSSLUtil = new SSLUtil(CryptoManagerFactory.getInstance().getKeyManagers(serverKeyStorePath, "changeit".toCharArray())
+                    , CryptoManagerFactory.getInstance().getTrustManagers(serverTrustStorePath, "changeit".toCharArray()));
+            
+            ldapPort = SocketUtils.findAvailableTcpPort();
+            ldapsPort = SocketUtils.findAvailableTcpPort();
+            
+            listenerConfigs.add(InMemoryListenerConfig.createLDAPConfig("ldap", null, ldapPort, serverSSLUtil.createSSLSocketFactory()));
+            listenerConfigs.add(InMemoryListenerConfig.createLDAPSConfig("ldaps", null, ldapsPort, serverSSLUtil.createSSLServerSocketFactory(), serverSSLUtil.createSSLSocketFactory()));
 
-        return listenerConfigs;
+            return listenerConfigs;
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            throw e;
+        }
     }
     
     private final String loadFile(final String file) throws IOException {
@@ -162,10 +164,13 @@ final class LdapServer extends AbstractNonClusterTest {
         config.setListenerConfigs(listenerConfigs);
         config.setEnforceAttributeSyntaxCompliance(false);
         config.setEnforceSingleStructuralObjectClass(false);
+        
+        //InMemorySASLBindHandler not working as expected. Not possible atm to get the DN from the peer
+        //config.addSASLBindHandler(new InMemorySASLBindHandler()
 
         //config.setLDAPDebugLogHandler(DEBUG_HANDLER);
         //config.setAccessLogHandler(DEBUG_HANDLER);
-        //config.addAdditionalBindCredentials(configuration.getBindDn(), configuration.getPassword());
+        //config.addAdditionalBindCredentials("cn=sss", "aaa");
 
         server = new InMemoryDirectoryServer(config);
 

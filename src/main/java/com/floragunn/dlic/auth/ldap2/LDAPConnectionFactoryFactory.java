@@ -47,10 +47,14 @@ import org.ldaptive.ssl.CredentialConfigFactory;
 import org.ldaptive.ssl.SslConfig;
 
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
+import com.floragunn.dlic.auth.ldap.util.Utils;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfigException;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
 
 public class LDAPConnectionFactoryFactory {
+
+    private static final String COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION = "com.sun.jndi.ldap.object.disableEndpointIdentification";
 
     private static final Logger log = LogManager.getLogger(LDAPConnectionFactoryFactory.class);
 
@@ -261,24 +265,28 @@ public class LDAPConnectionFactoryFactory {
         }
 
         SslConfig ldaptiveSslConfig = new SslConfig();
-        CredentialConfig cc = CredentialConfigFactory.createKeyStoreCredentialConfig(
-                this.sslConfig.getEffectiveTruststore(), this.sslConfig.getEffectiveTruststoreAliasesArray(),
-                this.sslConfig.getEffectiveKeystore(), this.sslConfig.getEffectiveKeyPasswordString(),
-                this.sslConfig.getEffectiveKeyAliasesArray());
-
+        CredentialConfig cc = CryptoManagerFactory.isFipsEnabled()?Utils.createFipsCompliantCredentialConfig(sslConfig):CredentialConfigFactory.createKeyStoreCredentialConfig(
+                sslConfig.getEffectiveTruststore(), sslConfig.getEffectiveTruststoreAliasesArray(),
+                sslConfig.getEffectiveKeystore(), sslConfig.getEffectiveKeyPasswordString(),
+                sslConfig.getEffectiveKeyAliasesArray());
         ldaptiveSslConfig.setCredentialConfig(cc);
 
-        if (!this.sslConfig.isHostnameVerificationEnabled()) {
+        if (!sslConfig.isHostnameVerificationEnabled()) {
             ldaptiveSslConfig.setHostnameVerifier(new AllowAnyHostnameVerifier());
 
-            if (!Boolean.parseBoolean(System.getProperty("com.sun.jndi.ldap.object.disableEndpointIdentification"))) {
-                log.warn("In order to disable host name verification for LDAP connections (verify_hostnames: true), "
-                        + "you also need to set set the system property com.sun.jndi.ldap.object.disableEndpointIdentification to true when starting the JVM running ES. "
-                        + "This applies for all Java versions released since July 2018.");
+            //Set com.sun.jndi.ldap.object.disableEndpointIdentification system property to true to disable endpoint identification algorithms.            
+            if (!Boolean.getBoolean(COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION)) {
+                log.warn("In order to disable host name verification for LDAP connections (verify_hostnames: false), "
+                        + "you also need to set set the system property "+COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION+" to true when starting the JVM running ES. "
+                        + "This applies for all Java versions released since July 2018 (>= 8u181).");
                 // See:
                 // https://www.oracle.com/technetwork/java/javase/8u181-relnotes-4479407.html
                 // https://www.oracle.com/technetwork/java/javase/10-0-2-relnotes-4477557.html
                 // https://www.oracle.com/technetwork/java/javase/11-0-1-relnotes-5032023.html
+            } else {
+                if(log.isDebugEnabled()) {
+                    log.debug("hostname verification disabled because "+COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION+" is defined");
+                }
             }
         }
 

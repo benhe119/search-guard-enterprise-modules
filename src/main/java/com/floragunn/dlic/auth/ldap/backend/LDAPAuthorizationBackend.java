@@ -19,14 +19,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.AccessController;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,7 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
-import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,6 +63,7 @@ import org.ldaptive.ssl.AllowAnyHostnameVerifier;
 import org.ldaptive.ssl.AllowAnyTrustManager;
 import org.ldaptive.ssl.CredentialConfig;
 import org.ldaptive.ssl.CredentialConfigFactory;
+import org.ldaptive.ssl.DefaultHostnameVerifier;
 import org.ldaptive.ssl.SslConfig;
 import org.ldaptive.ssl.ThreadLocalTLSSocketFactory;
 
@@ -74,9 +71,10 @@ import com.floragunn.dlic.auth.ldap.LdapUser;
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
 import com.floragunn.dlic.auth.ldap.util.LdapHelper;
 import com.floragunn.dlic.auth.ldap.util.Utils;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
+import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.searchguard.auth.AuthorizationBackend;
-import com.floragunn.searchguard.ssl.util.SSLConfigConstants;
-import com.floragunn.searchguard.support.PemKeyReader;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
 import com.floragunn.searchguard.support.WildcardMatcher;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.user.User;
@@ -86,9 +84,8 @@ import io.netty.util.internal.PlatformDependent;
 
 public class LDAPAuthorizationBackend implements AuthorizationBackend {
 
-    private static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger();
     private static final String COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION = "com.sun.jndi.ldap.object.disableEndpointIdentification";
-    private static final List<String> DEFAULT_TLS_PROTOCOLS = Arrays.asList("TLSv1.2", "TLSv1.1");
+    private static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger();
     static final int ONE_PLACEHOLDER = 1;
     static final int TWO_PLACEHOLDER = 2;
     static final String DEFAULT_ROLEBASE = "";
@@ -164,7 +161,7 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
         return Collections.singletonList(result.entrySet().iterator().next());
     }
 
-    @SuppressWarnings("unchecked")
+    //@SuppressWarnings("unchecked")
     private static Connection getConnection0(final Settings settings, final Path configPath, final ClassLoader cl,
             final boolean needRestore) throws KeyStoreException, NoSuchAlgorithmException, CertificateException,
             FileNotFoundException, IOException, LdapException {
@@ -194,17 +191,12 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
                     port = enableSSL ? 636 : 389;
                 }
 
-                final ConnectionConfig config = new ConnectionConfig();
-                config.setLdapUrl("ldap" + (enableSSL ? "s" : "") + "://" + split[0] + ":" + port);
+                final SSLConfig sslConfig = new SettingsBasedSSLConfigurator(settings, configPath, "", "ldap").buildSSLConfig();
+                DefaultConnectionFactory connFactory = new DefaultConnectionFactory(getConnectionConfig("ldap" + (enableSSL ? "s" : "") + "://" + split[0] + ":" + port, 
+                        sslConfig, settings));
+                
+                configureSSLinConnectionFactory(connFactory, sslConfig);
 
-                if (log.isTraceEnabled()) {
-                    log.trace("Connect to {}", config.getLdapUrl());
-                }
-
-                final Map<String, Object> props = configureSSL(config, settings, configPath);
-
-                DefaultConnectionFactory connFactory = new DefaultConnectionFactory(config);
-                connFactory.getProvider().getProviderConfig().setProperties(props);
                 connection = connFactory.getConnection();
 
                 final String bindDn = settings.get(ConfigConstants.LDAP_BIND_DN, null);
@@ -393,175 +385,97 @@ public class LDAPAuthorizationBackend implements AuthorizationBackend {
             }
         };
     }
-
-    private static Map<String, Object> configureSSL(final ConnectionConfig config, final Settings settings,
-            final Path configPath) throws Exception {
-
-        final Map<String, Object> props = new HashMap<String, Object>();
-        final boolean enableSSL = settings.getAsBoolean(ConfigConstants.LDAPS_ENABLE_SSL, false);
-        final boolean enableStartTLS = settings.getAsBoolean(ConfigConstants.LDAPS_ENABLE_START_TLS, false);
-
-        if (enableSSL || enableStartTLS) {
-
-            final boolean enableClientAuth = settings.getAsBoolean(ConfigConstants.LDAPS_ENABLE_SSL_CLIENT_AUTH,
-                    ConfigConstants.LDAPS_ENABLE_SSL_CLIENT_AUTH_DEFAULT);
-
-            final boolean trustAll = settings.getAsBoolean(ConfigConstants.LDAPS_TRUST_ALL, false);
-
-            final boolean verifyHostnames = !trustAll && settings.getAsBoolean(ConfigConstants.LDAPS_VERIFY_HOSTNAMES,
-                    ConfigConstants.LDAPS_VERIFY_HOSTNAMES_DEFAULT);
-
-            if (log.isDebugEnabled()) {
-                log.debug("verifyHostname {}:", verifyHostnames);
-                log.debug("trustall {}:", trustAll);
-            }
-
-            if (enableStartTLS && !verifyHostnames) {
-                props.put("jndi.starttls.allowAnyHostname", "true");
-            }
-
-            final boolean pem = settings.get(ConfigConstants.LDAPS_PEMTRUSTEDCAS_FILEPATH, null) != null
-                    || settings.get(ConfigConstants.LDAPS_PEMTRUSTEDCAS_CONTENT, null) != null;
-
-            final SslConfig sslConfig = new SslConfig();
-            CredentialConfig cc;
-
-            if (pem) {
-                X509Certificate[] trustCertificates = PemKeyReader.loadCertificatesFromStream(
-                        PemKeyReader.resolveStream(ConfigConstants.LDAPS_PEMTRUSTEDCAS_CONTENT, settings));
-
-                if (trustCertificates == null) {
-                    trustCertificates = PemKeyReader.loadCertificatesFromFile(PemKeyReader
-                            .resolve(ConfigConstants.LDAPS_PEMTRUSTEDCAS_FILEPATH, settings, configPath, !trustAll));
-                }
-                // for client authentication
-                X509Certificate authenticationCertificate = PemKeyReader.loadCertificateFromStream(
-                        PemKeyReader.resolveStream(ConfigConstants.LDAPS_PEMCERT_CONTENT, settings));
-
-                if (authenticationCertificate == null) {
-                    authenticationCertificate = PemKeyReader.loadCertificateFromFile(PemKeyReader
-                            .resolve(ConfigConstants.LDAPS_PEMCERT_FILEPATH, settings, configPath, enableClientAuth));
-                }
-
-                PrivateKey authenticationKey = PemKeyReader.loadKeyFromStream(
-                        settings.get(ConfigConstants.LDAPS_PEMKEY_PASSWORD),
-                        PemKeyReader.resolveStream(ConfigConstants.LDAPS_PEMKEY_CONTENT, settings));
-
-                if (authenticationKey == null) {
-                    authenticationKey = PemKeyReader
-                            .loadKeyFromFile(settings.get(ConfigConstants.LDAPS_PEMKEY_PASSWORD), PemKeyReader.resolve(
-                                    ConfigConstants.LDAPS_PEMKEY_FILEPATH, settings, configPath, enableClientAuth));
-                }
-
-                cc = Utils.createX509CredentialConfig(trustCertificates, authenticationCertificate,
-                        authenticationKey);
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Use PEM to secure communication with LDAP server (client auth is {})",
-                            authenticationKey != null);
-                }
-
-            } else {
-                final KeyStore trustStore = PemKeyReader.loadKeyStore(
-                        PemKeyReader.resolve(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_FILEPATH, settings,
-                                configPath, !trustAll),
-                        settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_PASSWORD,
-                                SSLConfigConstants.DEFAULT_STORE_PASSWORD),
-                        settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_TRUSTSTORE_TYPE));
-
-                final List<String> trustStoreAliases = settings.getAsList(ConfigConstants.LDAPS_JKS_TRUST_ALIAS, null);
-
-                // for client authentication
-                final KeyStore keyStore = PemKeyReader.loadKeyStore(
-                        PemKeyReader.resolve(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_KEYSTORE_FILEPATH, settings,
-                                configPath, enableClientAuth),
-                        settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_KEYSTORE_PASSWORD,
-                                SSLConfigConstants.DEFAULT_STORE_PASSWORD),
-                        settings.get(SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_KEYSTORE_TYPE));
-                final String keyStorePassword = settings.get(
-                        SSLConfigConstants.SEARCHGUARD_SSL_TRANSPORT_KEYSTORE_PASSWORD,
-                        SSLConfigConstants.DEFAULT_STORE_PASSWORD);
-
-                final String keyStoreAlias = settings.get(ConfigConstants.LDAPS_JKS_CERT_ALIAS, null);
-                final String[] keyStoreAliases = keyStoreAlias == null ? null : new String[] { keyStoreAlias };
-
-                if (enableClientAuth && keyStoreAliases == null) {
-                    throw new IllegalArgumentException(ConfigConstants.LDAPS_JKS_CERT_ALIAS + " not given");
-                }
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Use Trust-/Keystore to secure communication with LDAP server (client auth is {})",
-                            keyStore != null);
-                    log.debug("trustStoreAliases: {}, keyStoreAlias: {}", trustStoreAliases, keyStoreAlias);
-                }
-
-                cc = Utils.createKeyStoreCredentialConfig(trustStore,
-                        trustStoreAliases == null ? null : trustStoreAliases.toArray(new String[0]), keyStore,
-                        keyStorePassword, keyStoreAliases);
-
-            }
-
-            sslConfig.setCredentialConfig(cc);
-
-            if (trustAll) {xxx
-                //sslConfig.setTrustManagers(new AllowAnyTrustManager());
-            }
-
-            if (!verifyHostnames) {xxx
-                //sslConfig.setHostnameVerifier(new AllowAnyHostnameVerifier());
-                final String deiProp = System.getProperty(COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION);
-                
-                if (deiProp == null || !Boolean.parseBoolean(deiProp)) {
-                    log.warn("In order to disable host name verification for LDAP connections (verify_hostnames: true), "
-                            + "you also need to set set the system property "+COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION+" to true when starting the JVM running ES. "
-                            + "This applies for all Java versions released since July 2018.");
-                    // See:
-                    // https://www.oracle.com/technetwork/java/javase/8u181-relnotes-4479407.html
-                    // https://www.oracle.com/technetwork/java/javase/10-0-2-relnotes-4477557.html
-                    // https://www.oracle.com/technetwork/java/javase/11-0-1-relnotes-5032023.html
-                }
-                
-                System.setProperty(COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION, "true");
-
-            }
-
-            // https://github.com/floragunncom/search-guard/issues/227
-            final List<String> enabledCipherSuites = settings.getAsList(ConfigConstants.LDAPS_ENABLED_SSL_CIPHERS,
-                    Collections.emptyList());
-            final List<String> enabledProtocols = settings.getAsList(ConfigConstants.LDAPS_ENABLED_SSL_PROTOCOLS,
-                    DEFAULT_TLS_PROTOCOLS);
-
-            if (!enabledCipherSuites.isEmpty()) {
-                sslConfig.setEnabledCipherSuites(enabledCipherSuites.toArray(new String[0]));
-                log.debug("enabled ssl cipher suites for ldaps {}", enabledCipherSuites);
-            }
-
-            log.debug("enabled ssl/tls protocols for ldaps {}", enabledProtocols);
-            sslConfig.setEnabledProtocols(enabledProtocols.toArray(new String[0]));
-            config.setSslConfig(sslConfig);
+    
+    
+    @SuppressWarnings("unchecked")
+    private static void configureSSLinConnectionFactory(DefaultConnectionFactory connectionFactory, SSLConfig sslConfig) {
+        if (sslConfig == null) {
+            // Disabled
+            return;
         }
 
-        config.setUseSSL(enableSSL);
-        config.setUseStartTLS(enableStartTLS);
+        Map<String, Object> props = new HashMap<String, Object>();
 
-        final long connectTimeout = settings.getAsLong(ConfigConstants.LDAP_CONNECT_TIMEOUT, 5000L); // 0L means TCP
-                                                                                                     // default timeout
-        final long responseTimeout = settings.getAsLong(ConfigConstants.LDAP_RESPONSE_TIMEOUT, 0L); // 0L means wait
-                                                                                                    // infinitely
-
-        config.setConnectTimeout(Duration.ofMillis(connectTimeout < 0L ? 0L : connectTimeout)); // 5 sec by default
-        config.setResponseTimeout(Duration.ofMillis(responseTimeout < 0L ? 0L : responseTimeout));
-
-        if (log.isDebugEnabled()) {
-            log.debug("Connect timeout: " + config.getConnectTimeout() + "/ResponseTimeout: "
-                    + config.getResponseTimeout());
+        if (sslConfig.isStartTlsEnabled() && !sslConfig.isHostnameVerificationEnabled()) {
+            props.put("jndi.starttls.allowAnyHostname", "true");
         }
-        return props;
+
+        connectionFactory.getProvider().getProviderConfig().setProperties(props);
 
     }
     
-    
+    private static void configureSSL(ConnectionConfig config, SSLConfig sslConfig) {
 
+        if (sslConfig == null) {
+            // Disabled
+            return;
+        }
+
+        SslConfig ldaptiveSslConfig = new SslConfig();
+        CredentialConfig cc = CryptoManagerFactory.isFipsEnabled()?Utils.createFipsCompliantCredentialConfig(sslConfig):CredentialConfigFactory.createKeyStoreCredentialConfig(
+                sslConfig.getEffectiveTruststore(), sslConfig.getEffectiveTruststoreAliasesArray(),
+                sslConfig.getEffectiveKeystore(), sslConfig.getEffectiveKeyPasswordString(),
+                sslConfig.getEffectiveKeyAliasesArray());
+
+        ldaptiveSslConfig.setCredentialConfig(cc);
+
+        if (!sslConfig.isHostnameVerificationEnabled()) {
+            ldaptiveSslConfig.setHostnameVerifier(new AllowAnyHostnameVerifier());
+
+            //Set com.sun.jndi.ldap.object.disableEndpointIdentification system property to true to disable endpoint identification algorithms.            
+            if (!Boolean.getBoolean(COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION)) {
+                log.warn("In order to disable host name verification for LDAP connections (verify_hostnames: false), "
+                        + "you also need to set set the system property "+COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION+" to true when starting the JVM running ES. "
+                        + "This applies for all Java versions released since July 2018 (>= 8u181).");
+                // See:
+                // https://www.oracle.com/technetwork/java/javase/8u181-relnotes-4479407.html
+                // https://www.oracle.com/technetwork/java/javase/10-0-2-relnotes-4477557.html
+                // https://www.oracle.com/technetwork/java/javase/11-0-1-relnotes-5032023.html
+            } else {
+                if(log.isDebugEnabled()) {
+                    log.debug("hostname verification disabled because "+COM_SUN_JNDI_LDAP_OBJECT_DISABLE_ENDPOINT_IDENTIFICATION+" is defined");
+                }
+            }
+        }
+
+        if (sslConfig.getSupportedCipherSuites() != null && sslConfig.getSupportedCipherSuites().length > 0) {
+            ldaptiveSslConfig.setEnabledCipherSuites(sslConfig.getSupportedCipherSuites());
+        }
+
+        ldaptiveSslConfig.setEnabledProtocols(sslConfig.getSupportedProtocols());
+
+        if (sslConfig.isTrustAllEnabled()) {
+            ldaptiveSslConfig.setTrustManagers(new AllowAnyTrustManager());
+        }
+
+        config.setSslConfig(ldaptiveSslConfig);
+
+        config.setUseSSL(true);
+        config.setUseStartTLS(sslConfig.isStartTlsEnabled());
+
+    }
+    
+    private static ConnectionConfig getConnectionConfig(String ldapUrl, SSLConfig sslConfig, Settings settings) {
+        ConnectionConfig result = new ConnectionConfig(ldapUrl);
+
+        if (sslConfig != null) {
+            configureSSL(result, sslConfig);
+        }
+
+        long connectTimeout = settings.getAsLong(ConfigConstants.LDAP_CONNECT_TIMEOUT, 5000L); // 0L means TCP
+        // default timeout
+        long responseTimeout = settings.getAsLong(ConfigConstants.LDAP_RESPONSE_TIMEOUT, 0L); // 0L means wait
+        // infinitely
+
+        result.setConnectTimeout(Duration.ofMillis(connectTimeout < 0L ? 0L : connectTimeout)); // 5 sec by default
+        result.setResponseTimeout(Duration.ofMillis(responseTimeout < 0L ? 0L : responseTimeout));
+
+        if (log.isDebugEnabled()) {
+            log.debug("LDAP connection config:\n" + result);
+        }
+
+        return result;
+    }
 
     @Override
     public void fillRoles(final User user, final AuthCredentials optionalAuthCreds)

@@ -15,7 +15,6 @@
 package com.floragunn.dlic.auth.ldap2;
 
 import java.io.File;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -36,20 +35,23 @@ import org.ldaptive.Connection;
 import org.ldaptive.LdapAttribute;
 import org.ldaptive.LdapEntry;
 
-import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.auth.ldap.LdapUser;
 import com.floragunn.dlic.auth.ldap.backend.LDAPAuthenticationBackend;
 import com.floragunn.dlic.auth.ldap.backend.LDAPAuthorizationBackend;
 import com.floragunn.dlic.auth.ldap.srv.EmbeddedLDAPServer;
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
 import com.floragunn.dlic.auth.ldap.util.LdapHelper;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
 import com.floragunn.searchguard.support.WildcardMatcher;
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.user.User;
 
+import net.bytebuddy.asm.Advice.Thrown;
+
 @RunWith(Parameterized.class)
-public class LdapBackendTestOldStyleConfig2 extends AbstractNonClusterTest {
+public class LdapBackendTestOldStyleConfig2 extends AbstractSGUnitTest {
 
     static {
         System.setProperty("sg.display_lic_none", "true");
@@ -300,8 +302,14 @@ public class LdapBackendTestOldStyleConfig2 extends AbstractNonClusterTest {
                     .authenticate(new AuthCredentials("jacksonm", "secret".getBytes(StandardCharsets.UTF_8)));
             Assert.fail("Expected Exception");
         } catch (Exception e) {
-            Assert.assertEquals(org.ldaptive.provider.ConnectionException.class, e.getCause().getClass());
-            Assert.assertTrue(ExceptionUtils.getStackTrace(e).contains("No appropriate protocol"));
+            
+            if(CryptoManagerFactory.isFipsEnabled()) {
+                Assert.assertEquals(java.lang.RuntimeException.class, e.getClass());
+                Assert.assertTrue(ExceptionUtils.getStackTrace(e).contains("Non fips compliant SSL/TLS protocols configured: [SSLv3]"));
+            } else {
+                Assert.assertEquals(org.ldaptive.provider.ConnectionException.class, e.getCause().getClass());
+                Assert.assertTrue(ExceptionUtils.getStackTrace(e).contains("No appropriate protocol"));
+            }
         }
 
     }
@@ -321,8 +329,16 @@ public class LdapBackendTestOldStyleConfig2 extends AbstractNonClusterTest {
                     .authenticate(new AuthCredentials("jacksonm", "secret".getBytes(StandardCharsets.UTF_8)));
             Assert.fail("Expected Exception");
         } catch (Exception e) {
-            Assert.assertEquals(e.getCause().getClass().toString(), org.ldaptive.provider.ConnectionException.class, e.getCause().getClass());
-            Assert.assertTrue(ExceptionUtils.getStackTrace(e), WildcardMatcher.match("*unsupported*ciphersuite*aaa*", ExceptionUtils.getStackTrace(e).toLowerCase()));
+            
+            if(CryptoManagerFactory.isFipsEnabled()) {
+                Assert.assertEquals(java.lang.RuntimeException.class, e.getClass());
+                Assert.assertTrue(ExceptionUtils.getStackTrace(e), ExceptionUtils.getStackTrace(e).contains("Non fips compliant"));
+            } else {
+                Assert.assertEquals(e.getCause().getClass().toString(), org.ldaptive.provider.ConnectionException.class, e.getCause().getClass());
+                Assert.assertTrue(ExceptionUtils.getStackTrace(e), WildcardMatcher.match("*unsupported*ciphersuite*aaa*", ExceptionUtils.getStackTrace(e).toLowerCase()));
+            }
+            
+            
         }
 
     }
@@ -330,18 +346,30 @@ public class LdapBackendTestOldStyleConfig2 extends AbstractNonClusterTest {
     @Test
     public void testLdapAuthenticationSpecialCipherProtocol() throws Exception {
 
-        final Settings settings = createBaseSettings()
-                .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
-                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put("searchguard.ssl.transport.truststore_filepath",
-                        FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
-                .put("verify_hostnames", false).putList("enabled_ssl_protocols", "TLSv1")
-                .putList("enabled_ssl_ciphers", "TLS_DHE_RSA_WITH_AES_128_CBC_SHA").put("path.home", ".").build();
+        try {
+            final Settings settings = createBaseSettings()
+                    .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
+                    .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
+                    .put("searchguard.ssl.transport.truststore_filepath",
+                            FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
+                    .put("verify_hostnames", false).putList("enabled_ssl_protocols", "TLSv1")
+                    .putList("enabled_ssl_ciphers", "TLS_DHE_RSA_WITH_AES_128_CBC_SHA").put("path.home", ".").build();
 
-        final LdapUser user = (LdapUser) new LDAPAuthenticationBackend2(settings, null)
-                .authenticate(new AuthCredentials("jacksonm", "secret".getBytes(StandardCharsets.UTF_8)));
-        Assert.assertNotNull(user);
-        Assert.assertEquals("cn=Michael Jackson,ou=people,o=TEST", user.getName());
+            final LdapUser user = (LdapUser) new LDAPAuthenticationBackend2(settings, null)
+                    .authenticate(new AuthCredentials("jacksonm", "secret".getBytes(StandardCharsets.UTF_8)));
+            Assert.assertNotNull(user);
+            Assert.assertEquals("cn=Michael Jackson,ou=people,o=TEST", user.getName());
+            if(CryptoManagerFactory.isFipsEnabled()) {
+               Assert.fail(); 
+            }
+        } catch (RuntimeException e) {
+            if(!CryptoManagerFactory.isFipsEnabled()) {
+                Assert.fail(e.toString()); 
+            } else {
+                Assert.assertEquals(java.lang.RuntimeException.class, e.getClass());
+                Assert.assertTrue(ExceptionUtils.getStackTrace(e), ExceptionUtils.getStackTrace(e).contains("Non fips compliant"));
+            }
+        }
 
     }
 

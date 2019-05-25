@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.elasticsearch.ElasticsearchSecurityException;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.AfterClass;
@@ -28,17 +29,19 @@ import org.junit.Test;
 import org.ldaptive.Connection;
 import org.ldaptive.LdapEntry;
 
-import com.floragunn.dlic.AbstractNonClusterTest;
 import com.floragunn.dlic.auth.ldap.backend.LDAPAuthenticationBackend;
 import com.floragunn.dlic.auth.ldap.backend.LDAPAuthorizationBackend;
 import com.floragunn.dlic.auth.ldap.srv.EmbeddedLDAPServer;
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
 import com.floragunn.dlic.auth.ldap.util.LdapHelper;
+import com.floragunn.searchguard.crypto.CryptoManagerFactory;
+import com.floragunn.searchguard.support.WildcardMatcher;
+import com.floragunn.searchguard.test.AbstractSGUnitTest;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.user.AuthCredentials;
 import com.floragunn.searchguard.user.User;
 
-public class LdapBackendTestNewStyleConfig extends AbstractNonClusterTest {
+public class LdapBackendTestNewStyleConfig extends AbstractSGUnitTest {
 
     static {
         System.setProperty("sg.display_lic_none", "true");
@@ -242,28 +245,49 @@ public class LdapBackendTestNewStyleConfig extends AbstractNonClusterTest {
             new LDAPAuthenticationBackend(settings, null)
                     .authenticate(new AuthCredentials("jacksonm", "secret".getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
-            Assert.assertEquals(e.getCause().getClass(), org.ldaptive.LdapException.class);
-            Assert.assertTrue(e.getCause().getMessage().contains("Unable to connec"));
+            
+            
+            if(CryptoManagerFactory.isFipsEnabled()) {
+                Assert.assertEquals(ElasticsearchSecurityException.class, e.getClass());
+                Assert.assertTrue(ExceptionUtils.getStackTrace(e),ExceptionUtils.getStackTrace(e).contains("Non fips compliant"));
+            } else {
+                Assert.assertEquals(e.getCause().getClass(), org.ldaptive.LdapException.class);
+                Assert.assertTrue(e.getCause().getMessage().contains("Unable to connec"));
+            }
+            
+            
         }
 
     }
 
     @Test
     public void testLdapAuthenticationSpecialCipherProtocol() throws Exception {
-
+        try {
         final Settings settings = Settings.builder()
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put("users.u1.search", "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
                 .put("searchguard.ssl.transport.truststore_filepath",
                         FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")))
-                .put("verify_hostnames", false).putList("enabled_ssl_protocols", "TLSv1")
-                .putList("enabled_ssl_ciphers", "TLS_DHE_RSA_WITH_AES_128_CBC_SHA").put("path.home", ".").build();
+                .put("verify_hostnames", false)
+                .putList("enabled_ssl_protocols", "TLSv1")
+                .putList("enabled_ssl_ciphers", "TLS_DHE_RSA_WITH_AES_128_CBC_SHA")
+                .put("path.home", ".").build();
 
         final LdapUser user = (LdapUser) new LDAPAuthenticationBackend(settings, null)
                 .authenticate(new AuthCredentials("jacksonm", "secret".getBytes(StandardCharsets.UTF_8)));
         Assert.assertNotNull(user);
         Assert.assertEquals("cn=Michael Jackson,ou=people,o=TEST", user.getName());
-
+        if(CryptoManagerFactory.isFipsEnabled()) {
+            Assert.fail(); 
+         }
+     } catch (RuntimeException e) {
+         if(!CryptoManagerFactory.isFipsEnabled()) {
+             Assert.fail(e.toString()); 
+         } else {
+             Assert.assertEquals(ElasticsearchSecurityException.class, e.getClass());
+             Assert.assertTrue(ExceptionUtils.getStackTrace(e), ExceptionUtils.getStackTrace(e).contains("Non fips compliant"));
+         }
+     }
     }
 
     @Test
