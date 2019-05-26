@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.floragunn</groupId>
     <artifactId>search-guard-parent</artifactId>
-    <version>7.35.1</version>
+    <version>7.35.2-FIPS-SNAPSHOT</version>
   </parent>
 
   <artifactId>dlic-search-guard-enterprise-modules</artifactId>
