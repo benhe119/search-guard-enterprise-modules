@@ -73,7 +73,7 @@ jobs:
             TESTFILES="$(circleci tests glob **/*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
             echo "$TESTFILES"
             cd ~/circleci-sg
-            mvn -U verify -Dtest="$TESTFILES" -s settings.xml
+            mvn -U verify -Dtest="$TESTFILES" -s settings.xml -Pwith-bcfips
       - store_test_results:
           path: target/surefire-reports
       - store_artifacts:
@@ -82,12 +82,12 @@ jobs:
           paths:
             - ~/.m2
           key: maven-repo-v4fips1-{{ .Branch }}-{{ checksum "pom.xml" }}
-  fipsbuild_8u111:
+  fipsbuild_8u171:
     parallelism: 4
     working_directory: ~/circleci-sg
     resource_class: xlarge
     docker:
-      - image: floragunncom/fjvm:8u111-jdk
+      - image: floragunncom/fjvm:8u171-stretch
     steps:
       - run:
           name: Versions
@@ -105,7 +105,7 @@ jobs:
             TESTFILES="$(circleci tests glob **/*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
             echo "$TESTFILES"
             cd ~/circleci-sg
-            mvn -U verify -Dtest="$TESTFILES" -s settings.xml
+            mvn -U verify -Dtest="$TESTFILES" -s settings.xml -Pwith-bcfips
       - store_test_results:
           path: target/surefire-reports
       - store_artifacts:
@@ -120,7 +120,7 @@ workflows:
     jobs:
       - build
       - fipsbuild_8u212
-      - fipsbuild_8u111
+      - fipsbuild_8u171
 
 #workflows:
 #  version: 2

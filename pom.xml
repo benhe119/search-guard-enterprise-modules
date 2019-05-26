@@ -392,4 +392,53 @@
       </plugin>
     </plugins>
   </build>
+<profiles>
+
+<profile>
+      <id>with-bcfips</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <dependencies>
+        <!-- Bouncycastle //its in jvm
+        <dependency>
+          <groupId>local</groupId>
+          <artifactId>bcfipsprov</artifactId>
+          <version>1.0.1</version>
+          <scope>test</scope>
+        </dependency>-->
+      </dependencies>
+      <build>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+      
+              <configuration>
+                <argLine>-Xmx3072m</argLine>
+                <rerunFailingTestsCount>3</rerunFailingTestsCount>
+                <forkCount>3</forkCount>
+                <reuseForks>true</reuseForks>
+                <!-- 
+                <parallel>methods</parallel>
+                <threadCount>1</threadCount>
+                 -->
+                <systemPropertyVariables>
+                    <forkno>fork_${surefire.forkNumber}</forkno>
+                </systemPropertyVariables>
+              
+                <includes>
+                    <include>**/*.java</include>
+                </includes>
+                
+                <classpathDependencyExcludes>
+                    <classpathDependencyExclude>org.bouncycastle:*</classpathDependencyExclude>
+                </classpathDependencyExcludes>
+                
+              </configuration>
+      </plugin>
+          </plugins>
+        </build>
+    </profile>
+  </profiles>
 </project>
