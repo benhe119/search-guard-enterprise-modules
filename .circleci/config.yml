@@ -19,7 +19,6 @@ jobs:
             - maven-repo-v4-{{ .Branch }}-{{ checksum "pom.xml" }}
             - maven-repo-v4-{{ .Branch }}-
             - maven-repo-v4-
-      - run: mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:resolve -DincludeParents=true -s settings.xml
       - run:
           command: |
             set -x
@@ -67,7 +66,6 @@ jobs:
             - maven-repo-v4fips1-{{ .Branch }}-{{ checksum "pom.xml" }}
             - maven-repo-v4fips1-{{ .Branch }}-
             - maven-repo-v4fips1-
-      - run: mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:resolve -DincludeParents=true -s settings.xml
       - run:
           command: |
             set -x
@@ -100,7 +98,6 @@ jobs:
             - maven-repo-v4fips2-{{ .Branch }}-{{ checksum "pom.xml" }}
             - maven-repo-v4fips2-{{ .Branch }}-
             - maven-repo-v4fips2-
-      - run: mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:resolve -DincludeParents=true -s settings.xml
       - run:
           command: |
             set -x
