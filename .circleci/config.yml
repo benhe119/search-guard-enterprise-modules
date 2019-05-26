@@ -114,6 +114,38 @@ jobs:
           paths:
             - ~/.m2
           key: maven-repo-v4fips2-{{ .Branch }}-{{ checksum "pom.xml" }}
+  non_fipsbuild_8u171:
+    parallelism: 4
+    working_directory: ~/circleci-sg
+    resource_class: xlarge
+    docker:
+      - image: circleci/openjdk:8u171-jdk-stretch
+    steps:
+      - run:
+          name: Versions
+          command: 'uname -a;java -version; cat /proc/sys/kernel/random/entropy_avail || true'
+      - checkout
+      - restore_cache:
+          keys:
+            - maven-repo-v4nonfips2-{{ .Branch }}-{{ checksum "pom.xml" }}
+            - maven-repo-v4nonfips2-{{ .Branch }}-
+            - maven-repo-v4nonfips2-
+      - run:
+          command: |
+            set -x
+            cd src/test/java         
+            TESTFILES="$(circleci tests glob **/*.java | circleci tests split --split-by=timings | tr -s '\n' ',')"
+            echo "$TESTFILES"
+            cd ~/circleci-sg
+            mvn -U verify -Dtest="$TESTFILES" -s settings.xml
+      - store_test_results:
+          path: target/surefire-reports
+      - store_artifacts:
+          path: /.circleci-task-data
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: maven-repo-v4nonfips2-{{ .Branch }}-{{ checksum "pom.xml" }}
 workflows:
   version: 2
   commit:
@@ -121,6 +153,7 @@ workflows:
       - build
       - fipsbuild_8u212
       - fipsbuild_8u171
+      - non_fipsbuild_8u171
 
 #workflows:
 #  version: 2
