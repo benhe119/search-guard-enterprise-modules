@@ -17,7 +17,13 @@ package com.floragunn.dlic.auth.ldap.srv;
 
 public class EmbeddedLDAPServer {
     
-    LdapServer s = new LdapServer();
+    private final LdapServer s;
+    
+    public EmbeddedLDAPServer(boolean identifyAsLocalhost) {
+        s = new LdapServer(identifyAsLocalhost);
+    }
+
+    
     
     public int applyLdif(final String... ldifFile) throws Exception {
         return s.start(ldifFile);

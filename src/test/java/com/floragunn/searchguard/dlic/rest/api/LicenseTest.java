@@ -25,12 +25,14 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.floragunn.searchguard.DefaultObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.floragunn.searchguard.configuration.SearchGuardLicense;
 import com.floragunn.searchguard.test.helper.file.FileHelper;
 import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
 public class LicenseTest extends AbstractRestApiUnitTest {
+    
+    public static final ObjectMapper TEST_MAPPER = new ObjectMapper(); //allows duplicates
 
 	protected final static String CONFIG_LICENSE_KEY = "sg_config.dynamic.license";
 	protected final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -132,7 +134,7 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 		Assert.assertEquals(HttpStatus.SC_BAD_REQUEST, response.getStatusCode());
 		settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
 		msg = settings.get("message");
-		Assert.assertTrue(msg, msg.contains("Invalid license signature"));
+		Assert.assertTrue(msg, msg.contains("Invalid license signature") || msg.contains("Cannot find license signature"));
 		checkCurrentLicenseProperties(SearchGuardLicense.Type.FULL, Boolean.TRUE, "unlimited", validStartDate, validExpiryDate);
 	}
 
@@ -179,7 +181,7 @@ public class LicenseTest extends AbstractRestApiUnitTest {
 	protected final Map<String, Object> getCurrentLicense() throws Exception {
 		HttpResponse response = rh.executeGetRequest("_searchguard/api/license");
 		Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
-		return (Map)DefaultObjectMapper.objectMapper.readValue(response.getBody(), Map.class).get("sg_license");
+		return (Map)TEST_MAPPER.readValue(response.getBody(), Map.class).get("sg_license");
 	}
 
 	protected final Settings getCurrentConfig() throws Exception {

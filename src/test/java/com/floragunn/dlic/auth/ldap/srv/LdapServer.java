@@ -67,9 +67,12 @@ final class LdapServer extends AbstractSGUnitTest {
     
     private int ldapPort = -1;
     private int ldapsPort = -1;
+    
+    private final boolean identifyAsLocalhost;
 
 
-    public LdapServer() {
+    public LdapServer(boolean identifyAsLocalhost) {
+        this.identifyAsLocalhost = identifyAsLocalhost;
     }
 
     public boolean isStarted() {
@@ -119,7 +122,7 @@ final class LdapServer extends AbstractSGUnitTest {
             Collection<InMemoryListenerConfig> listenerConfigs = new ArrayList<InMemoryListenerConfig>();
 
             //node4-keystore does not have the localhost san entry
-            String serverKeyStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/node4-keystore"+(!utFips()?".p12":".BCFKS")).toFile().getAbsolutePath();
+            String serverKeyStorePath = FileHelper.getAbsoluteFilePathFromClassPath((identifyAsLocalhost?"ldap/node-0-keystore":"ldap/node4-keystore")+(!utFips()?".p12":".BCFKS")).toFile().getAbsolutePath();
             String serverTrustStorePath = FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore"+(!utFips()?".jks":".BCFKS")).toFile().getAbsolutePath();
             final SSLUtil serverSSLUtil = new SSLUtil(CryptoManagerFactory.getInstance().getKeyManagers(serverKeyStorePath, "changeit".toCharArray())
                     , CryptoManagerFactory.getInstance().getTrustManagers(serverTrustStorePath, "changeit".toCharArray()));

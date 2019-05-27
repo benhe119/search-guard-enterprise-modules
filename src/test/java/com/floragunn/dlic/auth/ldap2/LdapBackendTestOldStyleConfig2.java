@@ -64,7 +64,7 @@ public class LdapBackendTestOldStyleConfig2 extends AbstractSGUnitTest {
     
     @BeforeClass
     public static void startLdapServer() throws Exception {
-        ldapServer = new EmbeddedLDAPServer();
+        ldapServer = new EmbeddedLDAPServer(true);
         ldapServer.start();
         ldapServer.applyLdif("base.ldif");
         ldapPort = ldapServer.getLdapPort();

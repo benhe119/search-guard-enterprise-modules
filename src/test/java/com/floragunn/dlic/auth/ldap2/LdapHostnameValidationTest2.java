@@ -43,7 +43,7 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
     
     @BeforeClass
     public static void startLdapServer() throws Exception {
-        ldapServer = new EmbeddedLDAPServer();
+        ldapServer = new EmbeddedLDAPServer(false);
         ldapServer.start();
         ldapServer.applyLdif("base.ldif");
         ldapsPort = ldapServer.getLdapsPort();
