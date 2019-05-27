@@ -57,7 +57,7 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
         }
     }
     
-    public static int exec(Class klass, String... args) throws IOException, InterruptedException {
+    public static int exec(Class klass, File file, String... args) throws IOException, InterruptedException {
         String javaHome = System.getProperty("java.home");
         String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
         String classpath = System.getProperty("java.class.path");
@@ -67,10 +67,9 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
         args0.addAll(Arrays.asList(javaBin, "-cp", classpath, className));
         args0.addAll(Arrays.asList(args));
 
-        FileUtils.deleteQuietly(new File("/tmp/javaout.txt"));
         ProcessBuilder builder = new ProcessBuilder(args0);
-        builder.redirectOutput(new File("/tmp/javaout.txt"));
-        builder.redirectError(Redirect.INHERIT);
+        builder.redirectOutput(file);
+        builder.redirectError(file);
         builder.redirectInput(Redirect.INHERIT);
         
         Process process = builder.start();
@@ -215,6 +214,10 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
     
     protected void testHostnameVerification(boolean defineDisableEndpointIdentification, boolean verifyHostnames, String checkForInStacktrace) {
         
+        try {
+            File f = File.createTempFile("sg_u", "javaout");
+            f.deleteOnExit();
+        
         if(checkForInStacktrace != null) {
 
                 try {
@@ -222,10 +225,10 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
                     //boolean verifyHostnames, 
                     //boolean fips, 
                     //int ldapsPort
-                    int exit = exec(LdapBackendHostnameValidationTest2.class, String.valueOf(defineDisableEndpointIdentification), String.valueOf(verifyHostnames), String.valueOf(CryptoManagerFactory.isFipsEnabled()), String.valueOf(ldapsPort));
+                    int exit = exec(LdapBackendHostnameValidationTest2.class, f, String.valueOf(defineDisableEndpointIdentification), String.valueOf(verifyHostnames), String.valueOf(CryptoManagerFactory.isFipsEnabled()), String.valueOf(ldapsPort));
                     Assert.assertNotEquals(0, exit);
                     try {
-                        String content = FileUtils.readFileToString(new File("/tmp/javaout.txt"), StandardCharsets.ISO_8859_1);
+                        String content = FileUtils.readFileToString(f, StandardCharsets.ISO_8859_1);
                         Assert.assertTrue(content, content.contains(checkForInStacktrace));
                     } catch (IOException e1) {
                         e1.printStackTrace();
@@ -243,8 +246,9 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
                     //boolean verifyHostnames, 
                     //boolean fips, 
                     //int ldapsPort
-                    int exit = exec(LdapBackendHostnameValidationTest2.class, String.valueOf(defineDisableEndpointIdentification), String.valueOf(verifyHostnames), String.valueOf(CryptoManagerFactory.isFipsEnabled()), String.valueOf(ldapsPort));
-                    Assert.assertEquals(0, exit);
+                    int exit = exec(LdapBackendHostnameValidationTest2.class, f, String.valueOf(defineDisableEndpointIdentification), String.valueOf(verifyHostnames), String.valueOf(CryptoManagerFactory.isFipsEnabled()), String.valueOf(ldapsPort));
+                    String content = FileUtils.readFileToString(f, StandardCharsets.ISO_8859_1);
+                    Assert.assertEquals(content, 0, exit);
                 } catch (Throwable e) {
                     e.printStackTrace();
                     Assert.fail(e.toString());
@@ -253,7 +257,10 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
                 Assert.fail("No Exception expected but got "+ExceptionsHelper.stackTrace(e));
             }
         }
-
+        } catch (IOException e) {
+            e.printStackTrace();
+            Assert.fail(e.toString());
+        }
     }
 
 }

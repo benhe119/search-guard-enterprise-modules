@@ -20,6 +20,7 @@ import java.security.Permission;
 import java.security.Policy;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.TreeSet;
 
 import org.elasticsearch.common.settings.Settings;
@@ -37,6 +38,7 @@ public class LdapBackendHostnameValidationTest2 {
     
     public static void main(String[] args) throws Throwable {
         try {
+            System.out.println("LdapBackendHostnameValidationTest2: "+Arrays.toString(args));
             testHostnameVerification(Boolean.parseBoolean(args[0]),Boolean.parseBoolean(args[1]),Boolean.parseBoolean(args[2]),Integer.parseInt(args[3]));
         } catch (Throwable e) {
             e.printStackTrace(System.out);
