@@ -225,7 +225,8 @@ public class LdapHostnameValidationTest2 extends AbstractSGUnitTest {
                     int exit = exec(LdapBackendHostnameValidationTest2.class, String.valueOf(defineDisableEndpointIdentification), String.valueOf(verifyHostnames), String.valueOf(CryptoManagerFactory.isFipsEnabled()), String.valueOf(ldapsPort));
                     Assert.assertNotEquals(0, exit);
                     try {
-                        Assert.assertTrue(FileUtils.readFileToString(new File("/tmp/javaout.txt"), StandardCharsets.ISO_8859_1).contains(checkForInStacktrace));
+                        String content = FileUtils.readFileToString(new File("/tmp/javaout.txt"), StandardCharsets.ISO_8859_1);
+                        Assert.assertTrue(content, content.contains(checkForInStacktrace));
                     } catch (IOException e1) {
                         e1.printStackTrace();
                         Assert.fail(e1.toString());

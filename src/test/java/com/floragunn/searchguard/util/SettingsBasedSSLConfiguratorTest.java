@@ -302,7 +302,7 @@ public class SettingsBasedSSLConfiguratorTest extends AbstractSGUnitTest {
 
             Settings settings = Settings.builder()
                     .put("searchguard.ssl.transport.truststore_filepath", rootCaJksPath.getFileName().toString())
-                    .put("searchguard.ssl.transport.truststore_password", "secret").put("prefix.enable_ssl", "true")
+                    .put("searchguard.ssl.transport.truststore_password", (!utFips()?"secret":"changeit")).put("prefix.enable_ssl", "true")
                     .put("path.home", rootCaJksPath.getParent().toString()).build();
             Path configPath = rootCaJksPath.getParent();
 
