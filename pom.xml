@@ -415,7 +415,7 @@
               <artifactId>maven-surefire-plugin</artifactId>
       
               <configuration>
-                <argLine>-Xmx3072m</argLine>
+                <argLine>-Xmx4096m</argLine>
                 <rerunFailingTestsCount>3</rerunFailingTestsCount>
                 <forkCount>3</forkCount>
                 <reuseForks>true</reuseForks>
