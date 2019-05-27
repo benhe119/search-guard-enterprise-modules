@@ -73,7 +73,7 @@ public class LdapBackendHostnameValidationTest {
             });
     
             System.setSecurityManager(new SecurityManager());
-            System.out.println("Security Manager installed");
+            System.out.println("Security Manager installed (ldap jvm)");
         }
 
         CryptoManagerFactory.initialize(fips);
