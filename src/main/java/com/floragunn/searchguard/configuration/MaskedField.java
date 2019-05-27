@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.lucene.util.BytesRef;
-import org.bouncycastle.util.encoders.Hex;
 
 import com.floragunn.searchguard.crypto.CryptoManagerFactory;
+import com.floragunn.searchguard.support.hex.Hex;
 import com.google.common.base.Splitter;
 
 public class MaskedField {
