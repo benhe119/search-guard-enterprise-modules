@@ -17,6 +17,7 @@ package com.floragunn.dlic.auth.ldap2;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
@@ -79,9 +80,35 @@ public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destro
         whitelistedAttributes = settings.getAsList(ConfigConstants.LDAP_CUSTOM_ATTR_WHITELIST,
                 null);
     }
-
+    
     @Override
     public User authenticate(final AuthCredentials credentials) throws ElasticsearchSecurityException {
+        final SecurityManager sm = System.getSecurityManager();
+
+        if (sm != null) {
+            sm.checkPermission(new SpecialPermission());
+        }
+
+        try {
+            return AccessController.doPrivileged(new PrivilegedExceptionAction<User>() {
+                @Override
+                public User run() throws Exception {
+                    return authenticate0(credentials);
+                }
+            });
+        } catch (PrivilegedActionException e) {
+            if (e.getException() instanceof ElasticsearchSecurityException) {
+                throw (ElasticsearchSecurityException) e.getException();
+            } else if (e.getException() instanceof RuntimeException) {
+                throw (RuntimeException) e.getException();
+            } else {
+                throw new RuntimeException(e.getException());
+            }
+        }
+    }
+
+
+    private User authenticate0(final AuthCredentials credentials) throws ElasticsearchSecurityException {
 
         Connection ldapConnection = null;
         final String user = credentials.getUsername();
@@ -154,8 +181,26 @@ public class LDAPAuthenticationBackend2 implements AuthenticationBackend, Destro
         return "ldap";
     }
 
+    
     @Override
     public boolean exists(final User user) {
+        final SecurityManager sm = System.getSecurityManager();
+
+        if (sm != null) {
+            sm.checkPermission(new SpecialPermission());
+        }
+
+     
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+            @Override
+            public Boolean run() {
+                return exists0(user);
+            }
+        });
+        
+    }
+
+    private boolean exists0(final User user) {
         Connection ldapConnection = null;
         String userName = user.getName();
 
