@@ -55,6 +55,10 @@ class TestJwts {
         static final String MC_COY_SIGNED_RSA_X = createSignedWithoutKeyId(MC_COY, TestJwk.RSA_X);
     }
 
+    static class PeculiarEscaping {
+        static final String MC_COY_SIGNED_RSA_1 = createSignedWithPeculiarEscaping(MC_COY, TestJwk.RSA_1);
+    }
+
     static JwtToken create(String subject, String audience, Object... moreClaims) {
         JwtClaims claims = new JwtClaims();
 
@@ -90,5 +94,16 @@ class TestJwts {
         JwtToken signedToken = new JwtToken(jwsHeaders, baseJwt.getClaims());
 
         return new JoseJwtProducer().processJwt(signedToken, null, JwsUtils.getSignatureProvider(jwk));
+    }
+
+    static String createSignedWithPeculiarEscaping(JwtToken baseJwt, JsonWebKey jwk) {
+        JwsSignatureProvider signatureProvider = JwsUtils.getSignatureProvider(jwk);
+        JwsHeaders jwsHeaders = new JwsHeaders();
+        JwtToken signedToken = new JwtToken(jwsHeaders, baseJwt.getClaims());
+
+        // Depends on CXF not escaping the input string. This may fail for other frameworks or versions.
+        jwsHeaders.setKeyId(jwk.getKeyId().replace("/", "\\/"));
+
+        return new JoseJwtProducer().processJwt(signedToken, null, signatureProvider);
     }
 }
