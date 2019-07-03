@@ -73,7 +73,7 @@ public class SgConfigAction extends PatchableResourceApiAction {
     @Override
     protected void handleGet(RestChannel channel, RestRequest request, Client client, final Settings.Builder additionalSettingsBuilder) {
         final Tuple<Long, Settings> configurationSettings = loadAsSettings(getConfigName(), true);
-        channel.sendResponse(new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings.v2())));
+        successResponse(channel, configurationSettings.v2());
     }
 
     @Override

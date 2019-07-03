@@ -54,6 +54,7 @@ import com.floragunn.searchguard.action.configupdate.ConfigUpdateAction;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateNodeResponse;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateRequest;
 import com.floragunn.searchguard.action.configupdate.ConfigUpdateResponse;
+import com.floragunn.searchguard.action.licenseinfo.LicenseInfoResponse;
 import com.floragunn.searchguard.auditlog.AuditLog;
 import com.floragunn.searchguard.configuration.AdminDNs;
 import com.floragunn.searchguard.configuration.IndexBaseConfigurationRepository;
@@ -106,7 +107,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		AbstractConfigurationValidator validator = getValidator(request, request.content());
 		if (!validator.validateSettings()) {
 			request.params().clear();
-			channel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+			badRequestResponse(channel, validator);
 			return;
 		}
 		switch (request.method()) {
@@ -228,8 +229,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
 		// no specific resource requested, return complete config
 		if (resourcename == null || resourcename.length() == 0) {
-			channel.sendResponse(
-					new BytesRestResponse(RestStatus.OK, convertToJson(channel, configurationSettings)));
+		    successResponse(channel, configurationSettings);
 			return;
 		}
 		
@@ -246,9 +246,8 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 			notFound(channel, "Resource '" + resourcename + "' not found.");
 			return;
 		}
-            
-		channel.sendResponse(
-            		new BytesRestResponse(RestStatus.OK, XContentHelper.convertToJson(Utils.convertStructuredMapToBytes(con), false, false, XContentType.JSON)));
+		
+		successResponse(channel, con);
 
 		return;
 	}
@@ -372,10 +371,7 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 
         // check if SG index has been initialized
         if (!ensureIndexExists()) {
-            return channel -> channel.sendResponse(
-                    new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ErrorType.SG_NOT_INITIALIZED.getMessage())); // TODO
-                                                                                                                         // return
-                                                                                                                         // json
+            return channel -> internalErrorResponse(channel, ErrorType.SG_NOT_INITIALIZED.getMessage());
         }
 
         // check if request is authorized
@@ -449,71 +445,107 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 		return success;
 	}
 
-	protected static XContentBuilder convertToJson(RestChannel channel, Settings settings) {
-		try {
+    protected static XContentBuilder convertToJson(RestChannel channel, ToXContent toxContent) {
+        
+        try {
             XContentBuilder builder = channel.newBuilder();
-            builder.startObject();
-            settings.toXContent(builder, ToXContent.EMPTY_PARAMS);
-            builder.endObject();
+            
+            if(toxContent.isFragment()) {
+                builder.startObject();
+            }
+            
+            toxContent.toXContent(builder, ToXContent.EMPTY_PARAMS);
+            
+            if(toxContent.isFragment()) {
+                builder.endObject();
+            }
+            
             return builder;
         } catch (IOException e) {
             throw ExceptionsHelper.convertToElastic(e);
         }
-	}
+    }
 
-	protected void response(RestChannel channel, RestStatus status, String statusString, String message) {
+    protected void response(RestChannel channel, RestStatus status, String message) {
 
-		try {
-			final XContentBuilder builder = channel.newBuilder();
-			builder.startObject();
-			builder.field("status", statusString);
-			builder.field("message", message);
-			builder.endObject();
-			channel.sendResponse(new BytesRestResponse(status, builder));
-		} catch (IOException e) {
-		    throw ExceptionsHelper.convertToElastic(e);
-		}
-	}
+        try {
+            final XContentBuilder builder = channel.newBuilder();
+            builder.startObject();
+            builder.field("status", status.name());
+            builder.field("message", message);
+            builder.endObject();
+            channel.sendResponse(new BytesRestResponse(status, builder));
+        } catch (IOException e) {
+            throw ExceptionsHelper.convertToElastic(e);
+        }
+    }
+    
+    protected void successResponse(RestChannel channel, ToXContent response) {
+        channel.sendResponse(new BytesRestResponse(RestStatus.OK, convertToJson(channel, response)));
+    }
+    
+    protected void successResponse(RestChannel channel, Map<String, Object> response) throws IOException {
+        channel.sendResponse(new BytesRestResponse(RestStatus.OK, XContentHelper.convertToJson(Utils.convertStructuredMapToBytes(response), false, false, XContentType.JSON)));
+    }
 
-	protected void successResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.OK, RestStatus.OK.name(), message);
-	}
+    protected void successResponse(RestChannel channel, LicenseInfoResponse ur) {
+        try {
+            final XContentBuilder builder = channel.newBuilder();
+            builder.startObject();
+            ur.toXContent(builder, ToXContent.EMPTY_PARAMS);
+            builder.endObject();
+            if (log.isDebugEnabled()) {
+                log.debug("Successfully fetched license " + ur.toString());
+            }
+            channel.sendResponse(new BytesRestResponse(RestStatus.OK, builder));
+        } catch (IOException e) {
+            internalErrorResponse(channel, "Unable to fetch license: " + e.getMessage());
+            log.error("Cannot fetch convert license to XContent due to", e);
+        }
+    }
 
-	protected void createdResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.CREATED, RestStatus.CREATED.name(), message);
-	}
+    protected void badRequestResponse(RestChannel channel, AbstractConfigurationValidator validator) {
+        channel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+    }
 
-	protected void badRequestResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.BAD_REQUEST, RestStatus.BAD_REQUEST.name(), message);
-	}
+    protected void successResponse(RestChannel channel, String message) {
+        response(channel, RestStatus.OK, message);
+    }
 
-	protected void notFound(RestChannel channel, String message) {
-		response(channel, RestStatus.NOT_FOUND, RestStatus.NOT_FOUND.name(), message);
-	}
+    protected void createdResponse(RestChannel channel, String message) {
+        response(channel, RestStatus.CREATED, message);
+    }
 
-	protected void forbidden(RestChannel channel, String message) {
-		response(channel, RestStatus.FORBIDDEN, RestStatus.FORBIDDEN.name(), message);
-	}
+    protected void badRequestResponse(RestChannel channel, String message) {
+        response(channel, RestStatus.BAD_REQUEST, message);
+    }
 
-	protected void internalErrorResponse(RestChannel channel, String message) {
-		response(channel, RestStatus.INTERNAL_SERVER_ERROR, RestStatus.INTERNAL_SERVER_ERROR.name(), message);
-	}
+    protected void notFound(RestChannel channel, String message) {
+        response(channel, RestStatus.NOT_FOUND, message);
+    }
 
-	protected void unprocessable(RestChannel channel, String message) {
-		response(channel, RestStatus.UNPROCESSABLE_ENTITY, RestStatus.UNPROCESSABLE_ENTITY.name(), message);
-	}
+    protected void forbidden(RestChannel channel, String message) {
+        response(channel, RestStatus.FORBIDDEN, message);
+    }
 
-	protected void notImplemented(RestChannel channel, Method method) {
-		response(channel, RestStatus.NOT_IMPLEMENTED, RestStatus.NOT_IMPLEMENTED.name(),
-				"Method " + method.name() + " not supported for this action.");
-	}
-	
-	protected boolean isReadOnly(Settings settings, String resourceName) {
-	    return settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
-	}
+    protected void internalErrorResponse(RestChannel channel, String message) {
+        response(channel, RestStatus.INTERNAL_SERVER_ERROR, message);
+    }
+
+    protected void unprocessable(RestChannel channel, String message) {
+        response(channel, RestStatus.UNPROCESSABLE_ENTITY, message);
+    }
+
+    protected void notImplemented(RestChannel channel, Method method) {
+        response(channel, RestStatus.NOT_IMPLEMENTED, "Method " + method.name() + " not supported for this action.");
+    }
+    
+    protected boolean isReadOnly(Settings settings, String resourceName) {
+        return settings.getAsBoolean(resourceName + "." + ConfigConstants.CONFIGKEY_READONLY, Boolean.FALSE);
+    }
 
     protected boolean isHidden(Settings settings, String resourceName) {
-        return settings.getAsBoolean(resourceName+ "." + ConfigConstants.CONFIGKEY_HIDDEN, Boolean.FALSE);
+        return settings.getAsBoolean(resourceName + "." + ConfigConstants.CONFIGKEY_HIDDEN, Boolean.FALSE);
     }
 	
 	/**
