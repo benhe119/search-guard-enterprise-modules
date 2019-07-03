@@ -78,8 +78,9 @@ public class GetConfigurationApiAction extends AbstractApiAction {
 		filter(configBuilder.v2(), configname);
 		final Settings config = configBuilder.v2().build();
 		
-		channel.sendResponse(
-				new BytesRestResponse(RestStatus.OK, convertToJson(channel, config)));
+		successResponse(channel, config);
+		//xchannel.sendResponse(
+		//		new BytesRestResponse(RestStatus.OK, convertToJson(channel, config)));
 		return;
 	}
 
