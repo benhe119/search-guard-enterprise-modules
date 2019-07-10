@@ -77,12 +77,14 @@ public abstract class AbstractApiAction extends BaseRestHandler {
 	private final RestApiPrivilegesEvaluator restApiPrivilegesEvaluator;
 	protected final Boolean acceptInvalidLicense;
 	protected final AuditLog auditLog;
+	protected final Settings settings;
 
 	protected AbstractApiAction(final Settings settings, final Path configPath, final RestController controller,
 			final Client client, final AdminDNs adminDNs, final IndexBaseConfigurationRepository cl,
 			final ClusterService cs, final PrincipalExtractor principalExtractor, final PrivilegesEvaluator evaluator,
 			ThreadPool threadPool, AuditLog auditLog) {
 		super(settings);
+		this.settings = settings;
 		this.searchguardIndex = settings.get(ConfigConstants.SEARCHGUARD_CONFIG_INDEX_NAME,
 				ConfigConstants.SG_DEFAULT_CONFIG_INDEX);
 		this.acceptInvalidLicense = settings.getAsBoolean(ConfigConstants.SEARCHGUARD_UNSUPPORTED_RESTAPI_ACCEPT_INVALID_LICENSE, Boolean.FALSE);

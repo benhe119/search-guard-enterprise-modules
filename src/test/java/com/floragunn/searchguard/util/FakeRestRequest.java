@@ -65,7 +65,7 @@ public class FakeRestRequest extends RestRequest {
     }
 
     @Override
-    public BytesReference content() {
+    protected BytesReference innerContent() {
         return content;
     }
 
@@ -119,5 +119,7 @@ public class FakeRestRequest extends RestRequest {
         }
         return ret;
     }
+
+    
 
 }
