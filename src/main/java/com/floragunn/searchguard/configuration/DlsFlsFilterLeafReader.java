@@ -40,6 +40,7 @@ import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -320,6 +321,10 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         }
 
     }
+    
+    private boolean isFls(final BytesRef termAsFiledName) {
+        return isFls(termAsFiledName.utf8ToString());
+    }
 
     private boolean isFls(final String name) {
 
@@ -448,8 +453,8 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
                 delegate.binaryField(fieldInfo, value);
             }
         }
-
-
+        
+        
         @Override
         public Status needsField(final FieldInfo fieldInfo) throws IOException {
             return isFls(fieldInfo.name) ? delegate.needsField(fieldInfo) : Status.NO;
@@ -907,12 +912,103 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
         return isFls(field) ? wrapTerms(field, in.terms(field)) : null;
     }
 
-    private Terms wrapTerms(final String field, Terms terms) {
+    private Terms wrapTerms(final String field, Terms terms) throws IOException {
+        
+        if(terms == null) {
+            return null;
+        }
+
         Map<String, MaskedField> rtMask = getRuntimeMaskedFieldInfo();
         if(rtMask != null && WildcardMatcher.matchAny(rtMask.keySet(), handleKeyword(field))) {
             return null;
+        
         } else {
+            
+            if("_field_names".equals(field)) {
+                return new FilteredTerms(terms);
+            }
+            
             return terms;
+        }
+    }
+    
+    private final class FilteredTermsEnum extends FilterTermsEnum {
+
+        public FilteredTermsEnum(TermsEnum delegate) {
+            super(delegate);
+        }
+        
+        @Override
+        public BytesRef next() throws IOException {
+            //wind forward in the sequence of terms until we reached the end or we find a allowed term(=field name)
+            //so that calling this method never return a term which is not allowed by fls rules
+            for (BytesRef nextBytesRef = in.next(); nextBytesRef != null; nextBytesRef = in.next()) {
+                if (!isFls((nextBytesRef))) {
+                    continue;
+                } else {
+                    return nextBytesRef;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public SeekStatus seekCeil(BytesRef text) throws IOException {
+            //Get the current seek status for a given term in the original sequence of terms
+            final SeekStatus delegateStatus = in.seekCeil(text);
+
+            //So delegateStatus here is either FOUND or NOT_FOUND
+            //check if the current term (=field name) is allowed
+            //If so just return current seek status
+            if (delegateStatus != SeekStatus.END && isFls((in.term()))) {
+                return delegateStatus;
+            } else if (delegateStatus == SeekStatus.END) {
+                //If we hit the end just return END 
+                return SeekStatus.END;
+            } else {
+                //If we are not at the end and the current term (=field name) is not allowed just check if
+                //we are at the end of the (filtered) iterator
+                if(this.next() != null) {
+                    return SeekStatus.NOT_FOUND;
+                } else {
+                    return SeekStatus.END;
+                }
+            }
+        }
+        
+        @Override
+        public boolean seekExact(BytesRef term) throws IOException {
+            return isFls(term) && in.seekExact(term);
+        }
+
+        @Override
+        public void seekExact(long ord) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long ord() throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+    }
+    
+    private final class FilteredTerms extends FilterTerms {
+        
+        //According to 
+        //https://www.elastic.co/guide/en/elasticsearch/reference/6.8/mapping-field-names-field.html
+        //"The _field_names field used to index the names of every field in a document that contains any value other than null"
+        //"For fields which have either doc_values or norm enabled the exists query will still be available but will not use the _field_names field."
+        //That means if a field has no doc values (which is always the case for an analyzed string) and no norms we need to strip the non allowed fls fields
+        //from the _field_names field. They are stored as terms, so we need to create a FilterTerms implementation which skips the terms (=field names)not allowed by fls
+
+        public FilteredTerms(Terms delegate) throws IOException {
+            super(delegate);
+        }
+
+        @Override
+        public TermsEnum iterator() throws IOException {
+            return new FilteredTermsEnum(in.iterator());
         }
     }
 
