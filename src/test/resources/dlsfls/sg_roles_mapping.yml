@@ -101,3 +101,7 @@ sg_prop_replace:
 sg_date_math:
   users:
     - date_math
+    
+sg_fls_exists:
+  users:
+    - fls_exists

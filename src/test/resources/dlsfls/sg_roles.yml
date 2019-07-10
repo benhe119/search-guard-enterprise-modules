@@ -5,7 +5,19 @@ sg_all_access:
     '*':
       '*':  
         - '*'
-        
+sg_fls_exists:
+  cluster:
+  - "*"
+  indices:
+    'data':
+      '*':
+      - "*"
+      _fls_:
+      - "@timestamp"
+      - "host"
+      #- "non-existing"
+
+
 sg_prop_replace:
   cluster:
     - '*'
