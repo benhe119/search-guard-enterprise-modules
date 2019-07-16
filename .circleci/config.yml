@@ -8,11 +8,8 @@ jobs:
       - image: circleci/openjdk:${SG_JAVA_BUILD_VERSION:-11}-jdk-browsers
     steps:
       - run:
-          name: apt update
-          command: sudo apt-get update -y || true
-      - run:
-          name: install deps
-          command: sudo apt-get install -y libapr1 openssl libxml2-utils || true
+          name: Install and Update
+          command: sudo rm -rf /var/lib/apt/lists/* && sudo apt-get update -yqq && sudo apt-get install -yqq libapr1 openssl libxml2-utils
       - run:
           name: Versions
           command: 'uname -a;java -version;openssl version'
