@@ -99,6 +99,7 @@ public class HTTPSamlAuthenticatorTest {
     @BeforeClass
     public static void setUp() throws Exception {
         mockSamlIdpServer = new MockSamlIdpServer();
+        mockSamlIdpServer.start();
         initSpSigningKeys();
     }
 
@@ -433,6 +434,56 @@ public class HTTPSamlAuthenticatorTest {
 
         mockSamlIdpServer.handleSloGetRequestURI(logoutUrl);
 
+    }
+    
+    @Test
+    public void initialConnectionFailureTest() throws Exception {
+        try (MockSamlIdpServer mockSamlIdpServer = new MockSamlIdpServer()) {
+            
+            Settings settings = Settings.builder().put("idp.metadata_url", mockSamlIdpServer.getMetadataUri())
+                    .put("idp.min_refresh_delay", 100)
+                    .put("kibana_url", "http://wherever").put("idp.entity_id", mockSamlIdpServer.getIdpEntityId())
+                    .put("exchange_key", "abc").put("roles_key", "roles").put("path.home", ".").build();
+
+            HTTPSamlAuthenticator samlAuthenticator = new HTTPSamlAuthenticator(settings, null);
+
+            RestRequest restRequest = new FakeRestRequest(ImmutableMap.of(), new HashMap<String, String>());
+            TestRestChannel restChannel = new TestRestChannel(restRequest);
+            samlAuthenticator.reRequestAuthentication(restChannel, null);
+            
+            Assert.assertNull(restChannel.response);
+                        
+            mockSamlIdpServer.start();
+            
+            mockSamlIdpServer.setSignResponses(true);
+            mockSamlIdpServer.loadSigningKeys("saml/kirk-keystore.jks", "kirk");
+            mockSamlIdpServer.setAuthenticateUser("horst");
+            mockSamlIdpServer.setEndpointQueryString(null);
+
+            Thread.sleep(500);
+
+            AuthenticateHeaders authenticateHeaders = getAutenticateHeaders(samlAuthenticator);
+
+            String encodedSamlResponse = mockSamlIdpServer.handleSsoGetRequestURI(authenticateHeaders.location);
+
+            RestRequest tokenRestRequest = buildTokenExchangeRestRequest(encodedSamlResponse, authenticateHeaders);
+            TestRestChannel tokenRestChannel = new TestRestChannel(tokenRestRequest);
+
+            samlAuthenticator.reRequestAuthentication(tokenRestChannel, null);
+
+            String responseJson = new String(BytesReference.toBytes(tokenRestChannel.response.content()));
+            HashMap<String, Object> response = DefaultObjectMapper.objectMapper.readValue(responseJson,
+                    new TypeReference<HashMap<String, Object>>() {
+                    });
+            String authorization = (String) response.get("authorization");
+
+            Assert.assertNotNull("Expected authorization attribute in JSON: " + responseJson, authorization);
+
+            JwsJwtCompactConsumer jwtConsumer = new JwsJwtCompactConsumer(authorization.replaceAll("\\s*bearer\\s*", ""));
+            JwtToken jwt = jwtConsumer.getJwtToken();
+
+            Assert.assertEquals("horst", jwt.getClaim("sub"));
+        }
     }
 
     private AuthenticateHeaders getAutenticateHeaders(HTTPSamlAuthenticator samlAuthenticator) {

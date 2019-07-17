@@ -135,8 +135,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
         if(originalValidator != null) {
         	if (!originalValidator.validateSettings()) {
                 request.params().clear();
-                channel.sendResponse(
-                        new BytesRestResponse(RestStatus.BAD_REQUEST, originalValidator.errorsAsXContent(channel)));
+                badRequestResponse(channel, originalValidator);
                 return;
             }
         }
@@ -146,8 +145,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
 
             if (!validator.validateSettings()) {
                 request.params().clear();
-                channel.sendResponse(
-                        new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+                badRequestResponse(channel, validator);
                 return;
             }
 
@@ -209,8 +207,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
                 if(originalValidator != null) {
                     if (!originalValidator.validateSettings()) {
                         request.params().clear();
-                        channel.sendResponse(
-                                new BytesRestResponse(RestStatus.BAD_REQUEST, originalValidator.errorsAsXContent(channel)));
+                        badRequestResponse(channel, originalValidator);
                         return;
                     }
                 }
@@ -220,8 +217,7 @@ public abstract class PatchableResourceApiAction extends AbstractApiAction {
 
                     if (!validator.validateSettings()) {
                         request.params().clear();
-                        channel.sendResponse(
-                                new BytesRestResponse(RestStatus.BAD_REQUEST, validator.errorsAsXContent(channel)));
+                        badRequestResponse(channel, validator);
                         return;
                     }
                 }
