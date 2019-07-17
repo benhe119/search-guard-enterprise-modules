@@ -56,7 +56,7 @@ public class AuthTokenProcessorAction extends AbstractApiAction {
 		// Just do nothing here. Eligible authenticators will intercept calls and
 		// provide own responses.
 
-		channel.sendResponse(new BytesRestResponse(RestStatus.OK, ""));
+	    successResponse(channel,"");
 	}
 
 	@Override

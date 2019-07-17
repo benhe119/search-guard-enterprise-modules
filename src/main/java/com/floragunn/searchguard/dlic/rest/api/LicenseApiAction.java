@@ -83,21 +83,8 @@ public class LicenseApiAction extends AbstractApiAction {
 			}
 
 			@Override
-			public void onResponse(final LicenseInfoResponse ur) {				
-				try {
-				    final XContentBuilder builder = channel.newBuilder();
-		            builder.startObject();
-		            ur.toXContent(builder, ToXContent.EMPTY_PARAMS);
-		            builder.endObject();
-					if (log.isDebugEnabled()) {
-						log.debug("Successfully fetched license " + ur.toString());
-					}
-					channel.sendResponse(
-			                new BytesRestResponse(RestStatus.OK, builder));
-				} catch (IOException e) {
-				    internalErrorResponse(channel, "Unable to fetch license: " + e.getMessage());
-					logger.error("Cannot fetch convert license to XContent due to", e);		
-				}
+			public void onResponse(final LicenseInfoResponse ur) {
+			    successResponse(channel, ur);
 			}
 		});
 	}
