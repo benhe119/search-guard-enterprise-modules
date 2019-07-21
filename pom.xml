@@ -328,7 +328,6 @@
 	    <groupId>com.unboundid</groupId>
 	    <artifactId>unboundid-ldapsdk</artifactId>
 	    <version>${unboundid-ldapsdk.version}</version>
-	    <scope>test</scope>
 	</dependency>
 	
 	<dependency>

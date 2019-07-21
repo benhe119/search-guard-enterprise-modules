@@ -31,6 +31,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.ldaptive.Connection;
 import org.ldaptive.LdapAttribute;
 
+import com.unboundid.ldap.sdk.Attribute;
+
 public final class Utils {
     
     private static final Logger log = LogManager.getLogger(Utils.class);
@@ -109,5 +111,19 @@ public final class Utils {
         }
         
         return attribute.getStringValue();
+    }
+    
+    public static String getSingleStringValue(Attribute attribute) {
+        if(attribute == null) {
+            return null;
+        }
+        
+        if(attribute.size() > 1) {
+            if(log.isDebugEnabled()) {
+                log.debug("Multiple values found for {} ({})", attribute.getName(), attribute);
+            }
+        }
+        
+        return attribute.getValue();
     }
 }
