@@ -33,6 +33,32 @@ import com.floragunn.searchguard.test.helper.rest.RestHelper.HttpResponse;
 
 public class UserApiTest extends AbstractRestApiUnitTest {
 
+    @Test
+    public void testSearchGuardRoles() throws Exception {
+
+        setup();
+
+        rh.keystore = "restapi/kirk-keystore.jks";
+        rh.sendHTTPClientCertificate = true;
+
+        // initial configuration, 5 users
+        HttpResponse response = rh
+                .executeGetRequest("_searchguard/api/" + CType.INTERNALUSERS.toLCString());
+        Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
+        Settings settings = Settings.builder().loadFromSource(response.getBody(), XContentType.JSON).build();
+        Assert.assertEquals(35, settings.size());
+        
+        response = rh.executePatchRequest("/_searchguard/api/internalusers", "[{ \"op\": \"add\", \"path\": \"/newuser\", \"value\": {\"password\": \"newuser\", \"search_guard_roles\": [\"sg_all_access\"] } }]", new Header[0]);
+        Assert.assertEquals(response.getBody(), HttpStatus.SC_OK, response.getStatusCode());
+    
+        response = rh.executeGetRequest("/_searchguard/api/internalusers/newuser", new Header[0]);
+        Assert.assertEquals(HttpStatus.SC_OK, response.getStatusCode());
+        Assert.assertTrue(response.getBody().contains("\"search_guard_roles\":[\"sg_all_access\"]"));
+        
+        checkGeneralAccess(HttpStatus.SC_OK, "newuser", "newuser");
+    }
+    
+    
 	@Test
 	public void testUserApi() throws Exception {
 

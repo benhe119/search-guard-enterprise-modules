@@ -39,6 +39,7 @@ public class InternalUsersValidator extends AbstractConfigurationValidator {
         allowedKeys.put("backend_roles", DataType.ARRAY);
         allowedKeys.put("attributes", DataType.OBJECT);
         allowedKeys.put("description", DataType.STRING);
+        allowedKeys.put("search_guard_roles", DataType.ARRAY);
     }
 
     @Override
