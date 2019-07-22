@@ -177,7 +177,7 @@ public class SettingsBasedSSLConfigurator {
     }
 
     private void configureWithSettings() throws SSLConfigException, NoSuchAlgorithmException, KeyStoreException {
-        this.enabled = getSettingAsBoolean(ENABLE_SSL, false);
+        this.enabled = getSettingAsBoolean(ENABLE_SSL, false) || getSettingAsBoolean(ENABLE_START_TLS, false);
 
         if (!this.enabled) {
             return;
