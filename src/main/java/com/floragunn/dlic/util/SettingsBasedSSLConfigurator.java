@@ -171,7 +171,7 @@ public class SettingsBasedSSLConfigurator {
     private boolean isTrustAllEnabled() {
         return getSettingAsBoolean(TRUST_ALL, false);
     }
-
+    
     private void configureWithSettings() throws SSLConfigException, NoSuchAlgorithmException, KeyStoreException {
         this.enabled = getSettingAsBoolean(ENABLE_SSL, false);
 
@@ -417,8 +417,12 @@ public class SettingsBasedSSLConfigurator {
             }
         }
 
-        public SSLContext getSslContext() {
+        public SSLContext getUnrestrictedSslContext() {
             return sslContext;
+        }
+        
+        public RestrictingSSLSocketFactory getRestrictedSSLSocketFactory() {
+            return new RestrictingSSLSocketFactory(sslContext.getSocketFactory(), getSupportedProtocols(), getSupportedCipherSuites());
         }
 
         public String[] getSupportedProtocols() {
