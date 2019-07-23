@@ -9,7 +9,7 @@ jobs:
     steps:
       - run:
           name: Install and Update
-          command: sudo apt-get update -yqq && sudo apt-get install -yqq libapr1 openssl libxml2-utils
+          command: sudo rm -rf /var/lib/apt/lists/* && sudo apt-get update -yqq && sudo apt-get install -yqq libapr1 openssl libxml2-utils
       - run:
           name: Versions
           command: 'uname -a;java -version;openssl version'
