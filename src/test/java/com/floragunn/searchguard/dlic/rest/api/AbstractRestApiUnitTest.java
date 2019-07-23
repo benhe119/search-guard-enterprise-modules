@@ -230,7 +230,13 @@ public abstract class AbstractRestApiUnitTest extends SingleClusterTest {
 		rh.executePutRequest("sf/public/0", "{\"some\" : \"value\"}", new Header[0]);
 		rh.sendHTTPClientCertificate = sendHTTPClientCertificate;
 	}
-
+	
+	protected void assertHealthy() throws Exception {
+        Assert.assertEquals(HttpStatus.SC_OK, rh.executeGetRequest("_searchguard/health?pretty").getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, rh.executeGetRequest("_searchguard/authinfo?pretty", encodeBasicHeader("admin", "admin")).getStatusCode());
+        Assert.assertEquals(HttpStatus.SC_OK, rh.executeGetRequest("*/_search?pretty", encodeBasicHeader("admin", "admin")).getStatusCode());
+	}
+    
 	protected Settings defaultNodeSettings(boolean enableRestSSL) {
 		Settings.Builder builder = Settings.builder();
 
