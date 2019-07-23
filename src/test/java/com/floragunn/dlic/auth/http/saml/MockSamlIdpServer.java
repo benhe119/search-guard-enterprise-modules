@@ -180,9 +180,13 @@ class MockSamlIdpServer implements Closeable {
     private String defaultAssertionConsumerService;
 
     MockSamlIdpServer() throws IOException {
-        this(SocketUtils.findAvailableTcpPort(), false, ENTITY_ID, null);
+        this(SocketUtils.findAvailableTcpPort());
     }
 
+    MockSamlIdpServer(int port) throws IOException {
+        this(port, false, ENTITY_ID, null);
+    }
+    
     MockSamlIdpServer(int port, boolean ssl, String idpEntityId, String endpointQueryString) throws IOException {
         this.port = port;
         this.uri = (ssl ? "https" : "http") + "://localhost:" + port;
@@ -248,8 +252,10 @@ class MockSamlIdpServer implements Closeable {
 
         this.httpServer = serverBootstrap.create();
 
+    }
+    
+    public void start() throws IOException {
         httpServer.start();
-
     }
 
     @Override
