@@ -43,7 +43,6 @@ import com.unboundid.ldap.sdk.SearchScope;
 import com.unboundid.ldap.sdk.ServerSet;
 import com.unboundid.ldap.sdk.SimpleBindRequest;
 import com.unboundid.ldap.sdk.StartTLSPostConnectProcessor;
-import com.unboundid.ldap.sdk.unboundidds.monitors.HealthCheckState;
 
 public final class LDAPConnectionManager implements Closeable{
 
