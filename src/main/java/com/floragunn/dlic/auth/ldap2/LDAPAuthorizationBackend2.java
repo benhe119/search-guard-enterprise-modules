@@ -143,7 +143,7 @@ public class LDAPAuthorizationBackend2 implements AuthorizationBackend, Destroya
         SearchResultEntry entry = null;
         String dn = null;
 
-        if (user instanceof LdapUser) {
+        if (user instanceof LdapUser && ((LdapUser) user).getUserEntry() != null && ((LdapUser) user).getUserEntry().getUbEntry() != null) {
             entry = ((LdapUser) user).getUserEntry().getUbEntry();
             dn = entry.getDN();
             authenticatedUser = entry.getDN();

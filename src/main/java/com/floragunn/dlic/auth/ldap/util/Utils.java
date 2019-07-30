@@ -98,7 +98,7 @@ public final class Utils {
             }
         });
     }
-    
+
     public static String getSingleStringValue(LdapAttribute attribute) {
         if(attribute == null) {
             return null;
@@ -106,7 +106,7 @@ public final class Utils {
         
         if(attribute.size() > 1) {
             if(log.isDebugEnabled()) {
-                log.debug("Multiple values found for {} ({})", attribute.getName(), attribute);
+                log.debug("Multiple values found for {} ({})", attribute.getName(false), attribute);
             }
         }
         
@@ -120,7 +120,7 @@ public final class Utils {
         
         if(attribute.size() > 1) {
             if(log.isDebugEnabled()) {
-                log.debug("Multiple values found for {} ({})", attribute.getName(), attribute);
+                log.debug("Multiple values found for {} ({})", attribute.getBaseName(), attribute);
             }
         }
         
