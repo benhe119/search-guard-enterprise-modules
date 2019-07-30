@@ -8,8 +8,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.settings.Settings;
 
 import com.floragunn.dlic.auth.ldap.util.ConfigConstants;
@@ -17,13 +20,21 @@ import com.floragunn.dlic.util.SettingsBasedSSLConfigurator;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfig;
 import com.floragunn.dlic.util.SettingsBasedSSLConfigurator.SSLConfigException;
 import com.google.common.primitives.Ints;
+import com.unboundid.ldap.sdk.AggregateLDAPConnectionPoolHealthCheck;
 import com.unboundid.ldap.sdk.BindRequest;
 import com.unboundid.ldap.sdk.DereferencePolicy;
 import com.unboundid.ldap.sdk.EXTERNALBindRequest;
+import com.unboundid.ldap.sdk.FailoverServerSet;
+import com.unboundid.ldap.sdk.FastestConnectServerSet;
+import com.unboundid.ldap.sdk.FewestConnectionsServerSet;
+import com.unboundid.ldap.sdk.GetEntryLDAPConnectionPoolHealthCheck;
 import com.unboundid.ldap.sdk.LDAPConnection;
 import com.unboundid.ldap.sdk.LDAPConnectionOptions;
 import com.unboundid.ldap.sdk.LDAPConnectionPool;
+import com.unboundid.ldap.sdk.LDAPConnectionPoolHealthCheck;
 import com.unboundid.ldap.sdk.LDAPException;
+import com.unboundid.ldap.sdk.PostConnectProcessor;
+import com.unboundid.ldap.sdk.PruneUnneededConnectionsLDAPConnectionPoolHealthCheck;
 import com.unboundid.ldap.sdk.RoundRobinServerSet;
 import com.unboundid.ldap.sdk.SearchRequest;
 import com.unboundid.ldap.sdk.SearchResult;
@@ -32,9 +43,11 @@ import com.unboundid.ldap.sdk.SearchScope;
 import com.unboundid.ldap.sdk.ServerSet;
 import com.unboundid.ldap.sdk.SimpleBindRequest;
 import com.unboundid.ldap.sdk.StartTLSPostConnectProcessor;
+import com.unboundid.ldap.sdk.unboundidds.monitors.HealthCheckState;
 
 public final class LDAPConnectionManager implements Closeable{
 
+    private static final Logger log = LogManager.getLogger(LDAPConnectionManager.class);
     private final LDAPConnectionPool pool;
     private final SSLConfig sslConfig;
     private final LDAPUserSearcher userSearcher;
@@ -45,30 +58,6 @@ public final class LDAPConnectionManager implements Closeable{
         
         this.sslConfig = new SettingsBasedSSLConfigurator(settings, configPath, "").buildSSLConfig();
         this.settings = settings;
-        
-        /*
-        
-        NOT supported yet 
-        Can imho be done with GetEntryLDAPConnectionPoolHealthCheck
-        in combination with AggregateLDAPConnectionPoolHealthCheck and 
-        PruneUnneededConnectionsLDAPConnectionPoolHealthCheck
-        
-        this.settings.getAsBoolean("validation.enabled", false)) {
-        this.settings.getAsBoolean("validation.on_checkin", false));
-        this.settings.getAsBoolean("validation.on_checkout", false));
-        this.settings.getAsBoolean("validation.periodically", true));
-        this.settings.getAsLong("validation.period", 30l)));
-        this.settings.getAsLong("validation.timeout", 5l)));
-        this.settings.get("validation.strategy", "search");
-        this.settings.get("validation.compare.dn", ""),
-        this.settings.get("validation.compare.attribute", "objectClass"),
-        this.settings.get("validation.compare.value", "top"))));
-        this.settings.get("validation.search.base_dn", ""));
-        this.settings.get("validation.search.filter", "(objectClass=*)")));
-        this.settings.getAsLong("pruning.period", 5l)),
-        this.settings.getAsLong("pruning.idleTime", 10l))));
-        LDAP_CONNECTION_STRATEGY not supported, only roundrobin currently
-        */
 
         List<String> ldapStrings = this.settings.getAsList(ConfigConstants.LDAP_HOSTS,
                 Collections.singletonList("localhost"));
@@ -98,25 +87,80 @@ public final class LDAPConnectionManager implements Closeable{
         opts.setResponseTimeoutMillis(responseTimeout);
         opts.setFollowReferrals(true);
         
-        
-        if(this.settings.hasValue(ConfigConstants.LDAP_POOL_ENABLED)) {
-            //log deprecation
-        }
-        
         final int poolMinSize = this.settings.getAsInt(ConfigConstants.LDAP_POOL_MIN_SIZE, 3);
         final int poolMaxSize = this.settings.getAsInt(ConfigConstants.LDAP_POOL_MAX_SIZE, 10);
+        boolean createIfNecessary;
+        long maxWaitTimeMillis; //0L is the default which means no blocking at all
+        
+        if(this.settings.getAsBoolean(ConfigConstants.LDAP_POOL_ENABLED, false)) {
+            log.warn("LDAP connection pool can no longer be disabled");
+        }
+        
+        if ("blocking".equals(this.settings.get(ConfigConstants.LDAP_POOL_TYPE))){
+            //pool enabled in blocking mode
+            maxWaitTimeMillis = Long.MAX_VALUE;
+            createIfNecessary = false;
+        } else {
+          //pool enabled in non blocking mode
+            maxWaitTimeMillis = 0L;
+            createIfNecessary = true;
+        }
 
         pool = new LDAPConnectionPool(createServerSet(ldapStrings, opts), bindRequest, poolMinSize, poolMaxSize);
-        pool.setCreateIfNecessary(!"blocking".equals(this.settings.get(ConfigConstants.LDAP_POOL_TYPE)));
+        pool.setCreateIfNecessary(createIfNecessary);
+        pool.setMaxWaitTimeMillis(maxWaitTimeMillis);
         
-        //pool.setHealthCheck(healthCheck);
-        //System.out.println(pool.getHealthCheckIntervalMillis()); 60 sec
-        //System.out.println(pool.getMinimumAvailableConnectionGoal()); 0
-        
+        configureHealthChecks(poolMaxSize);
         
         userSearcher = new LDAPUserSearcher(this, settings);
     }
     
+    private void configureHealthChecks(int poolMaxSize) {
+        if (this.settings.getAsBoolean("pool.health_check.enabled", false)) {
+
+            final List<LDAPConnectionPoolHealthCheck> healthChecks = new ArrayList<>();
+
+            if (this.settings.getAsBoolean("pool.health_check.validation.enabled", false)) {
+
+                final String entryDN = this.settings.get("pool.health_check.validation.dn", null); //null means root dse
+                final long maxResponseTime = this.settings.getAsLong("pool.health_check.validation.max_response_time", 0L); //means default of 30 sec
+                final boolean invokeOnCreate = this.settings.getAsBoolean("pool.health_check.validation.on_create", false);
+                final boolean invokeAfterAuthentication = this.settings.getAsBoolean("pool.health_check.validation.after_authentication", false);
+                final boolean invokeOnCheckout = this.settings.getAsBoolean("pool.health_check.validation.on_checkout", false);
+                final boolean invokeOnRelease = this.settings.getAsBoolean("pool.health_check.validation.on_release", false);
+                final boolean invokeForBackgroundChecks = this.settings.getAsBoolean("pool.health_check.validation.for_background_checks", true);
+                final boolean invokeOnException = this.settings.getAsBoolean("pool.health_check.validation.on_exception", false);
+
+                final GetEntryLDAPConnectionPoolHealthCheck gehc = new GetEntryLDAPConnectionPoolHealthCheck(entryDN, maxResponseTime, invokeOnCreate,
+                        invokeAfterAuthentication, invokeOnCheckout, invokeOnRelease, invokeForBackgroundChecks, invokeOnException);
+                healthChecks.add(gehc);
+
+            }
+
+            if (this.settings.getAsBoolean("pool.health_check.pruning.enabled", false)) {
+
+                final int minAvailableConnections = this.settings.getAsInt("pool.health_check.pruning.min_available_connections", poolMaxSize);
+                final long minDurationMillisExceedingMinAvailableConnections = this.settings
+                        .getAsLong("pool.health_check.pruning.min_duration_millis_exceeding_min_available_connections", 0L);
+
+                final PruneUnneededConnectionsLDAPConnectionPoolHealthCheck puchc = new PruneUnneededConnectionsLDAPConnectionPoolHealthCheck(
+                        minAvailableConnections, minDurationMillisExceedingMinAvailableConnections);
+                healthChecks.add(puchc);
+
+            }
+
+            if (healthChecks.size() == 1) {
+                pool.setHealthCheck(healthChecks.get(0));
+            } else if (healthChecks.size() > 1) {
+                AggregateLDAPConnectionPoolHealthCheck aghc = new AggregateLDAPConnectionPoolHealthCheck(healthChecks);
+                pool.setHealthCheck(aghc);
+            }
+
+            pool.setHealthCheckIntervalMillis(this.settings.getAsLong("pool.health_check.interval_millis", pool.getHealthCheckIntervalMillis()));
+        }
+
+    }
+
     private ServerSet createServerSet(final Collection<String> ldapStrings, LDAPConnectionOptions opts) {
         final List<String> ldapHosts = new ArrayList<>();
         final List<Integer> ldapPorts = new ArrayList<>();
@@ -156,15 +200,35 @@ public final class LDAPConnectionManager implements Closeable{
 
         if(sslConfig != null && !sslConfig.isStartTlsEnabled()) {
             final SSLSocketFactory sf = sslConfig.getRestrictedSSLSocketFactory();
-            return new RoundRobinServerSet(ldapHosts.toArray(new String[0]), Ints.toArray(ldapPorts), sf, opts);
+            return newServerSetImpl(ldapHosts.toArray(new String[0]), Ints.toArray(ldapPorts), sf, opts, null, null);
         }
         
         if(sslConfig != null && sslConfig.isStartTlsEnabled()) {
             final SSLSocketFactory sf = sslConfig.getRestrictedSSLSocketFactory();
-            return new RoundRobinServerSet(ldapHosts.toArray(new String[0]), Ints.toArray(ldapPorts), null, opts, null, new StartTLSPostConnectProcessor(sf));
+            return newServerSetImpl(ldapHosts.toArray(new String[0]), Ints.toArray(ldapPorts), null, opts, null, new StartTLSPostConnectProcessor(sf));
         }
         
-        return new RoundRobinServerSet(ldapHosts.toArray(new String[0]), Ints.toArray(ldapPorts), opts);
+        return newServerSetImpl(ldapHosts.toArray(new String[0]), Ints.toArray(ldapPorts), null, opts, null, null);
+    }
+    
+    private ServerSet newServerSetImpl(final String[] addresses, final int[] ports, final SocketFactory socketFactory,
+            final LDAPConnectionOptions connectionOptions, final BindRequest bindRequest, final PostConnectProcessor postConnectProcessor) {
+
+        final String impl = settings.get(ConfigConstants.LDAP_CONNECTION_STRATEGY, "roundrobin").toLowerCase();
+
+        if ("fewest".equals(impl)) {
+            return new FewestConnectionsServerSet(addresses, ports, socketFactory, connectionOptions, bindRequest, postConnectProcessor);
+        }
+
+        if ("failover".equals(impl)) {
+            return new FailoverServerSet(addresses, ports, socketFactory, connectionOptions, bindRequest, postConnectProcessor);
+        }
+
+        if ("fastest".equals(impl)) {
+            return new FastestConnectServerSet(addresses, ports, socketFactory, connectionOptions, bindRequest, postConnectProcessor);
+        }
+
+        return new RoundRobinServerSet(addresses, ports, socketFactory, connectionOptions, bindRequest, postConnectProcessor);
     }
     
     public LDAPConnection getConnection() throws LDAPException {
