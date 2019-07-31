@@ -21,14 +21,12 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.IndexService;
 import org.elasticsearch.index.cache.bitset.BitsetFilterCache;
-import org.elasticsearch.index.engine.EngineException;
 import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.shard.ShardUtils;
@@ -117,17 +115,5 @@ public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearc
         
         return new DlsFlsFilterLeafReader.DlsFlsDirectoryReader(reader, flsFields, bsp,
                 indexService, threadContext, clusterService, complianceConfig, auditlog, maskedFields, shardId);
-    }
-
-
-    @Override
-    protected IndexSearcher dlsFlsWrap(final IndexSearcher searcher, boolean isAdmin) throws EngineException {
-
-        if(searcher.getIndexReader().getClass() != DlsFlsFilterLeafReader.DlsFlsDirectoryReader.class
-                && searcher.getIndexReader().getClass() != EmptyFilterLeafReader.EmptyDirectoryReader.class) {
-            throw new RuntimeException("Unexpected index reader class "+searcher.getIndexReader().getClass());
-        }
-
-        return searcher;
     }
 }
