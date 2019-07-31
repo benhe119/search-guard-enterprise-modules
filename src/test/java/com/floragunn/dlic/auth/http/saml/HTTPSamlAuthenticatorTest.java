@@ -604,6 +604,11 @@ public class HTTPSamlAuthenticatorTest {
 
         }
 
+        @Override
+        public XContentBuilder newBuilder(XContentType xContentType, XContentType responseContentType, boolean useFiltering) throws IOException {
+            return null;
+        }
+
     }
 
     static class AuthenticateHeaders {
