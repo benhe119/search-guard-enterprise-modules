@@ -72,15 +72,22 @@ public class LdapBackendTestNewStyleConfig2 {
     }
 
     protected Settings.Builder createBaseSettings() {
-        if (poolEnabled) {
-            return Settings.builder().put(ConfigConstants.LDAP_POOL_ENABLED, true);
+        if (healthCheckEnabled) {
+            return Settings.builder()
+                    .put("pool.health_check.enabled", true)
+                    .put("pool.health_check.interval_millis", 5L)
+                    .put("pool.health_check.validation.max_response_time", 300L)
+                    .put("pool.health_check.validation.on_create", true)
+                    .put("pool.health_check.validation.on_release", true)
+                    .put("pool.health_check.validation.on_exception", true)
+                    .put("pool.health_check.pruning.enabled", true);
         } else {
             return Settings.builder();
         }
     }
 
     @Parameter
-    public boolean poolEnabled;
+    public boolean healthCheckEnabled;
 
     @Test
     public void testLdapAuthentication() throws Exception {

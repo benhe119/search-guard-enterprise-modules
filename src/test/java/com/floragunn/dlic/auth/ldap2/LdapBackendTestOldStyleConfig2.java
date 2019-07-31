@@ -72,17 +72,29 @@ public class LdapBackendTestOldStyleConfig2 {
     public static Object[] parameters() {
         return new Object[] { Boolean.FALSE, Boolean.TRUE };
     }
+    
+    protected Settings healthCheckSettings() {
+        return Settings.builder()
+                .put("pool.health_check.enabled", true)
+                .put("pool.health_check.interval_millis", 5L)
+                .put("pool.health_check.validation.max_response_time", 300L)
+                .put("pool.health_check.validation.on_create", true)
+                .put("pool.health_check.validation.on_release", true)
+                .put("pool.health_check.validation.on_exception", true)
+                .put("pool.health_check.pruning.enabled", true).build();
+    }
 
     protected Settings.Builder createBaseSettings() {
-        if (poolEnabled) {
-            return Settings.builder().put(ConfigConstants.LDAP_POOL_ENABLED, true);
+        if (healthCheckEnabled) {
+            return Settings.builder()
+                    .put(healthCheckSettings());
         } else {
             return Settings.builder();
         }
     }
 
     @Parameter
-    public boolean poolEnabled;
+    public boolean healthCheckEnabled;
 
     @Test
     public void testLdapAuthentication() throws Exception {
@@ -98,11 +110,11 @@ public class LdapBackendTestOldStyleConfig2 {
     }
 
     @Test
-    public void testLdapAuthenticationPooled() throws Exception {
+    public void testLdapAuthenticationWithHealthChecks() throws Exception {
 
         final Settings settings = createBaseSettings()
                 .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
-                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").put(ConfigConstants.LDAP_POOL_ENABLED, true)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").put(healthCheckSettings())
                 .build();
 
         final LdapUser user = (LdapUser) new LDAPAuthenticationBackend2(settings, null)
@@ -205,11 +217,11 @@ public class LdapBackendTestOldStyleConfig2 {
     }
 
     @Test(expected = ElasticsearchSecurityException.class)
-    public void testLdapAuthenticationFailPooled() throws Exception {
+    public void testLdapAuthenticationFailWithHealthChecks() throws Exception {
 
         final Settings settings = createBaseSettings()
                 .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
-                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").put(ConfigConstants.LDAP_POOL_ENABLED, true)
+                .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").put(healthCheckSettings())
                 .build();
 
         new LDAPAuthenticationBackend2(settings, null)
@@ -233,12 +245,12 @@ public class LdapBackendTestOldStyleConfig2 {
     }
 
     @Test
-    public void testLdapAuthenticationSSLPooled() throws Exception {
+    public void testLdapAuthenticationSSLWithHealthChecks() throws Exception {
 
         final Settings settings = createBaseSettings()
                 .putList(ConfigConstants.LDAP_HOSTS, "localhost:" + ldapsPort)
                 .put(ConfigConstants.LDAP_AUTHC_USERSEARCH, "(uid={0})").put(ConfigConstants.LDAPS_ENABLE_SSL, true)
-                .put(ConfigConstants.LDAP_POOL_ENABLED, true)
+                .put(healthCheckSettings())
                 .put("searchguard.ssl.transport.truststore_filepath",
                         FileHelper.getAbsoluteFilePathFromClassPath("ldap/truststore.jks"))
                 .put("verify_hostnames", false).put("path.home", ".").build();
@@ -416,7 +428,7 @@ public class LdapBackendTestOldStyleConfig2 {
     }
 
     @Test
-    public void testLdapAuthorizationPooled() throws Exception {
+    public void testLdapAuthorizationWithHealthChecks() throws Exception {
 
         final Settings settings = createBaseSettings()
                 .putList(ConfigConstants.LDAP_HOSTS, "127.0.0.1:4", "localhost:" + ldapPort)
@@ -425,7 +437,7 @@ public class LdapBackendTestOldStyleConfig2 {
                 .put(ConfigConstants.LDAP_AUTHZ_ROLEBASE, "ou=groups,o=TEST")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLENAME, "cn")
                 .put(ConfigConstants.LDAP_AUTHZ_ROLESEARCH, "(uniqueMember={0})")
-                .put(ConfigConstants.LDAP_POOL_ENABLED, true)
+                .put(healthCheckSettings())
                 // .put("searchguard.authentication.authorization.ldap.userrolename",
                 // "(uniqueMember={0})")
                 .build();

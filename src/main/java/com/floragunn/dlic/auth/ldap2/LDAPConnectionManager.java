@@ -35,6 +35,7 @@ import com.unboundid.ldap.sdk.LDAPConnectionPoolHealthCheck;
 import com.unboundid.ldap.sdk.LDAPException;
 import com.unboundid.ldap.sdk.PostConnectProcessor;
 import com.unboundid.ldap.sdk.PruneUnneededConnectionsLDAPConnectionPoolHealthCheck;
+import com.unboundid.ldap.sdk.ResultCode;
 import com.unboundid.ldap.sdk.RoundRobinServerSet;
 import com.unboundid.ldap.sdk.SearchRequest;
 import com.unboundid.ldap.sdk.SearchResult;
@@ -91,7 +92,7 @@ public final class LDAPConnectionManager implements Closeable{
         boolean createIfNecessary;
         long maxWaitTimeMillis; //0L is the default which means no blocking at all
         
-        if(this.settings.getAsBoolean(ConfigConstants.LDAP_POOL_ENABLED, false)) {
+        if(this.settings.getAsBoolean("pool.enabled", false)) {
             log.warn("LDAP connection pool can no longer be disabled");
         }
         
@@ -119,7 +120,7 @@ public final class LDAPConnectionManager implements Closeable{
 
             final List<LDAPConnectionPoolHealthCheck> healthChecks = new ArrayList<>();
 
-            if (this.settings.getAsBoolean("pool.health_check.validation.enabled", false)) {
+            if (this.settings.getAsBoolean("pool.health_check.validation.enabled", true)) {
 
                 final String entryDN = this.settings.get("pool.health_check.validation.dn", null); //null means root dse
                 final long maxResponseTime = this.settings.getAsLong("pool.health_check.validation.max_response_time", 0L); //means default of 30 sec
@@ -160,7 +161,7 @@ public final class LDAPConnectionManager implements Closeable{
 
     }
 
-    private ServerSet createServerSet(final Collection<String> ldapStrings, LDAPConnectionOptions opts) {
+    private ServerSet createServerSet(final Collection<String> ldapStrings, LDAPConnectionOptions opts) throws LDAPException {
         final List<String> ldapHosts = new ArrayList<>();
         final List<Integer> ldapPorts = new ArrayList<>();
         
@@ -211,7 +212,7 @@ public final class LDAPConnectionManager implements Closeable{
     }
     
     private ServerSet newServerSetImpl(final String[] addresses, final int[] ports, final SocketFactory socketFactory,
-            final LDAPConnectionOptions connectionOptions, final BindRequest bindRequest, final PostConnectProcessor postConnectProcessor) {
+            final LDAPConnectionOptions connectionOptions, final BindRequest bindRequest, final PostConnectProcessor postConnectProcessor) throws LDAPException {
 
         final String impl = settings.get(ConfigConstants.LDAP_CONNECTION_STRATEGY, "roundrobin").toLowerCase();
 
@@ -227,7 +228,11 @@ public final class LDAPConnectionManager implements Closeable{
             return new FastestConnectServerSet(addresses, ports, socketFactory, connectionOptions, bindRequest, postConnectProcessor);
         }
 
-        return new RoundRobinServerSet(addresses, ports, socketFactory, connectionOptions, bindRequest, postConnectProcessor);
+        if ("roundrobin".equals(impl)) {
+            return new RoundRobinServerSet(addresses, ports, socketFactory, connectionOptions, bindRequest, postConnectProcessor);
+        }
+        
+        throw new LDAPException(ResultCode.NOT_SUPPORTED, ConfigConstants.LDAP_CONNECTION_STRATEGY+": "+impl+" not supported");
     }
     
     public LDAPConnection getConnection() throws LDAPException {
