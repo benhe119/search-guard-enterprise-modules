@@ -1048,7 +1048,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
         @Override
         public BytesRef next() throws IOException {
-            return mf.mask(delegate.next());
+            return delegate.next(); //no masking here
         }
 
         @Override
