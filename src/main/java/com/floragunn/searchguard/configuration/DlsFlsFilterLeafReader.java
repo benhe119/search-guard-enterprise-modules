@@ -918,7 +918,7 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             return terms;
         }
     }
-
+    
     @Override
     public Bits getLiveDocs() {
 
@@ -928,9 +928,19 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
             if(bs == null) {
                 return new Bits.MatchNoBits(in.maxDoc());
             } else if (currentLiveDocs == null) {
-                return bs;
+                return new Bits() {
+                    
+                    @Override
+                    public int length() {
+                        return bs.length();
+                    }
+                    
+                    @Override
+                    public boolean get(int index) {
+                        return bs.get(index);
+                    }
+                };
             } else {
-
                 return new Bits() {
 
                     @Override
@@ -954,41 +964,41 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
     @Override
     public int numDocs() {
 
-        if (dlsEnabled) {
-            if (this.numDocs == -1) {
-                final Bits currentLiveDocs = in.getLiveDocs();
+            if (dlsEnabled) {
+                if (this.numDocs == -1) {
+                    final Bits currentLiveDocs = in.getLiveDocs();
 
-                if (bs == null) {
-                    this.numDocs = 0;
-                } else if (currentLiveDocs == null) {
-                    this.numDocs = bs.cardinality();
-                } else {
+                    if (bs == null) {
+                        this.numDocs = 0;
+                    } else if (currentLiveDocs == null) {
+                        this.numDocs = bs.cardinality();
+                    } else {
 
-                    try {
-                        int localNumDocs = 0;
+                        try {
+                            int localNumDocs = 0;
 
-                        DocIdSetIterator it = new BitSetIterator(bs, 0L);
+                            DocIdSetIterator it = new BitSetIterator(bs, 0L);
 
-                        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
-                            if (currentLiveDocs.get(doc)) {
-                                localNumDocs++;
+                            for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+                                if (currentLiveDocs.get(doc)) {
+                                    localNumDocs++;
+                                }
                             }
+
+                            this.numDocs = localNumDocs;
+                        } catch (IOException e) {
+                            throw ExceptionsHelper.convertToElastic(e);
                         }
-
-                        this.numDocs = localNumDocs;
-                    } catch (IOException e) {
-                        throw ExceptionsHelper.convertToElastic(e);
                     }
+
+                    return this.numDocs;
+
+                } else {
+                    return this.numDocs; // cached
                 }
-
-                return this.numDocs;
-
-            } else {
-                return this.numDocs; // cached
             }
-        }
 
-        return in.numDocs();
+            return in.numDocs();
     }
 
     @Override
