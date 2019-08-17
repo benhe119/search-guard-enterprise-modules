@@ -1,0 +1,62 @@
+---
+_sg_meta:
+  type: "roles"
+  config_version: 2
+
+sg_so_read:
+  cluster_permissions:
+  - "*"
+  index_permissions:
+  - index_patterns:
+    - "*"
+    allowed_actions:
+    - "*"
+  tenant_permissions:
+  - tenant_patterns:
+    - "*"
+    allowed_actions:
+    - searchguard:dings/*/bums
+    - kibana:foo/bar
+
+sg_so_readwrite:
+  cluster_permissions:
+  - "*"
+  index_permissions:
+  - index_patterns:
+    - "*"
+    allowed_actions:
+    - "*"
+  tenant_permissions:
+  - tenant_patterns:
+    - "*"
+    allowed_actions:
+    - searchguard:dings/*
+    - kibana:foo/bar
+
+sg_vg_all:
+  cluster_permissions:
+  - "*"
+  index_permissions:
+  - index_patterns:
+    - "*"
+    allowed_actions:
+    - "*"
+  tenant_permissions:
+  - tenant_patterns:
+    - "*"
+    allowed_actions:
+    - KIBANA_VIS_GRAPH_ALL
+
+sg_vg_read:
+  cluster_permissions:
+  - "*"
+  index_permissions:
+  - index_patterns:
+    - "*"
+    allowed_actions:
+    - "*"
+  tenant_permissions:
+  - tenant_patterns:
+    - "*"
+    allowed_actions:
+    - KIBANA_VIS_GRAPH_READ
