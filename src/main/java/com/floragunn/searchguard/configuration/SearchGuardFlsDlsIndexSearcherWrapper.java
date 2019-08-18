@@ -43,7 +43,7 @@ import com.google.common.collect.Sets;
 
 public class SearchGuardFlsDlsIndexSearcherWrapper extends SearchGuardIndexSearcherWrapper {
 
-    private static final Set<String> metaFields = Sets.union(Sets.newHashSet("_source", "_version", "_field_names", "_seq_no"),
+    private static final Set<String> metaFields = Sets.union(Sets.newHashSet("_source", "_version", "_field_names", "_seq_no", "_primary_term"),
             Sets.newHashSet(MapperService.getAllMetaFields()));
     private final ClusterService clusterService;
     private final IndexService indexService;
