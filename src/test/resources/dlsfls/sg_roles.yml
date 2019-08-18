@@ -2,6 +2,18 @@
 _sg_meta:
   type: "roles"
   config_version: 2
+sg_fls_exists:
+  cluster_permissions:
+    - "*"
+  index_permissions:
+    - index_patterns:
+      - "data"
+      allowed_actions:
+        - "*"
+      fls:
+        - "@timestamp"
+        - "host"
+        #- "non-existing"
 sg_date_math:
   index_permissions:
     - index_patterns:
