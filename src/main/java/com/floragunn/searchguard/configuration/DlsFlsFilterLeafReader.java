@@ -56,6 +56,7 @@ import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CombinedBitSet;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.cluster.service.ClusterService;
@@ -1016,33 +1017,18 @@ class DlsFlsFilterLeafReader extends FilterLeafReader {
 
     @Override
     public Bits getLiveDocs() {
-
-        if(dlsEnabled) {
+        if (dlsEnabled) {
             final Bits currentLiveDocs = in.getLiveDocs();
-            
-            if(bs == null) {
+
+            if (bs == null) {
                 return new Bits.MatchNoBits(in.maxDoc());
             } else if (currentLiveDocs == null) {
                 return bs;
             } else {
-
-                return new Bits() {
-
-                    @Override
-                    public boolean get(int index) {
-                        return bs.get(index) && currentLiveDocs.get(index);
-                    }
-
-                    @Override
-                    public int length() {
-                        return bs.length();
-                    }
-                    
-                };
-            
+                return new CombinedBitSet(bs, currentLiveDocs);
             }
         }
-        
+
         return in.getLiveDocs(); //no dls
     }
 
